@@ -1,0 +1,60 @@
+main {
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 95vw;
+    height: 95vh;
+}
+
+.column {
+    padding: 0px;
+    box-sizing: border-box;
+}
+
+// .left-column {
+//     background: lightcoral;
+// }
+
+// .right-column {
+//     background: lightseagreen;
+// }
+
+.clickable {
+    cursor: pointer;
+}
+
+.selectable {
+    background: lightblue;
+
+}
+
+.selected {
+    border: 3px solid black;
+    border-radius: 15px;
+}
+
+.correct-selected {
+    background: lightgreen;
+    border: 3px solid black;
+    border-radius: 15px;
+}
+.wrong-selected {
+    background: lightcoral;
+}
+
+.item {
+    width: 90%;
+    height: 15%;
+    padding: 1rem;
+    margin: 1rem;
+    font-size: 3rem;
+    font-family:'Courier New', Courier, monospace;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 15px;
+}
+
+.next-button {
+    height: 2rem;
+}
