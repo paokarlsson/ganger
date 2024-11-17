@@ -33,6 +33,9 @@ export class AppComponent {
   doneQuestions: Set<Question>;
   left: Question | null | undefined;
   right: Question | null | undefined;
+  loopAudio: HTMLAudioElement;
+  rightAudio: HTMLAudioElement;
+  wrongAudio: HTMLAudioElement;
 
   constructor() {
     this.bigDataBaseQuestionSet = this.createQuestions();
@@ -40,11 +43,22 @@ export class AppComponent {
     this.doneQuestions = new Set<Question>();
     this.leftList = this.shuffleArray(this.questionList, 1);
     this.rightList = this.shuffleArray(this.questionList, 200);
+    this.loopAudio = new Audio('assets/audio/loop.mp3');
+    this.rightAudio = new Audio('assets/audio/right.wav');
+    this.wrongAudio = new Audio('assets/audio/wrong.wav');
+    this.loopAudio.loop = true;
+    this.loopAudio.volume = 0.1;
+    this.loopAudio.play().catch(error => console.error('Error starting loop:', error));
   }
 
   isDone(q: Question) {
     let a: Question[] = Array.from(this.doneQuestions);
-    return a.some((a) => a.first * a.second == q.first * q.second && (a.first == q.first ||  a.second == q.second));
+
+    return a.some(
+      (a) =>
+        a.first * a.second == q.first * q.second &&
+        (a.first == q.first || a.second == q.second)
+    );
   }
   allIsDone(): any {
     if (this.doneQuestions?.size == this.questionList?.size) {
@@ -66,26 +80,26 @@ export class AppComponent {
     return false;
   }
   isLeftWrong(q: Question) {
+    if (this.left != q) {
+      return false;
+    }
     if (this.left == undefined || this.right == undefined) {
       return false;
     }
     if (this.left == null || this.right == null) {
-      return false;
-    }
-    if(this.left != q) {
       return false;
     }
     return this.left != this.right;
   }
 
   isRightWrong(q: Question) {
+    if (this.right != q) {
+      return false;
+    }
     if (this.left == undefined || this.right == undefined) {
       return false;
     }
     if (this.left == null || this.right == null) {
-      return false;
-    }
-    if(this.right != q) {
       return false;
     }
     return this.left != this.right;
@@ -97,6 +111,13 @@ export class AppComponent {
   isASelected(q: Question) {
     return this.right == q;
   }
+  resetLeftAndRight() {
+    this.left = null;
+    this.right = null;
+  }
+  private pushToDone(q: Question) {
+    this.doneQuestions?.add(q);
+  }
   selQ(q: Question) {
     if (this.isDone(q)) {
       return;
@@ -105,14 +126,26 @@ export class AppComponent {
     if (this.isCorrect(q)) {
       this.pushToDone(q);
       this.resetLeftAndRight();
+      this.playSuccess();
+    } else if (!this.isCorrect(q) && this.left != null && this.right != null) {
+      this.playWrong();
     }
   }
-  resetLeftAndRight() {
-    this.left = null;
-    this.right = null;
+
+  private playWrong() {
+    this.wrongAudio.currentTime = 0;
+    this.wrongAudio.volume = 0.3;
+    this.wrongAudio
+      .play()
+      .catch((error) => console.error('Error playing effect:', error));
   }
-  private pushToDone(q: Question) {
-    this.doneQuestions?.add(q);
+
+  private playSuccess() {
+    this.rightAudio.currentTime = 0;
+    this.rightAudio.volume = 0.3;
+    this.rightAudio
+      .play()
+      .catch((error) => console.error('Error playing effect:', error));
   }
 
   selA(q: Question) {
@@ -123,17 +156,24 @@ export class AppComponent {
     if (this.isCorrect(q)) {
       this.pushToDone(q);
       this.resetLeftAndRight();
+      this.playSuccess()
+    } else if (!this.isCorrect(q) && this.left != null && this.right != null) {
+      this.playWrong();
     }
   }
 
   getQuestions(): Set<Question> {
     let iterator = this.bigDataBaseQuestionSet.values();
-    let set :Question[] = []; 
+    let set: Question[] = [];
     while (set.length < 5) {
       const next = iterator.next();
- 
+
       if (next.done) break;
-      if(set.some(a=>a.first * a.second == next.value.first * next.value.second)) {
+      if (
+        set.some(
+          (a) => a.first * a.second == next.value.first * next.value.second
+        )
+      ) {
         continue;
       }
       set.push(next.value);
@@ -147,7 +187,7 @@ export class AppComponent {
     for (let i = 0; i < 100; i++) {
       let a = Math.floor(Math.random() * 11);
       let b = Math.floor(Math.random() * 11);
-      const q: Question = { first: a, second: b};
+      const q: Question = { first: a, second: b };
       set.add(q);
     }
     return set;
