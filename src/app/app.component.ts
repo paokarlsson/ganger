@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 
 /**
@@ -12,7 +12,7 @@ import { MatCardModule } from '@angular/material/card';
   standalone: true,
   imports: [MatCardModule, CommonModule],
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   next() {
     this.doneQuestions = new Set<Question>();
     this.questionList = this.getQuestions();
@@ -46,6 +46,9 @@ export class AppComponent {
     this.loopAudio = new Audio('assets/audio/loop.mp3');
     this.rightAudio = new Audio('assets/audio/right.wav');
     this.wrongAudio = new Audio('assets/audio/wrong.wav');
+
+  }
+  ngOnInit(): void {
     this.loopAudio.loop = true;
     this.loopAudio.volume = 0.1;
     this.loopAudio.play().catch(error => console.error('Error starting loop:', error));
