@@ -9,6 +9,6 @@
       [class.wrong-selected]="isRightWrong(q)" (click)="selA(q)" *ngFor="let q of rightList">{{ q.first * q.second }}</button>
   </div>
   <div *ngIf="allIsDone()">
-    <button class="item clickable next-button" (click)="next()">Nästa</button>
+    <button class="item clickable selectable next-button" (click)="next()">Nästa</button>
   </div>
 </main>

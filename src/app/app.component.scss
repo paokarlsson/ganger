@@ -1,3 +1,6 @@
+* {
+    background: rgb(255, 255, 255);
+}
 main {
     margin: 0;
     padding: 0;
@@ -12,35 +15,27 @@ main {
     box-sizing: border-box;
 }
 
-// .left-column {
-//     background: lightcoral;
-// }
-
-// .right-column {
-//     background: lightseagreen;
-// }
-
 .clickable {
     cursor: pointer;
 }
 
 .selectable {
-    background: lightblue;
+    background: rgb(120, 120, 120);
+    border: 7px solid rgb(59, 59, 59);
 
 }
 
 .selected {
-    border: 3px solid black;
-    border-radius: 15px;
+    border: 7px solid rgb(14, 14, 14);
 }
 
 .correct-selected {
-    background: lightgreen;
-    border: 3px solid black;
-    border-radius: 15px;
+    background: rgb(70, 255, 70);
+    border: 7px solid rgb(0, 180, 0);
 }
 .wrong-selected {
-    background: lightcoral;
+    background: rgb(255, 70, 70);
+    border: 7px solid rgb(180, 0, 0);
 }
 
 .item {
@@ -52,9 +47,9 @@ main {
     font-family:'Courier New', Courier, monospace;
     font-weight: bold;
     text-align: center;
-    border-radius: 15px;
+    border-radius: 10rem;
 }
 
 .next-button {
-    height: 2rem;
+    height: 5rem;
 }

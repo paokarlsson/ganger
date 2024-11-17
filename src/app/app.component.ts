@@ -128,16 +128,18 @@ export class AppComponent {
 
   getQuestions(): Set<Question> {
     let iterator = this.bigDataBaseQuestionSet.values();
-    let set = new Set<Question>();
-    for (let i = 0; i < 4; i++) {
-      const next = iterator.next(); // Get the next item in the Set
-      // let a: Question[] = Array.from(set);
-      // let already = a.some((a) => a.first * a.second == next?.first * next.second && (a.first == next.first ||  a.second == next.second));
-      if (next.done) break; // Stop if there are no more items
-      set.add(next.value); // Add the item to the result array
-      this.bigDataBaseQuestionSet.delete(next.value); // Remove the item from the Set
+    let set :Question[] = []; 
+    while (set.length < 5) {
+      const next = iterator.next();
+ 
+      if (next.done) break;
+      if(set.some(a=>a.first * a.second == next.value.first * next.value.second)) {
+        continue;
+      }
+      set.push(next.value);
+      this.bigDataBaseQuestionSet.delete(next.value);
     }
-    return set;
+    return new Set(set);
   }
 
   createQuestions(): Set<Question> {
