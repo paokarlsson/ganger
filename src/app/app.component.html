@@ -1,24 +1,24 @@
 <div class="wrapper">
-  <div>
+  <div class="top">
     <button (click)="startStopLoopAudio()">
       <img *ngIf="playLoop" src="assets/icons/volume_up.svg" alt="Start Audio Loop" />
       <img *ngIf="!playLoop" src="assets/icons/volume_off.svg" alt="Start Audio Loop" />
     </button>
   </div>
-  <main>
-    <div class="column left-column">
+  <main class="m">
+    <div class="column left">
       <button class="item clickable selectable" [class.selected]="isQSelected(q)" [class.correct-selected]="isDone(q)"
         [class.wrong-selected]="isLeftWrong(q)" (click)="selQ(q)" *ngFor="let q of leftList">{{ q.first }} *
         {{q.second}}</button>
     </div>
-    <div class="column right-column">
+    <div class="column right">
       <button class="item clickable selectable" [class.selected]="isASelected(q)" [class.correct-selected]="isDone(q)"
         [class.wrong-selected]="isRightWrong(q)" (click)="selA(q)" *ngFor="let q of rightList">{{ q.first * q.second
         }}</button>
     </div>
 
   </main>
-  <div>    <div *ngIf="allIsDone()">
+  <div class="bottom">    <div *ngIf="allIsDone()">
     <button class="item clickable selectable next-button" (click)="next()">Nästa</button>
   </div></div>
 </div>
