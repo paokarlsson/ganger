@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
 
 /**
  * @title Basic grid-list
@@ -10,9 +11,23 @@ import { MatCardModule } from '@angular/material/card';
   styleUrl: 'app.component.scss',
   templateUrl: 'app.component.html',
   standalone: true,
-  imports: [MatCardModule, CommonModule],
+  imports: [MatCardModule, CommonModule, MatIconModule],
 })
 export class AppComponent implements OnInit {
+  playLoop: boolean = false;
+  startStopLoopAudio() {
+    this.playLoop = !this.playLoop;
+    if(this.playLoop) {
+      this.loopAudio.loop = true;
+      this.loopAudio.volume = 0.1;
+      this.loopAudio
+        .play()
+        .catch((error) => console.error('Error starting loop:', error));
+    } else {
+      this.loopAudio.pause()
+    }
+
+  }
   next() {
     this.doneQuestions = new Set<Question>();
     this.questionList = this.getQuestions();
@@ -46,13 +61,8 @@ export class AppComponent implements OnInit {
     this.loopAudio = new Audio('assets/audio/loop.mp3');
     this.rightAudio = new Audio('assets/audio/right.wav');
     this.wrongAudio = new Audio('assets/audio/wrong.wav');
-
   }
-  ngOnInit(): void {
-    this.loopAudio.loop = true;
-    this.loopAudio.volume = 0.1;
-    this.loopAudio.play().catch(error => console.error('Error starting loop:', error));
-  }
+  ngOnInit(): void {}
 
   isDone(q: Question) {
     let a: Question[] = Array.from(this.doneQuestions);
@@ -159,7 +169,7 @@ export class AppComponent implements OnInit {
     if (this.isCorrect(q)) {
       this.pushToDone(q);
       this.resetLeftAndRight();
-      this.playSuccess()
+      this.playSuccess();
     } else if (!this.isCorrect(q) && this.left != null && this.right != null) {
       this.playWrong();
     }

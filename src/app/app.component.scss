@@ -1,13 +1,23 @@
 * {
-    background: rgb(255, 255, 255);
+    background: rgb(186, 186, 186);
 }
+.wrapper {
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-rows: 1fr 7fr 2fr;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
 main {
     margin: 0;
     padding: 0;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    width: 95vw;
-    height: 95vh;
+    width: 90%;
+    height: 100%;
 }
 
 .column {

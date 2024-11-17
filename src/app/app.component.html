@@ -1,14 +1,24 @@
-<main>
-  <div class="column left-column">
-    <button class="item clickable selectable" [class.selected]="isQSelected(q)" [class.correct-selected]="isDone(q)"
-      [class.wrong-selected]="isLeftWrong(q)" (click)="selQ(q)" *ngFor="let q of leftList">{{ q.first }} *
-      {{q.second}}</button>
+<div class="wrapper">
+  <div>
+    <button (click)="startStopLoopAudio()">
+      <img *ngIf="playLoop" src="assets/icons/volume_up.svg" alt="Start Audio Loop" />
+      <img *ngIf="!playLoop" src="assets/icons/volume_off.svg" alt="Start Audio Loop" />
+    </button>
   </div>
-  <div class="column right-column">
-    <button class="item clickable selectable" [class.selected]="isASelected(q)" [class.correct-selected]="isDone(q)"
-      [class.wrong-selected]="isRightWrong(q)" (click)="selA(q)" *ngFor="let q of rightList">{{ q.first * q.second }}</button>
-  </div>
-  <div *ngIf="allIsDone()">
+  <main>
+    <div class="column left-column">
+      <button class="item clickable selectable" [class.selected]="isQSelected(q)" [class.correct-selected]="isDone(q)"
+        [class.wrong-selected]="isLeftWrong(q)" (click)="selQ(q)" *ngFor="let q of leftList">{{ q.first }} *
+        {{q.second}}</button>
+    </div>
+    <div class="column right-column">
+      <button class="item clickable selectable" [class.selected]="isASelected(q)" [class.correct-selected]="isDone(q)"
+        [class.wrong-selected]="isRightWrong(q)" (click)="selA(q)" *ngFor="let q of rightList">{{ q.first * q.second
+        }}</button>
+    </div>
+
+  </main>
+  <div>    <div *ngIf="allIsDone()">
     <button class="item clickable selectable next-button" (click)="next()">Nästa</button>
-  </div>
-</main>
+  </div></div>
+</div>
