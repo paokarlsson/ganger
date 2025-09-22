@@ -55,7 +55,7 @@
               "src/styles.scss"
             ],
             "scripts": [],
-            "baseHref": "/ganger/"
+            "baseHref": "/"
           },
           "configurations": {
             "production": {
