@@ -1,0 +1,9 @@
+services:
+  ganger:
+    image: ola84/ganger
+    container_name: ganger
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped
