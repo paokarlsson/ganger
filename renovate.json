@@ -1,0 +1,31 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "dryRun": false,
+    "repositories": [
+        "paokarlsson/ganger"
+    ],
+    "enabledManagers": [
+        "npm"
+    ],
+    "groupName": "All dependency updates",
+    "separateMajorMinor": false,
+    "separateMultipleMajor": false,
+    "separateMinorPatch": false,
+    "prConcurrentLimit": 10,
+    "branchConcurrentLimit": 10,
+    "prHourlyLimit": 10,
+    "extends": [
+        "config:base"
+    ],
+    "packageRules": [
+        {
+            "matchPackagePatterns": [
+                "@angular/*"
+            ],
+            "groupName": "Angular updates",
+            "major": {
+                "enabled": true
+            }
+        }
+    ]
+}
