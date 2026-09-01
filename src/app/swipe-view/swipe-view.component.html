@@ -1,0 +1,62 @@
+<div class="container">
+    <header class="top">
+        <span class="score score--correct">Rätt {{nrCorrect}}</span>
+        <span class="score score--wrong">Fel {{nrWrong}}</span>
+    </header>
+
+    @if (loading) {
+        <section class="result">
+            <mat-card appearance="outlined" class="game-card result-card">
+                <p class="result-title">Laddar frågor…</p>
+            </mat-card>
+        </section>
+    } @else if (loadError) {
+        <section class="result">
+            <mat-card appearance="outlined" class="game-card result-card">
+                <p class="result-title">Kunde inte ladda frågorna</p>
+                <p class="result-score">Kontrollera nätet och ladda om sidan.</p>
+            </mat-card>
+        </section>
+    } @else if (finished) {
+        <section class="result">
+            <mat-card appearance="outlined" class="game-card result-card">
+                <p class="result-title">Klart!</p>
+                <p class="result-score">{{nrCorrect}} av {{totalAnswered}} rätt</p>
+                <button type="button" class="again" (click)="restart()">Spela igen</button>
+            </mat-card>
+        </section>
+    } @else {
+        <section class="main">
+            <button type="button" class="answer-key answer-key--false"
+                (click)="answer(false)" [disabled]="locked">Svara: påståendet är fel</button>
+
+            <div class="card-slot" cdkDrag cdkDragLockAxis="x" [cdkDragDisabled]="locked"
+                [class.is-instant]="instant" (cdkDragMoved)="dragMoved($event)"
+                (cdkDragEnded)="dragEnd($event)">
+                <mat-card appearance="outlined" class="game-card"
+                    [class.game-card--leaving-right]="leaving === 1"
+                    [class.game-card--leaving-left]="leaving === -1"
+                    [style.transform]="leaving ? null : 'rotate(' + rotation + 'deg)'">
+                    <span class="stamp stamp--false" [style.opacity]="strength(-1)">FEL</span>
+                    <span class="stamp stamp--true" [style.opacity]="strength(1)">RÄTT</span>
+                    <span class="statement">{{currentStatmentString}}</span>
+                </mat-card>
+            </div>
+
+            <button type="button" class="answer-key answer-key--true"
+                (click)="answer(true)" [disabled]="locked">Svara: påståendet är rätt</button>
+        </section>
+    }
+
+    <footer class="bottom" aria-live="polite">
+        @if (loading || loadError) {
+            &nbsp;
+        } @else if (feedback) {
+            <span class="feedback" [class.feedback--wrong]="!feedback.correct">
+                @if (feedback.correct) { Rätt! } @else { Fel — {{feedback.solution}} }
+            </span>
+        } @else {
+            Kvar: {{numberOfStatementsLeft()}}
+        }
+    </footer>
+</div>

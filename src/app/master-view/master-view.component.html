@@ -1,0 +1,171 @@
+<div class="container">
+  <header class="header">
+    <h1>⚡ Multiplikationsmästaren</h1>
+  </header>
+
+  @switch (screen) {
+    @case ('menu') {
+      <div class="menu-screen">
+        <div class="level-section">
+          <div class="level-title">Välj nivå</div>
+          <div class="level-grid">
+            @for (button of levelButtons; track button.level) {
+              <button type="button" class="level-btn"
+                [class.active]="selectedLevel === button.level"
+                (click)="selectLevel(button.level)">
+                <span class="level-num">{{ button.num }}</span>
+                <span class="level-label">{{ button.label }}</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="level-section">
+          <div class="level-title">Antal frågor</div>
+          <div class="question-count-row">
+            @for (count of questionCounts; track count) {
+              <button type="button" class="count-btn"
+                [class.active]="selectedQuestionCount === count"
+                (click)="selectQuestionCount(count)">{{ count }}</button>
+            }
+          </div>
+        </div>
+
+        <button type="button" class="start-btn" (click)="start()">Kör! ⚡</button>
+        <br />
+        <button type="button" class="heatmap-btn" (click)="openHeatmap()">📊 Värmekarta</button>
+      </div>
+    }
+
+    @case ('calibration') {
+      <div class="calibration-screen">
+        <div class="calibration-card">
+          <div class="calibration-title">🎯 Snabbhetskalibrering</div>
+          <div class="calibration-subtitle">Svara så snabbt du kan på dessa enkla tal</div>
+          <div class="calibration-progress">
+            @for (question of calibrationQuestions; track $index) {
+              <div class="calibration-dot" [class]="calibrationDotState($index)"></div>
+            }
+          </div>
+          <div class="calibration-question">{{ calibrationQuestionText }}</div>
+          <input #calibrationInput type="number" class="calibration-input"
+            [class.wrong]="calibrationWrong" autocomplete="off" inputmode="numeric"
+            (input)="checkCalibrationAnswer()" (keydown.enter)="checkCalibrationAnswer()" />
+        </div>
+        <button type="button" class="calibration-skip" (click)="skipCalibration()">
+          Hoppa över (använd standard)
+        </button>
+      </div>
+    }
+
+    @case ('game') {
+      <div class="game-screen">
+        <div class="progress-bar">
+          @for (dot of progressDots; track dot) {
+            <div class="progress-dot" [class]="dotState(dot)"></div>
+          }
+        </div>
+
+        <div class="question-card">
+          <div class="question-text">{{ questionText }}</div>
+          <input #answerInput type="number" class="answer-input" [class]="answerState"
+            autocomplete="off" inputmode="numeric" [disabled]="!isAnswering"
+            (input)="onAnswerInput()" (keydown.enter)="checkAnswer()" />
+        </div>
+
+        <div class="timer">⏱ <span>{{ timerDisplay }}</span>s</div>
+        <div class="feedback" [class.correct-feedback]="feedbackKind === 'correct'"
+          [class.wrong-feedback]="feedbackKind === 'wrong'">{{ feedbackText }}</div>
+        <div class="streak-indicator" [class.visible]="streakVisible">
+          🔥 {{ consecutiveFastDisplay }} snabba i rad!
+        </div>
+        <button type="button" class="abort-btn" (click)="openAbortModal()">Avbryt</button>
+      </div>
+
+      @if (showAbortModal) {
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="modal-title">Avbryta?</div>
+            <div class="modal-text">Vill du verkligen avbryta mitt i spelet? Dina svar hittills sparas.</div>
+            <div class="modal-buttons">
+              <button type="button" class="modal-btn cancel" (click)="cancelAbort()">Fortsätt</button>
+              <button type="button" class="modal-btn confirm" (click)="confirmAbort()">Avbryt</button>
+            </div>
+          </div>
+        </div>
+      }
+    }
+
+    @case ('result') {
+      <div class="result-screen">
+        <div class="result-card">
+          <div class="result-title">{{ resultTitle }}</div>
+          <div class="calibration-info">
+            <span class="label">Din kalibrerade snabbhetstid: </span>
+            <span class="value">{{ calibratedTimeDisplay }}</span>
+          </div>
+          <div class="result-stats">
+            <div class="stat">
+              <div class="stat-value">{{ resultCorrect }}</div>
+              <div class="stat-label">Rätt</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value">{{ resultAvgTime }}</div>
+              <div class="stat-label">Snitt</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value">{{ resultBestTime }}</div>
+              <div class="stat-label">Bäst</div>
+            </div>
+          </div>
+          <div class="result-breakdown">
+            @for (row of breakdown; track $index) {
+              <div class="breakdown-row">
+                <span class="breakdown-question">{{ row.text }}</span>
+                <span class="breakdown-time" [style.background]="row.color">
+                  {{ row.time }}<span class="breakdown-penalty">{{ row.penalty }}</span>
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+        <div class="result-buttons">
+          <button type="button" class="again-btn" (click)="startGame()">Igen! ⚡</button>
+          <button type="button" class="back-btn" (click)="showMenu()">Tillbaka</button>
+        </div>
+      </div>
+    }
+
+    @case ('heatmap') {
+      <div class="heatmap-screen">
+        <div class="heatmap-card">
+          <div class="heatmap-title">Din värmekarta</div>
+          <div class="heatmap-grid">
+            <div class="heatmap-cell"></div>
+            @for (column of heatmapRows; track column.label) {
+              <div class="heatmap-cell heatmap-header">{{ column.label }}</div>
+            }
+            @for (row of heatmapRows; track row.label) {
+              <div class="heatmap-cell heatmap-label">{{ row.label }}</div>
+              @for (cell of row.cells; track $index) {
+                <div class="heatmap-cell heatmap-data" [style.background]="cell.color"
+                  [title]="cell.title">{{ cell.text }}</div>
+              }
+            }
+          </div>
+          <div class="heatmap-legend">
+            <span>Snabb ✓</span>
+            <div class="legend-bar"></div>
+            <span>Långsam</span>
+          </div>
+          <div class="heatmap-stats">
+            <div class="mastered-count">Automatiserade: <span>{{ masteredCount }}</span> / 100</div>
+            <div class="baseline-info">Din baslinje: <span class="value">{{ baselineDisplay }}</span></div>
+          </div>
+        </div>
+        <button type="button" class="back-btn" (click)="showMenu()">Tillbaka</button>
+        <button type="button" class="reset-btn" (click)="resetStats()">🗑️ Nollställ</button>
+      </div>
+    }
+  }
+</div>

@@ -1,0 +1,747 @@
+[
+    {
+        "rank": 1,
+        "number1": 0,
+        "number2": 0,
+        "answer": 0,
+        "wrongs": []
+    },
+    {
+        "rank": 2,
+        "number1": 0,
+        "number2": 1,
+        "answer": 0,
+        "wrongs": [
+            1
+        ]
+    },
+    {
+        "rank": 3,
+        "number1": 0,
+        "number2": 2,
+        "answer": 0,
+        "wrongs": [
+            2
+        ]
+    },
+    {
+        "rank": 4,
+        "number1": 0,
+        "number2": 3,
+        "answer": 0,
+        "wrongs": [
+            3
+        ]
+    },
+    {
+        "rank": 5,
+        "number1": 0,
+        "number2": 4,
+        "answer": 0,
+        "wrongs": [
+            4
+        ]
+    },
+    {
+        "rank": 6,
+        "number1": 0,
+        "number2": 5,
+        "answer": 0,
+        "wrongs": [
+            5
+        ]
+    },
+    {
+        "rank": 7,
+        "number1": 0,
+        "number2": 6,
+        "answer": 0,
+        "wrongs": [
+            6
+        ]
+    },
+    {
+        "rank": 8,
+        "number1": 0,
+        "number2": 7,
+        "answer": 0,
+        "wrongs": [
+            7
+        ]
+    },
+    {
+        "rank": 9,
+        "number1": 0,
+        "number2": 8,
+        "answer": 0,
+        "wrongs": [
+            8
+        ]
+    },
+    {
+        "rank": 10,
+        "number1": 0,
+        "number2": 9,
+        "answer": 0,
+        "wrongs": [
+            9
+        ]
+    },
+    {
+        "rank": 11,
+        "number1": 0,
+        "number2": 10,
+        "answer": 0,
+        "wrongs": [
+            10
+        ]
+    },
+    {
+        "rank": 12,
+        "number1": 1,
+        "number2": 0,
+        "answer": 0,
+        "wrongs": [
+            1
+        ]
+    },
+    {
+        "rank": 13,
+        "number1": 1,
+        "number2": 1,
+        "answer": 1,
+        "wrongs": [
+            0
+        ]
+    },
+    {
+        "rank": 14,
+        "number1": 1,
+        "number2": 2,
+        "answer": 2,
+        "wrongs": [
+            1
+        ]
+    },
+    {
+        "rank": 15,
+        "number1": 1,
+        "number2": 3,
+        "answer": 3,
+        "wrongs": [
+            1
+        ]
+    },
+    {
+        "rank": 16,
+        "number1": 1,
+        "number2": 4,
+        "answer": 4,
+        "wrongs": [
+            1
+        ]
+    },
+    {
+        "rank": 17,
+        "number1": 1,
+        "number2": 5,
+        "answer": 5,
+        "wrongs": [
+            1
+        ]
+    },
+    {
+        "rank": 18,
+        "number1": 1,
+        "number2": 6,
+        "answer": 6,
+        "wrongs": [
+            1
+        ]
+    },
+    {
+        "rank": 19,
+        "number1": 1,
+        "number2": 7,
+        "answer": 7,
+        "wrongs": [
+            1
+        ]
+    },
+    {
+        "rank": 20,
+        "number1": 1,
+        "number2": 8,
+        "answer": 8,
+        "wrongs": [
+            1
+        ]
+    },
+    {
+        "rank": 21,
+        "number1": 1,
+        "number2": 9,
+        "answer": 9,
+        "wrongs": [
+            1
+        ]
+    },
+    {
+        "rank": 22,
+        "number1": 1,
+        "number2": 10,
+        "answer": 10,
+        "wrongs": [
+            1
+        ]
+    },
+    {
+        "rank": 23,
+        "number1": 2,
+        "number2": 0,
+        "answer": 0,
+        "wrongs": [
+            2
+        ]
+    },
+    {
+        "rank": 24,
+        "number1": 2,
+        "number2": 1,
+        "answer": 2,
+        "wrongs": [
+            1
+        ]
+    },
+    {
+        "rank": 25,
+        "number1": 2,
+        "number2": 2,
+        "answer": 4,
+        "wrongs": [
+            2
+        ]
+    },
+    {
+        "rank": 26,
+        "number1": 2,
+        "number2": 3,
+        "answer": 6,
+        "wrongs": [
+            5
+        ]
+    },
+    {
+        "rank": 27,
+        "number1": 2,
+        "number2": 4,
+        "answer": 8,
+        "wrongs": [
+            6
+        ]
+    },
+    {
+        "rank": 28,
+        "number1": 2,
+        "number2": 5,
+        "answer": 10,
+        "wrongs": [
+            8
+        ]
+    },
+    {
+        "rank": 29,
+        "number1": 2,
+        "number2": 6,
+        "answer": 12,
+        "wrongs": [
+            10
+        ]
+    },
+    {
+        "rank": 30,
+        "number1": 2,
+        "number2": 7,
+        "answer": 14,
+        "wrongs": [
+            12
+        ]
+    },
+    {
+        "rank": 31,
+        "number1": 2,
+        "number2": 8,
+        "answer": 16,
+        "wrongs": [
+            14
+        ]
+    },
+    {
+        "rank": 32,
+        "number1": 2,
+        "number2": 9,
+        "answer": 18,
+        "wrongs": [
+            16
+        ]
+    },
+    {
+        "rank": 33,
+        "number1": 2,
+        "number2": 10,
+        "answer": 20,
+        "wrongs": [
+            18
+        ]
+    },
+    {
+        "rank": 34,
+        "number1": 5,
+        "number2": 0,
+        "answer": 0,
+        "wrongs": [
+            5
+        ]
+    },
+    {
+        "rank": 35,
+        "number1": 5,
+        "number2": 1,
+        "answer": 5,
+        "wrongs": [
+            0
+        ]
+    },
+    {
+        "rank": 36,
+        "number1": 5,
+        "number2": 2,
+        "answer": 10,
+        "wrongs": [
+            5
+        ]
+    },
+    {
+        "rank": 37,
+        "number1": 5,
+        "number2": 3,
+        "answer": 15,
+        "wrongs": [
+            10
+        ]
+    },
+    {
+        "rank": 38,
+        "number1": 5,
+        "number2": 4,
+        "answer": 20,
+        "wrongs": [
+            15
+        ]
+    },
+    {
+        "rank": 39,
+        "number1": 5,
+        "number2": 5,
+        "answer": 25,
+        "wrongs": [
+            20
+        ]
+    },
+    {
+        "rank": 40,
+        "number1": 5,
+        "number2": 6,
+        "answer": 30,
+        "wrongs": [
+            25
+        ]
+    },
+    {
+        "rank": 41,
+        "number1": 5,
+        "number2": 7,
+        "answer": 35,
+        "wrongs": [
+            30
+        ]
+    },
+    {
+        "rank": 42,
+        "number1": 5,
+        "number2": 8,
+        "answer": 40,
+        "wrongs": [
+            35
+        ]
+    },
+    {
+        "rank": 43,
+        "number1": 5,
+        "number2": 9,
+        "answer": 45,
+        "wrongs": [
+            40
+        ]
+    },
+    {
+        "rank": 44,
+        "number1": 5,
+        "number2": 10,
+        "answer": 50,
+        "wrongs": [
+            45
+        ]
+    },
+    {
+        "rank": 45,
+        "number1": 10,
+        "number2": 0,
+        "answer": 0,
+        "wrongs": [
+            10
+        ]
+    },
+    {
+        "rank": 46,
+        "number1": 10,
+        "number2": 1,
+        "answer": 10,
+        "wrongs": [
+            0
+        ]
+    },
+    {
+        "rank": 47,
+        "number1": 10,
+        "number2": 2,
+        "answer": 20,
+        "wrongs": [
+            10
+        ]
+    },
+    {
+        "rank": 48,
+        "number1": 10,
+        "number2": 3,
+        "answer": 30,
+        "wrongs": [
+            20
+        ]
+    },
+    {
+        "rank": 49,
+        "number1": 10,
+        "number2": 4,
+        "answer": 40,
+        "wrongs": [
+            30
+        ]
+    },
+    {
+        "rank": 50,
+        "number1": 10,
+        "number2": 5,
+        "answer": 50,
+        "wrongs": [
+            40
+        ]
+    },
+    {
+        "rank": 51,
+        "number1": 10,
+        "number2": 6,
+        "answer": 60,
+        "wrongs": [
+            50
+        ]
+    },
+    {
+        "rank": 52,
+        "number1": 10,
+        "number2": 7,
+        "answer": 70,
+        "wrongs": [
+            60
+        ]
+    },
+    {
+        "rank": 53,
+        "number1": 10,
+        "number2": 8,
+        "answer": 80,
+        "wrongs": [
+            70
+        ]
+    },
+    {
+        "rank": 54,
+        "number1": 10,
+        "number2": 9,
+        "answer": 90,
+        "wrongs": [
+            80
+        ]
+    },
+    {
+        "rank": 55,
+        "number1": 10,
+        "number2": 10,
+        "answer": 100,
+        "wrongs": [
+            90
+        ]
+    },
+    {
+        "rank": 56,
+        "number1": 3,
+        "number2": 3,
+        "answer": 9,
+        "wrongs": [
+            6,
+            12,
+            8,
+            7
+        ]
+    },
+    {
+        "rank": 57,
+        "number1": 3,
+        "number2": 4,
+        "answer": 12,
+        "wrongs": [
+            9,
+            16,
+            8,
+            14
+        ]
+    },
+    {
+        "rank": 58,
+        "number1": 3,
+        "number2": 6,
+        "answer": 18,
+        "wrongs": [
+            15,
+            12,
+            21,
+            16
+        ]
+    },
+    {
+        "rank": 59,
+        "number1": 3,
+        "number2": 7,
+        "answer": 21,
+        "wrongs": [
+            24,
+            18,
+            27,
+            14
+        ]
+    },
+    {
+        "rank": 60,
+        "number1": 3,
+        "number2": 8,
+        "answer": 24,
+        "wrongs": [
+            21,
+            27,
+            16,
+            20
+        ]
+    },
+    {
+        "rank": 61,
+        "number1": 3,
+        "number2": 9,
+        "answer": 27,
+        "wrongs": [
+            24,
+            30,
+            36,
+            18
+        ]
+    },
+    {
+        "rank": 62,
+        "number1": 4,
+        "number2": 4,
+        "answer": 16,
+        "wrongs": [
+            12,
+            20,
+            14,
+            18
+        ]
+    },
+    {
+        "rank": 63,
+        "number1": 4,
+        "number2": 6,
+        "answer": 24,
+        "wrongs": [
+            20,
+            18,
+            28,
+            26
+        ]
+    },
+    {
+        "rank": 64,
+        "number1": 4,
+        "number2": 7,
+        "answer": 28,
+        "wrongs": [
+            24,
+            32,
+            21,
+            26
+        ]
+    },
+    {
+        "rank": 65,
+        "number1": 4,
+        "number2": 8,
+        "answer": 32,
+        "wrongs": [
+            28,
+            36,
+            24,
+            30
+        ]
+    },
+    {
+        "rank": 66,
+        "number1": 4,
+        "number2": 9,
+        "answer": 36,
+        "wrongs": [
+            32,
+            40,
+            27,
+            34
+        ]
+    },
+    {
+        "rank": 67,
+        "number1": 6,
+        "number2": 6,
+        "answer": 36,
+        "wrongs": [
+            30,
+            42,
+            32,
+            38
+        ]
+    },
+    {
+        "rank": 68,
+        "number1": 6,
+        "number2": 7,
+        "answer": 42,
+        "wrongs": [
+            36,
+            48,
+            40,
+            44
+        ]
+    },
+    {
+        "rank": 69,
+        "number1": 6,
+        "number2": 8,
+        "answer": 48,
+        "wrongs": [
+            42,
+            54,
+            44,
+            46
+        ]
+    },
+    {
+        "rank": 70,
+        "number1": 6,
+        "number2": 9,
+        "answer": 54,
+        "wrongs": [
+            48,
+            60,
+            52,
+            58
+        ]
+    },
+    {
+        "rank": 71,
+        "number1": 7,
+        "number2": 7,
+        "answer": 49,
+        "wrongs": [
+            42,
+            56,
+            54,
+            47
+        ]
+    },
+    {
+        "rank": 72,
+        "number1": 7,
+        "number2": 8,
+        "answer": 56,
+        "wrongs": [
+            49,
+            63,
+            54,
+            58
+        ]
+    },
+    {
+        "rank": 73,
+        "number1": 7,
+        "number2": 9,
+        "answer": 63,
+        "wrongs": [
+            56,
+            72,
+            54,
+            65
+        ]
+    },
+    {
+        "rank": 74,
+        "number1": 8,
+        "number2": 8,
+        "answer": 64,
+        "wrongs": [
+            56,
+            72,
+            66,
+            62
+        ]
+    },
+    {
+        "rank": 75,
+        "number1": 8,
+        "number2": 9,
+        "answer": 72,
+        "wrongs": [
+            64,
+            81,
+            70,
+            74
+        ]
+    },
+    {
+        "rank": 76,
+        "number1": 9,
+        "number2": 9,
+        "answer": 81,
+        "wrongs": [
+            72,
+            99,
+            79,
+            83
+        ]
+    }
+]
