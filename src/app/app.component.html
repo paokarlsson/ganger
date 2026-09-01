@@ -10,14 +10,18 @@
       <span class="choice-name">Svep</span>
       <span class="choice-hint">Svep höger om påståendet stämmer</span>
     </button>
+    <button type="button" class="choice" (click)="play('master')">
+      <span class="choice-name">Mästaren</span>
+      <span class="choice-hint">Skriv svaret på tid — nivåer och värmekarta</span>
+    </button>
   </main>
 } @else {
   <div class="game">
     <button type="button" class="back" (click)="showMenu()">← Meny</button>
-    @if (screen === 'match') {
-      <app-match-view />
-    } @else {
-      <app-swipe-view />
+    @switch (screen) {
+      @case ('match') { <app-match-view /> }
+      @case ('swipe') { <app-swipe-view /> }
+      @case ('master') { <app-master-view /> }
     }
   </div>
 }

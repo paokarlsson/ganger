@@ -1,7 +1,7 @@
 # Ganger
 
 A small Angular app for practising the multiplication table. The start screen
-lets you pick one of two games:
+lets you pick one of three games:
 
 - **Para ihop** — match each question in the left column with its answer in the
   right one. Background music and sound effects included.
@@ -9,9 +9,20 @@ lets you pick one of two games:
   with the mouse, or press the arrow keys) right if it is correct, left if it is
   not. The questions come from `src/assets/ranked-questions.json`, which is
   fetched as a static asset — the app has no backend.
+- **Mästaren** — type the answer against the clock. Pick a level (one table at a
+  time, all of them mixed, or *Auto*, which follows how the round is going) and a
+  round length. A short calibration measures how fast the player answers the
+  easiest questions; everything after that is judged against that time. A wrong
+  answer costs four seconds. The heat map shows the average time per table
+  entry, and how many of the hundred are answered fast enough to count as
+  automatic.
 
 The swipe game was moved here from the separate `ganger-swipe` repository, which
-is no longer developed.
+is no longer developed. *Mästaren* was ported from a standalone HTML prototype.
+
+*Mästaren* keeps its statistics in `localStorage` under `mult-heatmap` and
+`mult-calibration`, so they live in the browser they were practised in and are
+cleared with the **Nollställ** button on the heat map screen.
 
 ## Structure
 
@@ -20,7 +31,9 @@ is no longer developed.
 | `src/app/app.component.*` | Shell: the start menu and the choice of game |
 | `src/app/match-view/` | The *Para ihop* game |
 | `src/app/swipe-view/` | The *Svep* game |
+| `src/app/master-view/` | The *Mästaren* game, with its levels in `levels.ts` |
 | `src/app/services/question.service.ts` | Loads the ranked questions for *Svep* |
+| `src/app/services/practice-stats.service.ts` | Times and calibration for *Mästaren* |
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 17.3.11.
 

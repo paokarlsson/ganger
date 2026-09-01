@@ -13,6 +13,7 @@
     justify-content: center;
     gap: 1rem;
     padding: 1rem;
+    overflow-y: auto;
     background: rgb(186, 186, 186);
     text-align: center;
 }
@@ -58,6 +59,7 @@
 .game {
     position: relative;
     height: 100%;
+    overflow: hidden;
 }
 
 .back {
