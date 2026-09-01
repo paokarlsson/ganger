@@ -1,87 +1,80 @@
-.wrapper {
+:host {
+    display: block;
     height: 100%;
-    width: 100%;
-    display: grid;
-    grid-template-rows: 1fr 8fr 2fr;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.menu {
+    box-sizing: border-box;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem;
     background: rgb(186, 186, 186);
-    overflow: hidden;
-
-}
-.top{
-    text-align: center;
-    align-self: center;
-}
-.m{
-    // background-color: red;
-}
-.left{
-    // background-color: blue;
-}
-.right{
-    // background-color: orange;
-}
-.bottom{
-    // background-color: purple;
-    text-align: center;
-    align-self: center;
-}
-.icon {
-    fill: black;
-    height: 50px;
-    width: 50px;    
-}
-button {
-    background-color: transparent;
-    border: none;
-
-}
-
-main {
-    width: 100%;
-    height: 100%;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-}
-
-.column {
     text-align: center;
 }
 
-.clickable {
+.title {
+    margin: 0;
+    font-size: clamp(2.5rem, 12vw, 4rem);
+}
+
+.lead {
+    margin: 0 0 1rem;
+    font-size: clamp(1.1rem, 5vw, 1.5rem);
+}
+
+.choice {
+    width: min(420px, 90vw);
+    padding: 1.25rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    background: rgb(120, 120, 120);
+    border: 7px solid rgb(59, 59, 59);
+    border-radius: 10rem;
+    font: inherit;
     cursor: pointer;
 }
 
-.selectable {
-    background: rgb(120, 120, 120);
-    border: 7px solid rgb(59, 59, 59);
-
+.choice:hover,
+.choice:focus-visible {
+    border-color: rgb(14, 14, 14);
 }
 
-.selected {
-    border: 7px solid rgb(14, 14, 14);
-}
-
-.correct-selected {
-    background: rgb(70, 255, 70);
-    border: 7px solid rgb(0, 180, 0);
-}
-.wrong-selected {
-    background: rgb(255, 70, 70);
-    border: 7px solid rgb(180, 0, 0);
-}
-
-.item {
-    width: 90%;
-    height: 15%;
-    padding: 0px;
-    margin-top: 10px;
-    font-size: 2rem;
-    font-family:'Courier New', Courier, monospace;
+.choice-name {
+    font-size: clamp(1.5rem, 7vw, 2rem);
     font-weight: bold;
-    text-align: center;
-    border-radius: 10rem;
 }
 
-.next-button {
-    height: 5rem;
+.choice-hint {
+    font-size: clamp(0.85rem, 3.5vw, 1rem);
+}
+
+/* Spelen fyller hela ytan själva, så menyknappen läggs ovanpå dem. */
+.game {
+    position: relative;
+    height: 100%;
+}
+
+.back {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 2; /* svepkortet ligger på z-index 1 */
+    padding: 0.4em 0.9em;
+    background: rgb(120, 120, 120);
+    border: 3px solid rgb(59, 59, 59);
+    border-radius: 10rem;
+    font: inherit;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.back:hover,
+.back:focus-visible {
+    border-color: rgb(14, 14, 14);
 }

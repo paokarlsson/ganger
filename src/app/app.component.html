@@ -1,24 +1,23 @@
-<div class="wrapper">
-  <div class="top">
-    <button (click)="startStopLoopAudio()">
-      <img *ngIf="playLoop" src="assets/icons/volume_up.svg" alt="Start Audio Loop" />
-      <img *ngIf="!playLoop" src="assets/icons/volume_off.svg" alt="Start Audio Loop" />
+@if (screen === 'menu') {
+  <main class="menu">
+    <h1 class="title">Gånger</h1>
+    <p class="lead">Välj spel</p>
+    <button type="button" class="choice" (click)="play('match')">
+      <span class="choice-name">Para ihop</span>
+      <span class="choice-hint">Matcha frågan med rätt svar</span>
     </button>
-  </div>
-  <main class="m">
-    <div class="column left">
-      <button class="item clickable selectable" [class.selected]="isQSelected(q)" [class.correct-selected]="isDone(q)"
-        [class.wrong-selected]="isLeftWrong(q)" (click)="selQ(q)" *ngFor="let q of leftList">{{ q.first }} *
-        {{q.second}}</button>
-    </div>
-    <div class="column right">
-      <button class="item clickable selectable" [class.selected]="isASelected(q)" [class.correct-selected]="isDone(q)"
-        [class.wrong-selected]="isRightWrong(q)" (click)="selA(q)" *ngFor="let q of rightList">{{ q.first * q.second
-        }}</button>
-    </div>
-
+    <button type="button" class="choice" (click)="play('swipe')">
+      <span class="choice-name">Svep</span>
+      <span class="choice-hint">Svep höger om påståendet stämmer</span>
+    </button>
   </main>
-  <div class="bottom">    <div *ngIf="allIsDone()">
-    <button class="item clickable selectable next-button" (click)="next()">Nästa</button>
-  </div></div>
-</div>
+} @else {
+  <div class="game">
+    <button type="button" class="back" (click)="showMenu()">← Meny</button>
+    @if (screen === 'match') {
+      <app-match-view />
+    } @else {
+      <app-swipe-view />
+    }
+  </div>
+}

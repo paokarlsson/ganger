@@ -1,7 +1,26 @@
 # Ganger
 
-A small Angular app for practising the multiplication table: match each
-question in the left column with its answer in the right one.
+A small Angular app for practising the multiplication table. The start screen
+lets you pick one of two games:
+
+- **Para ihop** — match each question in the left column with its answer in the
+  right one. Background music and sound effects included.
+- **Svep** — a statement such as `7 × 8 = 54` is shown on a card. Swipe (or drag
+  with the mouse, or press the arrow keys) right if it is correct, left if it is
+  not. The questions come from `src/assets/ranked-questions.json`, which is
+  fetched as a static asset — the app has no backend.
+
+The swipe game was moved here from the separate `ganger-swipe` repository, which
+is no longer developed.
+
+## Structure
+
+| Path | What it is |
+| --- | --- |
+| `src/app/app.component.*` | Shell: the start menu and the choice of game |
+| `src/app/match-view/` | The *Para ihop* game |
+| `src/app/swipe-view/` | The *Svep* game |
+| `src/app/services/question.service.ts` | Loads the ranked questions for *Svep* |
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 17.3.11.
 
