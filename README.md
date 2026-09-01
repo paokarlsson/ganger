@@ -1,4 +1,7 @@
-# Math
+# Ganger
+
+A small Angular app for practising the multiplication table: match each
+question in the left column with its answer in the right one.
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 17.3.11.
 
@@ -6,21 +9,25 @@ This project was generated with [Angular CLI](https://github.com/angular/angular
 
 Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
 
-## Code scaffolding
-
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
-
 ## Build
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+Run `ng build` to build the project. The build artifacts will be stored in `dist/browser/`.
+
+## Deployment
+
+Two targets share the same build:
+
+- **GitHub Pages** — `.github/workflows/pages.yml` builds every push to `main`
+  with `--base-href /ganger/` and publishes `dist/browser`. Nothing is
+  committed to the repository; the Pages source must be set to *GitHub
+  Actions* under Settings → Pages.
+- **Docker** — `docker compose up` serves the app on
+  [http://localhost:8080](http://localhost:8080) through nginx, using the
+  default base href `/`.
 
 ## Running unit tests
 
 Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Running end-to-end tests
-
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
 
 ## Further help
 
