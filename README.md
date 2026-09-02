@@ -63,9 +63,11 @@ Two targets share the same build:
   Actions* under Settings → Pages.
 - **Docker** — for machines without node installed, `docker compose up` runs
   the dev server (`ng serve`) inside a `node` container and exposes it on
-  [http://localhost:4200](http://localhost:4200). `node_modules` lives in a
-  named volume, separate from the host, so `npm install` is a fast no-op once
-  dependencies are already installed.
+  [http://localhost:4200](http://localhost:4200). The container runs as your
+  host user (see the `user` field in [compose.yml](compose.yml)) so
+  `node_modules` and `.angular/cache`, both bind-mounted, end up owned by you
+  rather than root. `npm install` is a fast no-op once dependencies are
+  already installed.
 
 ## Running unit tests
 
