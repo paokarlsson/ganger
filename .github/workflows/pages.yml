@@ -23,8 +23,8 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      # angular.json keeps baseHref "/" so the Docker/nginx image serves from
-      # the root; GitHub Pages hosts the app under /ganger/ instead.
+      # angular.json keeps baseHref "/" so ng serve (including via Docker)
+      # serves from the root; GitHub Pages hosts the app under /ganger/ instead.
       - run: npm run build -- --base-href /ganger/
       - uses: actions/upload-pages-artifact@v3
         with:

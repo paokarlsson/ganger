@@ -1,9 +1,15 @@
 services:
   ganger:
-    image: ola84/ganger
+    image: node:20-alpine
     container_name: ganger
+    working_dir: /app
     ports:
-      - "8080:80"
+      - "4200:4200"
     volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - .:/app
+      - node_modules:/app/node_modules
+    command: sh -c "npm install && npm start -- --host 0.0.0.0"
     restart: unless-stopped
+
+volumes:
+  node_modules:

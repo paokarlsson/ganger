@@ -61,9 +61,11 @@ Two targets share the same build:
   with `--base-href /ganger/` and publishes `dist/browser`. Nothing is
   committed to the repository; the Pages source must be set to *GitHub
   Actions* under Settings → Pages.
-- **Docker** — `docker compose up` serves the app on
-  [http://localhost:8080](http://localhost:8080) through nginx, using the
-  default base href `/`.
+- **Docker** — for machines without node installed, `docker compose up` runs
+  the dev server (`ng serve`) inside a `node` container and exposes it on
+  [http://localhost:4200](http://localhost:4200). `node_modules` lives in a
+  named volume, separate from the host, so `npm install` is a fast no-op once
+  dependencies are already installed.
 
 ## Running unit tests
 
