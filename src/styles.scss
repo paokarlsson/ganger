@@ -16,6 +16,10 @@
     --accent-red: #e74c3c;
     --accent-orange: #f39c12;
 
+    /* Skalets menyknapp ligger över spelen i övre vänstra hörnet. Spel som
+       ritar något i toppen håller sig undan så här långt in. */
+    --shell-back-space: 7rem;
+
     --text-light: #f0f0f0;
     --text-muted: rgba(255, 255, 255, 0.5);
     --line-soft: rgba(255, 255, 255, 0.12);

@@ -1,14 +1,18 @@
 :host {
     --card-size: min(440px, 88vw, 62vh);
+    /* Knappfärger — mättade nog att bära vit text. Text mot den mörka
+       bakgrunden tar temats ljusare --accent-green/--accent-red i stället. */
     --green: rgb(42, 166, 42);
     --red: rgb(224, 69, 69);
 
     display: block;
     height: 100vh;
     height: 100dvh; /* vh räknar med adressfältet utfällt på iOS Safari */
-    font-family: 'Courier New', Courier, monospace;
-    background-color: rgb(128, 126, 121);
-    color: #1a1a1a;
+    font-family: var(--font-body);
+    /* Kortet är gult sedan tidigare och ligger nära temats --accent-gold, så
+       det får ligga kvar — det är bordet under som blir mörkt. */
+    background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-deep) 100%);
+    color: var(--text-light);
 }
 
 .container {
@@ -22,13 +26,15 @@
 .top {
     display: flex;
     justify-content: center;
+    /* Annars hamnar poängen under skalets menyknapp på en smal skärm. */
+    padding-left: var(--shell-back-space);
     gap: clamp(1rem, 6vw, 2.5rem);
     font-size: clamp(1.1rem, 5vw, 2rem);
     font-weight: bold;
 }
 
-.score--correct { color: rgb(20, 82, 20); }
-.score--wrong { color: rgb(128, 26, 26); }
+.score--correct { color: var(--accent-green); }
+.score--wrong { color: var(--accent-red); }
 
 .main {
     display: flex;
@@ -112,6 +118,9 @@
     border: 0;
     border-radius: 6px;
     background-color: rgb(255, 222, 92);
+    /* Egen textfärg: värden ärvs från :host, som numera är ljus. */
+    color: var(--bg-dark);
+    font-family: var(--font-display);
     font-size: calc(var(--card-size) * 0.105);
     font-weight: bold;
     user-select: none;
@@ -173,8 +182,8 @@
     font-weight: bold;
 }
 
-.feedback { color: rgb(20, 82, 20); }
-.feedback--wrong { color: rgb(128, 26, 26); }
+.feedback { color: var(--accent-green); }
+.feedback--wrong { color: var(--accent-red); }
 
 /* --- Slutskärm ------------------------------------------------------------ */
 .result-card {
@@ -197,15 +206,18 @@
     padding: 0.6em 1.2em;
     border: 0;
     border-radius: 12px;
-    background-color: var(--green);
+    /* Mörk knapp på det gula kortet — grönt mot gult bar för lite kontrast. */
+    background-color: var(--bg-dark);
     font: inherit;
+    /* Kortet sätter en stor teckenstorlek åt påståendet — knappen ska inte ärva den. */
+    font-size: clamp(1rem, 4vw, 1.25rem);
     font-weight: bold;
-    color: #fff;
+    color: var(--text-light);
     cursor: pointer;
 }
 
 .again:focus-visible {
-    outline: 3px solid #fff;
+    outline: 3px solid var(--bg-dark);
     outline-offset: 3px;
 }
 
