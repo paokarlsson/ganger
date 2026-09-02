@@ -1,7 +1,9 @@
 # Ganger
 
 A small Angular app for practising the multiplication table. The start screen
-lets you pick one of three games:
+lets you pick one of three games, and shows how many of the hundred entries in
+the table are already answered fast enough to count as automatic — once there
+is any practice to count.
 
 - **Para ihop** — match each question in the left column with its answer in the
   right one. Background music and sound effects included.
@@ -20,6 +22,10 @@ lets you pick one of three games:
 The swipe game was moved here from the separate `ganger-swipe` repository, which
 is no longer developed. *Mästaren* was ported from a standalone HTML prototype.
 
+*Mästaren* sets the visual tone — its dark palette and fonts live in
+`src/styles.scss` and are shared with the start screen. *Para ihop* and *Svep*
+keep their own lighter looks.
+
 *Mästaren* keeps its statistics in `localStorage` under `mult-heatmap` and
 `mult-calibration`, so they live in the browser they were practised in and are
 cleared with the **Nollställ** button on the heat map screen.
@@ -28,6 +34,7 @@ cleared with the **Nollställ** button on the heat map screen.
 
 | Path | What it is |
 | --- | --- |
+| `src/styles.scss` | The shared theme: colours and fonts as CSS variables |
 | `src/app/app.component.*` | Shell: the start menu and the choice of game |
 | `src/app/match-view/` | The *Para ihop* game |
 | `src/app/swipe-view/` | The *Svep* game |

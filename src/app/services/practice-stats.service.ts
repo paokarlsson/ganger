@@ -78,6 +78,26 @@ export class PracticeStatsService {
     return this.stats[`${a}_${b}`];
   }
 
+  /** Om spelaren hunnit svara på något alls. */
+  get hasPractice(): boolean {
+    return Object.keys(this.stats).length > 0;
+  }
+
+  /** Hur många av de hundra talen i tabellen som i snitt svaras på inom den
+   *  snabba tiden — måttet både värmekartan och startsidan visar. */
+  masteredCount(): number {
+    let mastered = 0;
+    for (let a = 1; a <= 10; a++) {
+      for (let b = 1; b <= 10; b++) {
+        const average = this.averageSeconds(this.statFor(a, b));
+        if (average !== null && average <= this.fastSeconds) {
+          mastered += 1;
+        }
+      }
+    }
+    return mastered;
+  }
+
   /** Snittid i sekunder, eller `null` för ett tal som aldrig övats. */
   averageSeconds(stat: QuestionStat | undefined): number | null {
     if (!stat || stat.times.length === 0) {

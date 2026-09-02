@@ -1,58 +1,249 @@
 :host {
     display: block;
     height: 100%;
-    font-family: 'Courier New', Courier, monospace;
+    font-family: var(--font-body);
 }
 
 .menu {
     box-sizing: border-box;
-    height: 100%;
+    min-height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 1rem;
-    padding: 1rem;
+    gap: 1.75rem;
+    padding: 2rem 1rem;
     overflow-y: auto;
-    background: rgb(186, 186, 186);
+    background:
+        /* Ett svagt gångertecken-mönster bakom gradienten. */
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.02) 0 2px, transparent 2px 22px),
+        repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.02) 0 2px, transparent 2px 22px),
+        linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-deep) 100%);
+    color: var(--text-light);
     text-align: center;
+}
+
+.hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
 }
 
 .title {
     margin: 0;
-    font-size: clamp(2.5rem, 12vw, 4rem);
+    font-family: var(--font-display);
+    font-size: clamp(2.75rem, 13vw, 4.25rem);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--accent-gold);
+    text-shadow: 0 3px 12px rgba(0, 0, 0, 0.5);
 }
 
 .lead {
-    margin: 0 0 1rem;
-    font-size: clamp(1.1rem, 5vw, 1.5rem);
+    margin: 0;
+    font-size: clamp(0.95rem, 4vw, 1.1rem);
+    color: var(--text-muted);
+}
+
+.progress {
+    width: min(420px, 90vw);
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.progress-track {
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--accent-green), var(--accent-gold));
+    transition: width 0.6s ease;
+}
+
+.progress-text {
+    margin: 0;
+    font-size: clamp(0.85rem, 3.5vw, 1rem);
+    color: var(--text-muted);
+}
+
+.progress-text strong {
+    color: var(--text-light);
+}
+
+.choices {
+    width: min(420px, 92vw);
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
 }
 
 .choice {
-    width: min(420px, 90vw);
-    padding: 1.25rem 1rem;
     display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-    background: rgb(120, 120, 120);
-    border: 7px solid rgb(59, 59, 59);
-    border-radius: 10rem;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.9rem 1.1rem;
+    background: var(--bg-card);
+    border: 2px solid var(--line-soft);
+    border-radius: 16px;
+    color: inherit;
     font: inherit;
+    text-align: left;
     cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .choice:hover,
 .choice:focus-visible {
-    border-color: rgb(14, 14, 14);
+    background: var(--bg-card-raised);
+    border-color: var(--accent-gold);
+    transform: translateY(-2px);
+}
+
+.choice:focus-visible {
+    outline: 3px solid var(--accent-gold);
+    outline-offset: 3px;
+}
+
+.choice:active {
+    transform: translateY(0);
+}
+
+.choice-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
 }
 
 .choice-name {
-    font-size: clamp(1.5rem, 7vw, 2rem);
-    font-weight: bold;
+    font-family: var(--font-display);
+    font-size: clamp(1.25rem, 5.5vw, 1.5rem);
+    font-weight: 700;
 }
 
 .choice-hint {
-    font-size: clamp(0.85rem, 3.5vw, 1rem);
+    font-size: clamp(0.8rem, 3.2vw, 0.95rem);
+    color: var(--text-muted);
+}
+
+/* Miniatyrerna: varje spel visar vad det går ut på i stället för en ikon. */
+.art {
+    flex: none;
+    width: 72px;
+}
+
+.art svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.art-pill {
+    fill: rgba(255, 255, 255, 0.16);
+}
+
+.art-link {
+    stroke: var(--accent-gold);
+    stroke-width: 2;
+    stroke-linecap: round;
+    opacity: 0.55;
+    transition: opacity 0.2s ease;
+}
+
+.choice:hover .art-link,
+.choice:focus-visible .art-link {
+    opacity: 1;
+}
+
+.art-card rect {
+    fill: rgba(255, 255, 255, 0.16);
+    stroke: rgba(255, 255, 255, 0.35);
+    stroke-width: 2;
+}
+
+.art-card {
+    transform: rotate(9deg);
+    transform-box: view-box;
+    transform-origin: 36px 28px;
+    transition: transform 0.25s ease;
+}
+
+.choice:hover .art-card,
+.choice:focus-visible .art-card {
+    transform: rotate(16deg) translateX(4px);
+}
+
+.art-wrong,
+.art-right {
+    fill: none;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.art-wrong { stroke: var(--accent-red); }
+.art-right { stroke: var(--accent-green); }
+
+.art-ring,
+.art-ring-fill {
+    fill: none;
+    stroke-width: 4;
+}
+
+.art-ring {
+    stroke: rgba(255, 255, 255, 0.16);
+}
+
+.art-ring-fill {
+    stroke: var(--accent-gold);
+    stroke-linecap: round;
+    /* Omkretsen är ~126, så visaren står på drygt halva varvet. */
+    stroke-dasharray: 74 126;
+    transform: rotate(-90deg);
+    transform-box: view-box;
+    transform-origin: 36px 28px;
+    transition: stroke-dasharray 0.3s ease;
+}
+
+.choice:hover .art-ring-fill,
+.choice:focus-visible .art-ring-fill {
+    stroke-dasharray: 108 126;
+}
+
+.art-text {
+    fill: var(--text-light);
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+}
+
+/* På en större skärm får korten plats att hålla texten på en rad. */
+@media (min-width: 560px) {
+    .progress,
+    .choices {
+        width: 480px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .choice,
+    .art-card,
+    .art-link,
+    .art-ring-fill,
+    .progress-fill {
+        transition: none;
+    }
+
+    .choice:hover,
+    .choice:focus-visible {
+        transform: none;
+    }
 }
 
 /* Spelen fyller hela ytan själva, så menyknappen läggs ovanpå dem. */
@@ -71,7 +262,8 @@
     background: rgb(120, 120, 120);
     border: 3px solid rgb(59, 59, 59);
     border-radius: 10rem;
-    font: inherit;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1rem;
     font-weight: bold;
     cursor: pointer;
 }

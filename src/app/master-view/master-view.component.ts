@@ -527,7 +527,6 @@ export class MasterViewComponent implements OnDestroy {
 
   private buildHeatmap(): void {
     const rows: { label: number; cells: HeatmapCell[] }[] = [];
-    let mastered = 0;
 
     for (let row = 1; row <= 10; row++) {
       const cells: HeatmapCell[] = [];
@@ -542,9 +541,6 @@ export class MasterViewComponent implements OnDestroy {
           });
           continue;
         }
-        if (average <= this.stats.fastSeconds) {
-          mastered += 1;
-        }
         cells.push({
           text: average.toFixed(1),
           color: this.timeColor(average),
@@ -555,7 +551,7 @@ export class MasterViewComponent implements OnDestroy {
     }
 
     this.heatmapRows = rows;
-    this.masteredCount = mastered;
+    this.masteredCount = this.stats.masteredCount();
   }
 
   private heatmapTitle(row: number, col: number, stat: QuestionStat, average: number): string {
