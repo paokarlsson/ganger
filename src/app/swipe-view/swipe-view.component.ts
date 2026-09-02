@@ -1,13 +1,32 @@
-import { Component, HostListener, inject, OnDestroy, ViewChild } from '@angular/core';
+import { Component, HostListener, OnDestroy, ViewChild } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { CdkDrag, CdkDragEnd, CdkDragMove } from '@angular/cdk/drag-drop';
-import { QuestionService, Statement } from '../services/question.service';
+import {
+  DEFAULT_QUESTION_COUNT,
+  DEFAULT_TARGET_TIME,
+  GeneratedStatement,
+  LEVEL_DOWN_STEP,
+  LEVEL_MAX,
+  LEVEL_MIN,
+  LEVEL_UP_STEP,
+  QUESTION_COUNTS,
+  SLOW_TIME_MULTIPLIER,
+  START_LEVEL,
+  TARGET_TIMES,
+  TargetTime,
+  generateStatement,
+} from './swipe-difficulty';
 
 /** Hur länge kortet flyger ut innan nästa fråga läggs fram. */
 const LEAVE_MS = 260;
 
 /** Hastighet i px/ms som räknas som en knyck även om dragningen är kort. */
 const FLING_SPEED = 0.6;
+
+/** Hur länge brasan pulsar efter att nivån ändrats. */
+const LEVEL_FLASH_MS = 500;
+
+type Screen = 'menu' | 'game' | 'result';
 
 interface Feedback {
   correct: boolean;
@@ -24,16 +43,23 @@ interface Feedback {
 export class SwipeViewComponent implements OnDestroy {
   @ViewChild(CdkDrag) private drag?: CdkDrag;
 
-  currentStatement: Statement | undefined;
+  readonly targetTimes = TARGET_TIMES;
+  readonly questionCounts = QUESTION_COUNTS;
+  readonly levelMax = LEVEL_MAX;
+
+  screen: Screen = 'menu';
+  selectedTargetTime: TargetTime = DEFAULT_TARGET_TIME;
+  selectedQuestionCount = DEFAULT_QUESTION_COUNT;
+
+  level = START_LEVEL;
+  /** Kort puls när nivån just ändrats, styr brasans animation. */
+  levelFlash: '' | 'up' | 'down' = '';
+
+  currentStatement: GeneratedStatement | undefined;
   currentStatmentString = '';
-  /** Om påståendet på kortet faktiskt stämmer. */
-  currentAnswer = false;
   nrCorrect = 0;
   nrWrong = 0;
-  finished = false;
   feedback: Feedback | undefined;
-  loading = true;
-  loadError = false;
 
   /** -1 helt åt vänster, 0 i vila, +1 helt åt höger. Driver all dragrespons. */
   progress = 0;
@@ -42,32 +68,17 @@ export class SwipeViewComponent implements OnDestroy {
   /** Stänger av övergångar i det ögonblick nästa kort läggs på plats. */
   instant = false;
 
-  private readonly questionService = inject(QuestionService);
-  private allQuestions: readonly Statement[] = [];
-  private deck: Statement[] = [];
-  private n1 = 0;
-  private n2 = 0;
+  private answered = 0;
+  private cardShownAt = 0;
   private samples: { x: number; t: number }[] = [];
   private advanceTimer?: ReturnType<typeof setTimeout>;
   private feedbackTimer?: ReturnType<typeof setTimeout>;
-
-  constructor() {
-    this.questionService.getQuestions().subscribe({
-      next: (questions) => {
-        this.allQuestions = questions;
-        this.loading = false;
-        this.restart();
-      },
-      error: () => {
-        this.loading = false;
-        this.loadError = true;
-      },
-    });
-  }
+  private flashTimer?: ReturnType<typeof setTimeout>;
 
   ngOnDestroy(): void {
     clearTimeout(this.advanceTimer);
     clearTimeout(this.feedbackTimer);
+    clearTimeout(this.flashTimer);
   }
 
   /** Sant medan kortet flyger ut — då tas inga nya svar emot. */
@@ -83,30 +94,62 @@ export class SwipeViewComponent implements OnDestroy {
     return this.nrCorrect + this.nrWrong;
   }
 
+  /** 0 vid lägsta nivån, 1 vid högsta — skalar brasan. */
+  get flameIntensity(): number {
+    return (this.level - LEVEL_MIN) / (LEVEL_MAX - LEVEL_MIN);
+  }
+
   /** 0 när kortet ligger stilla, 1 när det dragits hela vägen åt `dir`. */
   strength(dir: 1 | -1): number {
     return Math.max(0, dir * this.progress);
   }
 
   numberOfStatementsLeft(): number {
-    return this.deck.length + (this.currentStatement ? 1 : 0);
+    return Math.max(0, this.selectedQuestionCount - this.answered);
   }
 
+  // --- Meny -------------------------------------------------------------
+
+  selectTargetTime(time: TargetTime): void {
+    this.selectedTargetTime = time;
+  }
+
+  selectQuestionCount(count: number): void {
+    this.selectedQuestionCount = count;
+  }
+
+  start(): void {
+    this.screen = 'game';
+    this.restartRound();
+  }
+
+  /** "Spela igen" på slutskärmen — samma inställningar, ny rond. */
   restart(): void {
+    this.screen = 'game';
+    this.restartRound();
+  }
+
+  backToMenu(): void {
+    this.screen = 'menu';
+  }
+
+  private restartRound(): void {
     clearTimeout(this.advanceTimer);
     clearTimeout(this.feedbackTimer);
-    this.deck = this.shuffle(this.allQuestions);
+    clearTimeout(this.flashTimer);
+    this.answered = 0;
     this.nrCorrect = 0;
     this.nrWrong = 0;
-    this.finished = false;
+    this.level = START_LEVEL;
+    this.levelFlash = '';
     this.feedback = undefined;
     this.progress = 0;
     this.leaving = 0;
     this.samples = [];
-    this.getNextStatement();
+    this.nextCard();
   }
 
-  // --- Dragning -------------------------------------------------------------
+  // --- Dragning -----------------------------------------------------------
 
   dragMoved($event: CdkDragMove): void {
     // Rotationen ska följa hur långt kortet flyttats, inte var på skärmen
@@ -138,28 +181,35 @@ export class SwipeViewComponent implements OnDestroy {
     if ($event.key !== 'ArrowLeft' && $event.key !== 'ArrowRight') {
       return;
     }
+    if (this.screen !== 'game') {
+      return;
+    }
     $event.preventDefault();
     this.answer($event.key === 'ArrowRight');
   }
 
   /** `true` = spelaren svarar att påståendet stämmer (höger), `false` = vänster. */
   answer(saysTrue: boolean): void {
-    if (this.locked || this.finished || !this.currentStatement) {
+    if (this.locked || this.screen !== 'game' || !this.currentStatement) {
       return;
     }
 
-    const correct = saysTrue === this.currentAnswer;
+    const correct = saysTrue === this.currentStatement.isTrue;
+    const timeSec = (performance.now() - this.cardShownAt) / 1000;
+
     if (correct) {
       this.nrCorrect += 1;
     } else {
       this.nrWrong += 1;
       this.buzz();
     }
+    this.adjustLevel(correct, timeSec);
+    this.answered += 1;
 
-    // Facit räknas ut innan nästa fråga läggs fram — annars är n1/n2 borta.
+    const { n1, n2 } = this.currentStatement;
     this.feedback = {
       correct,
-      solution: `${this.n1} × ${this.n2} = ${this.n1 * this.n2}`,
+      solution: `${n1} × ${n2} = ${n1 * n2}`,
     };
     clearTimeout(this.feedbackTimer);
     this.feedbackTimer = setTimeout(
@@ -173,13 +223,40 @@ export class SwipeViewComponent implements OnDestroy {
   }
 
   private settleNextCard(): void {
-    this.getNextStatement();
+    if (this.answered >= this.selectedQuestionCount) {
+      this.screen = 'result';
+      this.leaving = 0;
+      this.progress = 0;
+      return;
+    }
+
+    this.nextCard();
     this.leaving = 0;
     this.progress = 0;
     // Utan detta skulle kortet animeras tillbaka in från kanten det for ut åt.
     this.instant = true;
     this.drag?.reset();
     requestAnimationFrame(() => (this.instant = false));
+  }
+
+  /** Nivån stiger försiktigt (ett steg) men sjunker snabbt (två) — samma
+   *  princip som auto-läget i Mästaren, se master-view.component.ts. */
+  private adjustLevel(correct: boolean, timeSec: number): void {
+    const slowSeconds = this.selectedTargetTime * SLOW_TIME_MULTIPLIER;
+    const before = this.level;
+
+    if (correct && timeSec <= this.selectedTargetTime) {
+      this.level = Math.min(LEVEL_MAX, this.level + LEVEL_UP_STEP);
+    } else if (!correct || timeSec > slowSeconds) {
+      this.level = Math.max(LEVEL_MIN, this.level - LEVEL_DOWN_STEP);
+    }
+    // Mittemellan (rätt, varken snabbt eller långsamt): nivån ligger still.
+
+    if (this.level !== before) {
+      this.levelFlash = this.level > before ? 'up' : 'down';
+      clearTimeout(this.flashTimer);
+      this.flashTimer = setTimeout(() => (this.levelFlash = ''), LEVEL_FLASH_MS);
+    }
   }
 
   /** Tröskeln skalar med skärmen så att svepet känns lika på mobil och desktop. */
@@ -209,40 +286,18 @@ export class SwipeViewComponent implements OnDestroy {
 
   // --- Frågor ---------------------------------------------------------------
 
-  private getNextStatement(): void {
-    this.currentStatement = this.deck.pop();
-
-    if (!this.currentStatement) {
-      this.currentStatmentString = '';
-      this.finished = true;
-      return;
+  private nextCard(): void {
+    let next = generateStatement(this.level);
+    // Slumpen ger ibland exakt samma kort två gånger i rad — dra om en gång.
+    if (this.currentStatement && this.sameCard(next, this.currentStatement)) {
+      next = generateStatement(this.level);
     }
-
-    const statement = this.currentStatement;
-    const flip = Math.random() < 0.5;
-    this.n1 = flip ? statement.number1 : statement.number2;
-    this.n2 = flip ? statement.number2 : statement.number1;
-
-    // 0 × 0 är enda frågan utan eget fel-alternativ. Utan reserven nedan
-    // skulle den alltid visas korrekt, och andelen sanna påståenden landa på
-    // 51,7 % i stället för 50/50.
-    const wrong = statement.wrongs.length
-      ? statement.wrongs[Math.floor(Math.random() * statement.wrongs.length)]
-      : statement.answer + 1;
-    const shown = Math.random() < 0.5 ? statement.answer : wrong;
-
-    this.currentAnswer = this.n1 * this.n2 === shown;
-    this.currentStatmentString = `${this.n1} × ${this.n2} = ${shown}`;
+    this.currentStatement = next;
+    this.currentStatmentString = `${next.n1} × ${next.n2} = ${next.shown}`;
+    this.cardShownAt = performance.now();
   }
 
-  /** Fisher-Yates på en kopia — sort() med slumpjämförare är varken jämn
-   *  fördelning eller fri från att skriva sönder källistan. */
-  private shuffle<T>(items: readonly T[]): T[] {
-    const out = [...items];
-    for (let i = out.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [out[i], out[j]] = [out[j], out[i]];
-    }
-    return out;
+  private sameCard(a: GeneratedStatement, b: GeneratedStatement): boolean {
+    return a.n1 === b.n1 && a.n2 === b.n2 && a.shown === b.shown;
   }
 }
