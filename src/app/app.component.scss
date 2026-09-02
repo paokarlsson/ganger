@@ -283,6 +283,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .back,
     .choice,
     .art-card,
     .art-link,
@@ -304,22 +305,32 @@
     overflow: hidden;
 }
 
+/* Knappen ligger över både ljusa och mörka spel, så den är mörk med ljus ram
+   — den syns mot Para ihops grå och mot Svepets och Mästarens mörka. */
 .back {
     position: absolute;
     top: 0.5rem;
     left: 0.5rem;
     z-index: 2; /* svepkortet ligger på z-index 1 */
+    max-width: calc(var(--shell-back-space) - 0.5rem);
     padding: 0.4em 0.9em;
-    background: rgb(120, 120, 120);
-    border: 3px solid rgb(59, 59, 59);
+    background: var(--bg-card);
+    border: 2px solid rgba(255, 255, 255, 0.25);
     border-radius: 10rem;
-    font-family: 'Courier New', Courier, monospace;
+    color: var(--text-light);
+    font-family: var(--font-body);
     font-size: 1rem;
     font-weight: bold;
     cursor: pointer;
+    transition: border-color 0.2s ease;
 }
 
 .back:hover,
 .back:focus-visible {
-    border-color: rgb(14, 14, 14);
+    border-color: var(--accent-gold);
+}
+
+.back:focus-visible {
+    outline: 3px solid var(--accent-gold);
+    outline-offset: 2px;
 }

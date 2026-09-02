@@ -23,8 +23,9 @@ The swipe game was moved here from the separate `ganger-swipe` repository, which
 is no longer developed. *Mästaren* was ported from a standalone HTML prototype.
 
 *Mästaren* sets the visual tone — its dark palette and fonts live in
-`src/styles.scss` and are shared with the start screen. *Para ihop* and *Svep*
-keep their own lighter looks.
+`src/styles.scss` and are shared with the start screen and *Svep*, whose yellow
+card was already close to the theme's gold. *Para ihop* still has its own
+lighter look.
 
 *Mästaren* keeps its statistics in `localStorage` under `mult-heatmap` and
 `mult-calibration`, so they live in the browser they were practised in and are
