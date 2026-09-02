@@ -1,6 +1,9 @@
 :host {
     display: block;
     height: 100%;
+    /* Spelet har sin egen ljusa look och ärvde typsnittet från skalet, som nu
+       följer appens mörka tema. */
+    font-family: 'Courier New', Courier, monospace;
 }
 
 .wrapper {

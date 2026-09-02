@@ -1,17 +1,4 @@
-:host {
-    /* Originalet hämtade Fredoka och Nunito från Google Fonts. Appen
-       ska fungera utan nätet, så den använder systemtypsnitt i stället. */
-    --font-display: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
-    --font-body: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    --bg-dark: #1a1a2e;
-    --bg-card: #16213e;
-    --accent-gold: #ffd700;
-    --accent-green: #2ecc71;
-    --accent-red: #e74c3c;
-    --accent-orange: #f39c12;
-    --text-light: #f0f0f0;
-    --text-muted: rgba(255,255,255,0.5);
-}
+/* Färgerna och typsnitten ligger i src/styles.scss och delas med startsidan. */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -23,7 +10,7 @@
     min-height: 100%;
     padding: 15px;
     overflow-y: auto;
-    background: linear-gradient(135deg, var(--bg-dark) 0%, #0f0f23 100%);
+    background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-deep) 100%);
     color: var(--text-light);
 }
 

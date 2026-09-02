@@ -1,19 +1,78 @@
 @if (screen === 'menu') {
   <main class="menu">
-    <h1 class="title">Gånger</h1>
-    <p class="lead">Välj spel</p>
-    <button type="button" class="choice" (click)="play('match')">
-      <span class="choice-name">Para ihop</span>
-      <span class="choice-hint">Matcha frågan med rätt svar</span>
-    </button>
-    <button type="button" class="choice" (click)="play('swipe')">
-      <span class="choice-name">Svep</span>
-      <span class="choice-hint">Svep höger om påståendet stämmer</span>
-    </button>
-    <button type="button" class="choice" (click)="play('master')">
-      <span class="choice-name">Mästaren</span>
-      <span class="choice-hint">Skriv svaret på tid — nivåer och värmekarta</span>
-    </button>
+    <header class="hero">
+      <h1 class="title">Gånger</h1>
+      @if (hasPractice) {
+        <div
+          class="progress"
+          role="progressbar"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          [attr.aria-valuenow]="masteredCount"
+          [attr.aria-valuetext]="masteredCount + ' av 100 tal sitter'"
+        >
+          <div class="progress-track">
+            <div class="progress-fill" [style.width.%]="masteredCount"></div>
+          </div>
+          <p class="progress-text"><strong>{{ masteredCount }}</strong> av 100 tal sitter</p>
+        </div>
+      } @else {
+        <p class="lead">Tre sätt att öva gångertabellen</p>
+      }
+    </header>
+
+    <div class="choices">
+      <button type="button" class="choice" (click)="play('match')">
+        <span class="art art--match" aria-hidden="true">
+          <svg viewBox="0 0 72 56" focusable="false">
+            <!-- Två kolumner med streck emellan: varje fråga hittar sitt svar. -->
+            <path class="art-link" d="M31 12 H41 M31 28 L41 44 M31 44 L41 28" />
+            <rect class="art-pill" x="3" y="6" width="26" height="12" rx="6" />
+            <rect class="art-pill" x="3" y="22" width="26" height="12" rx="6" />
+            <rect class="art-pill" x="3" y="38" width="26" height="12" rx="6" />
+            <rect class="art-pill" x="43" y="6" width="26" height="12" rx="6" />
+            <rect class="art-pill" x="43" y="22" width="26" height="12" rx="6" />
+            <rect class="art-pill" x="43" y="38" width="26" height="12" rx="6" />
+          </svg>
+        </span>
+        <span class="choice-text">
+          <span class="choice-name">Para ihop</span>
+          <span class="choice-hint">Matcha frågan med rätt svar</span>
+        </span>
+      </button>
+
+      <button type="button" class="choice" (click)="play('swipe')">
+        <span class="art art--swipe" aria-hidden="true">
+          <svg viewBox="0 0 72 56" focusable="false">
+            <!-- Ett kort på väg åt höger, med fel till vänster och rätt till höger. -->
+            <path class="art-wrong" d="M6 22 L14 32 M14 22 L6 32" />
+            <path class="art-right" d="M58 27 L62 32 L69 22" />
+            <g class="art-card">
+              <rect x="23" y="8" width="26" height="40" rx="5" />
+            </g>
+          </svg>
+        </span>
+        <span class="choice-text">
+          <span class="choice-name">Svep</span>
+          <span class="choice-hint">Svep höger om påståendet stämmer</span>
+        </span>
+      </button>
+
+      <button type="button" class="choice" (click)="play('master')">
+        <span class="art art--master" aria-hidden="true">
+          <svg viewBox="0 0 72 56" focusable="false">
+            <!-- Ett tal inuti en klocka som tickar. -->
+            <circle class="art-ring" cx="36" cy="28" r="20" />
+            <circle class="art-ring-fill" cx="36" cy="28" r="20" />
+            <text class="art-text" x="36" y="34" text-anchor="middle">7×8</text>
+          </svg>
+        </span>
+        <span class="choice-text">
+          <span class="choice-name">Mästaren</span>
+          <span class="choice-hint">Skriv svaret på tid — nivåer och värmekarta</span>
+        </span>
+      </button>
+    </div>
   </main>
 } @else {
   <div class="game">
