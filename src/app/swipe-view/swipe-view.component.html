@@ -1,28 +1,51 @@
 <div class="container">
     <header class="top">
-        <span class="score score--correct">Rätt {{nrCorrect}}</span>
-        <span class="score score--wrong">Fel {{nrWrong}}</span>
+        @if (screen === 'game' || screen === 'result') {
+            <span class="score score--correct">Rätt {{nrCorrect}}</span>
+            <span class="score score--wrong">Fel {{nrWrong}}</span>
+            <span class="flame" [class.flame--up]="levelFlash === 'up'" [class.flame--down]="levelFlash === 'down'"
+                [style.--flame-scale]="0.6 + flameIntensity * 0.9" [title]="'Nivå ' + level + ' av ' + levelMax">
+                🔥<span class="flame-level">{{level}}</span>
+            </span>
+        }
     </header>
 
-    @if (loading) {
-        <section class="result">
-            <mat-card appearance="outlined" class="game-card result-card">
-                <p class="result-title">Laddar frågor…</p>
-            </mat-card>
+    @if (screen === 'menu') {
+        <section class="menu">
+            <div class="menu-card">
+                <div class="menu-title">Svep</div>
+
+                <div class="menu-section">
+                    <div class="menu-label">Måltid per kort</div>
+                    <div class="menu-row">
+                        @for (time of targetTimes; track time) {
+                            <button type="button" class="option-btn" [class.active]="selectedTargetTime === time"
+                                (click)="selectTargetTime(time)">{{time}}s</button>
+                        }
+                    </div>
+                </div>
+
+                <div class="menu-section">
+                    <div class="menu-label">Antal kort</div>
+                    <div class="menu-row">
+                        @for (count of questionCounts; track count) {
+                            <button type="button" class="option-btn" [class.active]="selectedQuestionCount === count"
+                                (click)="selectQuestionCount(count)">{{count}}</button>
+                        }
+                    </div>
+                </div>
+
+                <button type="button" class="start-btn" (click)="start()">Kör! 🔥</button>
+            </div>
         </section>
-    } @else if (loadError) {
-        <section class="result">
-            <mat-card appearance="outlined" class="game-card result-card">
-                <p class="result-title">Kunde inte ladda frågorna</p>
-                <p class="result-score">Kontrollera nätet och ladda om sidan.</p>
-            </mat-card>
-        </section>
-    } @else if (finished) {
+    } @else if (screen === 'result') {
         <section class="result">
             <mat-card appearance="outlined" class="game-card result-card">
                 <p class="result-title">Klart!</p>
                 <p class="result-score">{{nrCorrect}} av {{totalAnswered}} rätt</p>
+                <p class="result-level">Nivå {{level}} av {{levelMax}}</p>
                 <button type="button" class="again" (click)="restart()">Spela igen</button>
+                <button type="button" class="again again--ghost" (click)="backToMenu()">Byt inställningar</button>
             </mat-card>
         </section>
     } @else {
@@ -49,7 +72,7 @@
     }
 
     <footer class="bottom" aria-live="polite">
-        @if (loading || loadError) {
+        @if (screen === 'menu' || screen === 'result') {
             &nbsp;
         } @else if (feedback) {
             <span class="feedback" [class.feedback--wrong]="!feedback.correct">
