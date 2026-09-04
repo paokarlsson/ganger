@@ -9,8 +9,10 @@ is any practice to count.
   right one. Background music and sound effects included.
 - **Svep** — a statement such as `7 × 8 = 54` is shown on a card. Swipe (or drag
   with the mouse, or press the arrow keys) right if it is correct, left if it is
-  not. The questions come from `src/assets/ranked-questions.json`, which is
-  fetched as a static asset — the app has no backend.
+  not. The statements are generated at run time by `swipe-difficulty.ts`; the
+  curated set they were modelled on is kept next to that file as
+  [`ranked-questions.reference.json`](src/app/swipe-view/ranked-questions.reference.json);
+  nothing imports it, so it is not shipped.
 - **Mästaren** — type the answer against the clock. Pick a level (one table at a
   time, all of them mixed, or *Auto*, which follows how the round is going) and a
   round length. A short calibration measures how fast the player answers the
@@ -40,7 +42,6 @@ cleared with the **Nollställ** button on the heat map screen.
 | `src/app/match-view/` | The *Para ihop* game |
 | `src/app/swipe-view/` | The *Svep* game |
 | `src/app/master-view/` | The *Mästaren* game, with its levels in `levels.ts` |
-| `src/app/services/question.service.ts` | Loads the ranked questions for *Svep* |
 | `src/app/services/practice-stats.service.ts` | Times and calibration for *Mästaren* |
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) and runs on
@@ -73,7 +74,8 @@ Two targets share the same build:
 
 ## Running unit tests
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+Run `ng test` to execute the unit tests via [Vitest](https://vitest.dev), which
+runs them in jsdom.
 
 ## Further help
 

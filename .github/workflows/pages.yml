@@ -23,6 +23,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npm test
       # angular.json keeps baseHref "/" so ng serve (including via Docker)
       # serves from the root; GitHub Pages hosts the app under /ganger/ instead.
       - run: npm run build -- --base-href /ganger/
