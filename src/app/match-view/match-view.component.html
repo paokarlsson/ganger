@@ -1,35 +1,38 @@
 <div class="wrapper">
   <div class="top">
-    <button (click)="startStopLoopAudio()">
+    <button type="button" class="sound-btn" [attr.aria-pressed]="playLoop"
+      [attr.aria-label]="playLoop ? 'Stäng av musiken' : 'Sätt på musiken'"
+      (click)="startStopLoopAudio()">
+      <!-- Ikonerna ligger inline så att de kan ta färg av knappen. Som <img>
+           gick de inte att färga, och blev osynliga mot den mörka bakgrunden. -->
       @if (playLoop) {
-        <img src="assets/icons/volume_up.svg" alt="Start Audio Loop" />
+        <svg class="icon" viewBox="0 -960 960 960" aria-hidden="true" focusable="false">
+          <path d="M560-131v-82q90-26 145-100t55-168q0-94-55-168T560-749v-82q124 28 202 125.5T840-481q0 127-78 224.5T560-131ZM120-360v-240h160l200-200v640L280-360H120Zm440 40v-322q47 22 73.5 66t26.5 96q0 51-26.5 94.5T560-320ZM400-606l-86 86H200v80h114l86 86v-252ZM300-480Z" />
+        </svg>
       } @else {
-        <img src="assets/icons/volume_off.svg" alt="Start Audio Loop" />
+        <svg class="icon" viewBox="0 -960 960 960" aria-hidden="true" focusable="false">
+          <path d="M792-56 671-177q-25 16-53 27.5T560-131v-82q14-5 27.5-10t25.5-12L480-368v208L280-360H120v-240h128L56-792l56-56 736 736-56 56Zm-8-232-58-58q17-31 25.5-65t8.5-70q0-94-55-168T560-749v-82q124 28 202 125.5T840-481q0 53-14.5 102T784-288ZM650-422l-90-90v-130q47 22 73.5 66t26.5 96q0 15-2.5 29.5T650-422ZM480-592 376-696l104-104v208Zm-80 238v-94l-72-72H200v80h114l86 86Zm-36-130Z" />
+        </svg>
       }
     </button>
   </div>
-  <main class="m">
-    <div class="column left">
+  <main>
+    <div class="column">
       @for (q of leftList; track q) {
-        <button class="item clickable selectable" [class.selected]="isQSelected(q)" [class.correct-selected]="isDone(q)"
-          [class.wrong-selected]="isLeftWrong(q)" (click)="selQ(q)">{{ q.first }} *
-        {{q.second}}</button>
+        <button type="button" class="item" [class.selected]="isQSelected(q)" [class.correct-selected]="isDone(q)"
+          [class.wrong-selected]="isLeftWrong(q)" (click)="selQ(q)">{{ q.first }} × {{ q.second }}</button>
       }
     </div>
-    <div class="column right">
+    <div class="column">
       @for (q of rightList; track q) {
-        <button class="item clickable selectable" [class.selected]="isASelected(q)" [class.correct-selected]="isDone(q)"
-          [class.wrong-selected]="isRightWrong(q)" (click)="selA(q)">{{ q.first * q.second
-        }}</button>
+        <button type="button" class="item" [class.selected]="isASelected(q)" [class.correct-selected]="isDone(q)"
+          [class.wrong-selected]="isRightWrong(q)" (click)="selA(q)">{{ q.first * q.second }}</button>
       }
     </div>
-
   </main>
   <div class="bottom">
     @if (allIsDone()) {
-      <div>
-        <button class="item clickable selectable next-button" (click)="next()">Nästa</button>
-      </div>
+      <button type="button" class="ui-btn ui-btn--primary" (click)="next()">Nästa</button>
     }
   </div>
 </div>

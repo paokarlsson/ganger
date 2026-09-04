@@ -1,9 +1,12 @@
+/* Knappen längst ned kommer från stilmallen i src/styles/. Här ligger
+   spelplanen: de två kolumnerna, brickorna och ljudknappen. */
+
 :host {
     display: block;
     height: 100%;
-    /* Spelet har sin egen ljusa look och ärvde typsnittet från skalet, som nu
-       följer appens mörka tema. */
-    font-family: 'Courier New', Courier, monospace;
+    font-family: var(--font-body);
+    background: var(--surface);
+    color: var(--text-light);
 }
 
 .wrapper {
@@ -11,37 +14,41 @@
     width: 100%;
     display: grid;
     grid-template-rows: 1fr 8fr 2fr;
-    background: rgb(186, 186, 186);
     overflow: hidden;
+}
 
+/* Ljudknappen sitter till höger — skalets menyknapp har vänsterhörnet. */
+.top {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 var(--space-3);
 }
-.top{
-    text-align: center;
-    align-self: center;
+
+.sound-btn {
+    display: flex;
+    padding: var(--space-1);
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color var(--motion-fast);
 }
-.m{
-    // background-color: red;
+
+.sound-btn:hover {
+    color: var(--accent-gold);
 }
-.left{
-    // background-color: blue;
+
+.sound-btn:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
 }
-.right{
-    // background-color: orange;
-}
-.bottom{
-    // background-color: purple;
-    text-align: center;
-    align-self: center;
-}
+
 .icon {
-    fill: black;
-    height: 50px;
-    width: 50px;    
-}
-button {
-    background-color: transparent;
-    border: none;
-
+    width: 36px;
+    height: 36px;
+    fill: currentColor;
 }
 
 main {
@@ -55,41 +62,55 @@ main {
     text-align: center;
 }
 
-.clickable {
-    cursor: pointer;
-}
-
-.selectable {
-    background: rgb(120, 120, 120);
-    border: 7px solid rgb(59, 59, 59);
-
-}
-
-.selected {
-    border: 7px solid rgb(14, 14, 14);
-}
-
-.correct-selected {
-    background: rgb(70, 255, 70);
-    border: 7px solid rgb(0, 180, 0);
-}
-.wrong-selected {
-    background: rgb(255, 70, 70);
-    border: 7px solid rgb(180, 0, 0);
-}
-
+/* Brickorna. Vald bricka markeras i guld, som växlarna i de andra spelen;
+   rätt och fel tar temats gröna och röda. */
 .item {
     width: 90%;
     height: 15%;
-    padding: 0px;
-    margin-top: 10px;
-    font-size: 2rem;
-    font-family:'Courier New', Courier, monospace;
+    margin-top: var(--space-2);
+    padding: 0;
+    border: 3px solid var(--line-strong);
+    border-radius: var(--radius-pill);
+    background: var(--bg-card);
+    color: var(--text-light);
+    font-family: var(--font-display);
+    font-size: clamp(1.1rem, 5vw, 2rem);
     font-weight: bold;
     text-align: center;
-    border-radius: 10rem;
+    cursor: pointer;
+    transition: background var(--motion-fast), border-color var(--motion-fast),
+        color var(--motion-fast);
 }
 
-.next-button {
-    height: 5rem;
+.item:hover {
+    background: var(--bg-card-raised);
+    border-color: var(--accent-gold);
+}
+
+.item:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 3px;
+}
+
+.item.selected {
+    background: var(--bg-card-raised);
+    border-color: var(--accent-gold);
+}
+
+.item.correct-selected {
+    background: rgba(46, 204, 113, 0.2);
+    border-color: var(--accent-green);
+    color: var(--accent-green);
+}
+
+.item.wrong-selected {
+    background: rgba(231, 76, 60, 0.2);
+    border-color: var(--accent-red);
+    color: var(--accent-red);
+}
+
+.bottom {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }

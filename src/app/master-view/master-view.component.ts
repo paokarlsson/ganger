@@ -168,11 +168,12 @@ export class MasterViewComponent implements OnDestroy {
     this.startGame();
   }
 
-  calibrationDotState(index: number): 'done' | 'current' | '' {
+  /** Tillståndsklasserna kommer från stilmallens .ui-dot. */
+  calibrationDotState(index: number): 'is-done' | 'is-current' | '' {
     if (index < this.calibrationIndex) {
-      return 'done';
+      return 'is-done';
     }
-    return index === this.calibrationIndex ? 'current' : '';
+    return index === this.calibrationIndex ? 'is-current' : '';
   }
 
   /** Svaret prövas medan det skrivs, så snart det är lika långt som facit. */
@@ -228,11 +229,11 @@ export class MasterViewComponent implements OnDestroy {
     this.nextQuestion();
   }
 
-  dotState(index: number): 'correct' | 'wrong' | 'current' | '' {
+  dotState(index: number): 'is-correct' | 'is-wrong' | 'is-current' | '' {
     if (index < this.results.length) {
-      return this.results[index].correct ? 'correct' : 'wrong';
+      return this.results[index].correct ? 'is-correct' : 'is-wrong';
     }
-    return index === this.currentQuestion ? 'current' : '';
+    return index === this.currentQuestion ? 'is-current' : '';
   }
 
   onAnswerInput(): void {

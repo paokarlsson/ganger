@@ -5,20 +5,19 @@
 }
 
 .menu {
-    box-sizing: border-box;
     min-height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 1.75rem;
-    padding: 2rem 1rem;
+    padding: var(--space-5) var(--space-3);
     overflow-y: auto;
     background:
-        /* Ett svagt gångertecken-mönster bakom gradienten. */
+        /* Ett svagt gångertecken-mönster ovanpå appens vanliga botten. */
         repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.02) 0 2px, transparent 2px 22px),
         repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.02) 0 2px, transparent 2px 22px),
-        linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-deep) 100%);
+        var(--surface);
     color: var(--text-light);
     text-align: center;
 }
@@ -30,8 +29,9 @@
     gap: 0.9rem;
 }
 
+/* Startsidans rubrik är appens största — den tar stilmallens guld och
+   typsnitt, men egen storlek och spärrning. */
 .title {
-    margin: 0;
     font-family: var(--font-display);
     font-size: clamp(2.75rem, 13vw, 4.25rem);
     font-weight: 700;
@@ -41,7 +41,6 @@
 }
 
 .lead {
-    margin: 0;
     font-size: clamp(0.95rem, 4vw, 1.1rem);
     color: var(--text-muted);
 }
@@ -55,7 +54,7 @@
 
 .progress-track {
     height: 8px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: rgba(255, 255, 255, 0.1);
     overflow: hidden;
 }
@@ -68,7 +67,6 @@
 }
 
 .progress-text {
-    margin: 0;
     font-size: clamp(0.85rem, 3.5vw, 1rem);
     color: var(--text-muted);
 }
@@ -86,19 +84,22 @@
     gap: 0.9rem;
 }
 
+/* Spelvalen är startsidans signatur och håller sin egen form, men färg,
+   radie, övergång och fokusring kommer från stilmallen. */
 .choice {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: var(--space-3);
     padding: 0.9rem 1.1rem;
     background: var(--bg-card);
     border: 2px solid var(--line-soft);
-    border-radius: 16px;
+    border-radius: var(--radius-md);
     color: inherit;
     font: inherit;
     text-align: left;
     cursor: pointer;
-    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    transition: background var(--motion-fast), border-color var(--motion-fast),
+        transform var(--motion-fast);
 }
 
 .choice:hover,
@@ -109,7 +110,7 @@
 }
 
 .choice:focus-visible {
-    outline: 3px solid var(--accent-gold);
+    outline: var(--focus-ring);
     outline-offset: 3px;
 }
 
@@ -282,16 +283,9 @@
     }
 }
 
+/* Övergångarna stängs av globalt i src/styles/_base.scss. Kvar här är bara
+   lyftet, som är en förflyttning och inte en övergång. */
 @media (prefers-reduced-motion: reduce) {
-    .back,
-    .choice,
-    .art-card,
-    .art-link,
-    .art-ring-fill,
-    .progress-fill {
-        transition: none;
-    }
-
     .choice:hover,
     .choice:focus-visible {
         transform: none;
@@ -305,32 +299,23 @@
     overflow: hidden;
 }
 
-/* Knappen ligger över både ljusa och mörka spel, så den är mörk med ljus ram
-   — den syns mot Para ihops grå och mot Svepets och Mästarens mörka. */
+/* Formen kommer från stilmallens tysta knapp. Bakgrunden är däremot solid
+   och inte genomskinlig: knappen ligger ovanpå spelen, och Svepets kort
+   glider in under den. */
 .back {
     position: absolute;
     top: 0.5rem;
     left: 0.5rem;
     z-index: 2; /* svepkortet ligger på z-index 1 */
     max-width: calc(var(--shell-back-space) - 0.5rem);
-    padding: 0.4em 0.9em;
     background: var(--bg-card);
-    border: 2px solid rgba(255, 255, 255, 0.25);
-    border-radius: 10rem;
+    border-color: rgba(255, 255, 255, 0.25);
     color: var(--text-light);
-    font-family: var(--font-body);
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: border-color 0.2s ease;
 }
 
 .back:hover,
 .back:focus-visible {
+    background: var(--bg-card-raised);
     border-color: var(--accent-gold);
-}
-
-.back:focus-visible {
-    outline: 3px solid var(--accent-gold);
-    outline-offset: 2px;
+    color: var(--text-light);
 }

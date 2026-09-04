@@ -24,10 +24,16 @@ is any practice to count.
 The swipe game was moved here from the separate `ganger-swipe` repository, which
 is no longer developed. *Mästaren* was ported from a standalone HTML prototype.
 
-*Mästaren* sets the visual tone — its dark palette and fonts live in
-`src/styles.scss` and are shared with the start screen and *Svep*, whose yellow
-card was already close to the theme's gold. *Para ihop* still has its own
-lighter look.
+All four surfaces share one style sheet, which lives in `src/styles/`:
+`_tokens.scss` holds the palette, fonts, radii and spacing as CSS variables,
+`_base.scss` the reset, and `_ui.scss` a small set of global `ui-` classes —
+card, title, button, toggle, dot and modal — that the components use instead of
+restyling the same widget once per game. A component's own stylesheet keeps only
+what is that game's own: the swipe card, the heat map, the matching board. The
+`ui-` prefix in a template is the signal that the look comes from the shared
+sheet. The dark palette was *Mästaren*'s to begin with, and the yellow of
+*Svep*'s card is kept as its own token, deliberately lighter than the theme's
+gold.
 
 *Mästaren* keeps its statistics in `localStorage` under `mult-heatmap` and
 `mult-calibration`, so they live in the browser they were practised in and are
@@ -37,7 +43,10 @@ cleared with the **Nollställ** button on the heat map screen.
 
 | Path | What it is |
 | --- | --- |
-| `src/styles.scss` | The shared theme: colours and fonts as CSS variables |
+| `src/styles.scss` | Entry point; pulls in the three parts below |
+| `src/styles/_tokens.scss` | Colours, fonts, radii and spacing as CSS variables |
+| `src/styles/_base.scss` | Reset, and the one reduced-motion rule for the app |
+| `src/styles/_ui.scss` | The shared `ui-` classes the four surfaces build from |
 | `src/app/app.component.*` | Shell: the start menu and the choice of game |
 | `src/app/match-view/` | The *Para ihop* game |
 | `src/app/swipe-view/` | The *Svep* game |

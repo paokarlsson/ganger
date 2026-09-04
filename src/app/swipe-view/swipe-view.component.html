@@ -12,41 +12,41 @@
 
     @if (screen === 'menu') {
         <section class="menu">
-            <div class="menu-card">
-                <div class="menu-title">Svep</div>
+            <div class="menu-card ui-card">
+                <div class="menu-title ui-title">Svep</div>
 
                 <div class="menu-section">
-                    <div class="menu-label">Måltid per kort</div>
+                    <div class="menu-label ui-title ui-title--sm">Måltid per kort</div>
                     <div class="menu-row">
                         @for (time of targetTimes; track time) {
-                            <button type="button" class="option-btn" [class.active]="selectedTargetTime === time"
+                            <button type="button" class="option-btn ui-toggle" [class.is-active]="selectedTargetTime === time"
                                 (click)="selectTargetTime(time)">{{time}}s</button>
                         }
                     </div>
                 </div>
 
                 <div class="menu-section">
-                    <div class="menu-label">Antal kort</div>
+                    <div class="menu-label ui-title ui-title--sm">Antal kort</div>
                     <div class="menu-row">
                         @for (count of questionCounts; track count) {
-                            <button type="button" class="option-btn" [class.active]="selectedQuestionCount === count"
+                            <button type="button" class="option-btn ui-toggle" [class.is-active]="selectedQuestionCount === count"
                                 (click)="selectQuestionCount(count)">{{count}}</button>
                         }
                     </div>
                 </div>
 
-                <button type="button" class="start-btn" (click)="start()">Kör! 🔥</button>
+                <button type="button" class="start-btn ui-btn ui-btn--primary" (click)="start()">Kör! 🔥</button>
             </div>
         </section>
     } @else if (screen === 'result') {
         <section class="result">
-            <mat-card appearance="outlined" class="game-card result-card">
-                <p class="result-title">Klart!</p>
+            <div class="result-card ui-card ui-card--roomy">
+                <p class="result-title ui-title ui-title--lg">Klart!</p>
                 <p class="result-score">{{nrCorrect}} av {{totalAnswered}} rätt</p>
                 <p class="result-level">Nivå {{level}} av {{levelMax}}</p>
-                <button type="button" class="again" (click)="restart()">Spela igen</button>
-                <button type="button" class="again again--ghost" (click)="backToMenu()">Byt inställningar</button>
-            </mat-card>
+                <button type="button" class="ui-btn ui-btn--primary" (click)="restart()">Spela igen</button>
+                <button type="button" class="ui-btn ui-btn--secondary" (click)="backToMenu()">Byt inställningar</button>
+            </div>
         </section>
     } @else {
         <section class="main">
