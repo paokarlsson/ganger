@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { MatchViewComponent } from './match-view/match-view.component';
 import { MasterViewComponent } from './master-view/master-view.component';
 import { SwipeViewComponent } from './swipe-view/swipe-view.component';
@@ -9,9 +9,9 @@ export type Screen = 'menu' | 'match' | 'swipe' | 'master';
 
 @Component({
   selector: 'app-root',
-  standalone: true,
   imports: [MasterViewComponent, MatchViewComponent, SwipeViewComponent],
   templateUrl: './app.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './app.component.scss',
 })
 export class AppComponent {

@@ -1,5 +1,4 @@
-import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 
 /** Smallest and largest factor a question is built from. */
 const MIN_FACTOR = 1;
@@ -12,8 +11,7 @@ const ROUND_SIZE = 5;
   selector: 'app-match-view',
   styleUrl: 'match-view.component.scss',
   templateUrl: 'match-view.component.html',
-  standalone: true,
-  imports: [CommonModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class MatchViewComponent {
   playLoop: boolean = false;

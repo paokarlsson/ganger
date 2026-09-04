@@ -52,13 +52,16 @@ function closeDistractorProbability(level: number): number {
 }
 
 /** Faktakombinationens svåraste tänkbara fel-svar: samma två mönster som
- *  finns handplockade i ranked-questions.json — verifierat mot filen, se
- *  README-diskussionen. `n1===1`/`n2===1` är specialfallet där kuraterarna
- *  alltid valt "den andra faktorn" som fel svar (det klassiska
- *  nybörjarmisstaget att tro att produkten blir samma som faktorn). */
+ *  finns handplockade i ranked-questions.reference.json — verifierat mot
+ *  filen, se README-diskussionen. `n1===1`/`n2===1` är specialfallet, där
+ *  kuraterarna valt ettan själv som fel svar (`1 × 4 = 1`): det klassiska
+ *  nybörjarmisstaget att tro att produkten blir samma som den lilla
+ *  faktorn. Mönstret "den andra faktorn" hör till `0 × n` i datan, och
+ *  nollor genereras aldrig här. `1 × 1` har ingen annan etta att erbjuda
+ *  och faller igenom till den vanliga logiken. */
 function pickWrong(n1: number, n2: number, answer: number, level: number, rng: () => number): number {
-  if (n1 === 1 || n2 === 1) {
-    return n1 === 1 ? n2 : n1;
+  if ((n1 === 1 || n2 === 1) && answer !== 1) {
+    return 1;
   }
 
   const neighbor = new Set<number>();

@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, OnDestroy, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { PracticeStatsService, QuestionStat } from '../services/practice-stats.service';
 import {
   CALIBRATION_QUESTIONS,
@@ -47,8 +47,8 @@ const STREAK_VISIBLE_FROM = 3;
 
 @Component({
   selector: 'app-master-view',
-  standalone: true,
   templateUrl: './master-view.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './master-view.component.scss',
 })
 export class MasterViewComponent implements OnDestroy {

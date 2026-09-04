@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, ViewChild } from '@angular/core';
+import { Component, HostListener, OnDestroy, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { CdkDrag, CdkDragEnd, CdkDragMove } from '@angular/cdk/drag-drop';
 import {
@@ -35,9 +35,9 @@ interface Feedback {
 
 @Component({
   selector: 'app-swipe-view',
-  standalone: true,
   imports: [CdkDrag, MatCardModule],
   templateUrl: './swipe-view.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './swipe-view.component.scss',
 })
 export class SwipeViewComponent implements OnDestroy {
