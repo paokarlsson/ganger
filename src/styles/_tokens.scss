@@ -16,8 +16,16 @@
 
     --accent-gold: #ffd700;
     --accent-green: #2ecc71;
-    --accent-red: #e74c3c;
+    /* Aningen ljusare än det ursprungliga #e74c3c, som låg på 4.46:1 mot
+       bakgrunden och därmed strax under WCAG:s 4.5:1 för brödtext. */
+    --accent-red: #ea6253;
     --accent-orange: #f39c12;
+
+    /* Toningar för rätt- och felmarkerade ytor. Texten ovanpå dem är ljus,
+       inte grön eller röd — färg mot sin egen toning ger för lite kontrast. */
+    --tint-green: rgba(46, 204, 113, 0.2);
+    --tint-red: rgba(234, 98, 83, 0.2);
+    --tint-red-strong: rgba(234, 98, 83, 0.38);
 
     /* Primärknappens gradient och den skugga den trycks ned mot. */
     --green-deep: #27ae60;
@@ -33,12 +41,17 @@
 
     --text-light: #f0f0f0;
     --text-muted: rgba(255, 255, 255, 0.5);
+    /* Enbart för avdelare och annat som inte är en kontroll. */
     --line-soft: rgba(255, 255, 255, 0.12);
 
     /* Ytor som lyfter sig ur bakgrunden utan att ta en egen färg. */
     --fill-soft: rgba(255, 255, 255, 0.05);
     --fill-hover: rgba(255, 255, 255, 0.15);
-    --line-strong: rgba(255, 255, 255, 0.2);
+    /* Ramen runt en kontroll är det som gör den till en kontroll, så den
+       ligger på 3:1 enligt WCAG 1.4.11 — och det mot båda sina grannar,
+       alltså både underlaget utanför och kontrollens egen fyllning. Det
+       senare är vad som kräver så här hög alfa. */
+    --line-strong: rgba(255, 255, 255, 0.45);
 
     /* Tre radier räcker för hela appen: liten yta, panel och piller. */
     --radius-sm: 10px;

@@ -20,13 +20,29 @@
     <div class="column">
       @for (q of leftList; track q) {
         <button type="button" class="item" [class.selected]="isQSelected(q)" [class.correct-selected]="isDone(q)"
-          [class.wrong-selected]="isLeftWrong(q)" (click)="selQ(q)">{{ q.first }} × {{ q.second }}</button>
+          [class.wrong-selected]="isLeftWrong(q)" [attr.aria-pressed]="isQSelected(q)" (click)="selQ(q)">
+          <!-- Tecknet säger samma sak som färgen, för den som inte skiljer
+               grönt från rött. -->
+          @if (isDone(q)) {
+            <span class="item-mark" aria-hidden="true">✓</span><span class="ui-visually-hidden">Rätt: </span>
+          } @else if (isLeftWrong(q)) {
+            <span class="item-mark" aria-hidden="true">✗</span><span class="ui-visually-hidden">Fel: </span>
+          }
+          {{ q.first }} × {{ q.second }}
+        </button>
       }
     </div>
     <div class="column">
       @for (q of rightList; track q) {
         <button type="button" class="item" [class.selected]="isASelected(q)" [class.correct-selected]="isDone(q)"
-          [class.wrong-selected]="isRightWrong(q)" (click)="selA(q)">{{ q.first * q.second }}</button>
+          [class.wrong-selected]="isRightWrong(q)" [attr.aria-pressed]="isASelected(q)" (click)="selA(q)">
+          @if (isDone(q)) {
+            <span class="item-mark" aria-hidden="true">✓</span><span class="ui-visually-hidden">Rätt: </span>
+          } @else if (isRightWrong(q)) {
+            <span class="item-mark" aria-hidden="true">✗</span><span class="ui-visually-hidden">Fel: </span>
+          }
+          {{ q.first * q.second }}
+        </button>
       }
     </div>
   </main>

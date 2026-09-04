@@ -97,16 +97,24 @@ main {
     border-color: var(--accent-gold);
 }
 
+/* Texten förblir ljus i båda lägena — grönt mot grön toning och rött mot röd
+   ger för lite kontrast. Färgen bärs av ram och fyllning, och tecknet i
+   .item-mark säger samma sak utan färg. */
 .item.correct-selected {
-    background: rgba(46, 204, 113, 0.2);
+    background: var(--tint-green);
     border-color: var(--accent-green);
-    color: var(--accent-green);
 }
 
 .item.wrong-selected {
-    background: rgba(231, 76, 60, 0.2);
+    background: var(--tint-red);
     border-color: var(--accent-red);
-    color: var(--accent-red);
+}
+
+/* Tecknet ärver den ljusa texten. Grönt respektive rött ovanpå sin egen
+   toning hade legat under 4.5:1 — och tecknet finns just för att inte vara
+   beroende av färg. */
+.item-mark {
+    margin-right: 0.4em;
 }
 
 .bottom {

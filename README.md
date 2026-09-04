@@ -35,6 +35,18 @@ sheet. The dark palette was *Mästaren*'s to begin with, and the yellow of
 *Svep*'s card is kept as its own token, deliberately lighter than the theme's
 gold.
 
+Several token values are pinned by WCAG 2.2 AA rather than by taste, so changing
+them is not free: `--accent-red` is lighter than a plain red because #e74c3c sat
+at 4.46:1 against the background, just under the 4.5:1 needed for body text;
+`--line-strong` is as bright as it is because a control's border needs 3:1
+against *both* neighbours, the surface outside and the control's own fill; and
+the primary button carries dark text because white on `--accent-green` is
+2.1:1. Text on a red or green tint is light, never red or green — a colour
+against its own tint does not reach 4.5:1. Where colour carries meaning it is
+never alone: *Para ihop* marks tiles with ✓ and ✗, *Svep* stamps the card RÄTT
+or FEL, and *Mästaren*'s dot rows have an `aria-label` saying the same thing in
+words.
+
 *Mästaren* keeps its statistics in `localStorage` under `mult-heatmap` and
 `mult-calibration`, so they live in the browser they were practised in and are
 cleared with the **Nollställ** button on the heat map screen.

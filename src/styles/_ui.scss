@@ -55,13 +55,18 @@
 
 /* Starta, spela igen. Grönt betyder även "rätt svar" i alla tre spelen —
    gradienten och skuggan är därför bara primärknappens, så att den läses som
-   en knapp och inte som ett facit. */
+   en knapp och inte som ett facit.
+
+   Texten är mörk, inte vit: vitt mot det ljusa gröna gav 2.1:1, och på en
+   smal skärm klampar knapptexten under gränsen för stor text. Mörk text
+   ligger på 9.0:1 mot gradientens topp och 6.6:1 mot dess botten. */
 .ui-btn--primary {
     padding: 0.75em 2.2em;
     font-size: clamp(1.05rem, 4.5vw, 1.3rem);
+    font-weight: 700;
     border-color: transparent;
     background: linear-gradient(180deg, var(--accent-green) 0%, var(--green-deep) 100%);
-    color: #fff;
+    color: var(--bg-deep);
     box-shadow: 0 4px 0 var(--green-shadow);
 }
 
@@ -95,16 +100,16 @@
     color: var(--text-light);
 }
 
-/* Nollställ statistiken, avbryt på riktigt. */
+/* Nollställ statistiken, avbryt på riktigt. Rött bärs av ram och fyllning;
+   texten är ljus, eftersom rött mot sin egen toning bara ger 3.4:1. */
 .ui-btn--danger {
-    background: rgba(231, 76, 60, 0.2);
+    background: var(--tint-red);
     border-color: var(--accent-red);
-    color: var(--accent-red);
+    color: var(--text-light);
 }
 
 .ui-btn--danger:hover {
-    background: rgba(231, 76, 60, 0.4);
-    color: var(--text-light);
+    background: var(--tint-red-strong);
 }
 
 /* --- Växlar --------------------------------------------------------------
@@ -184,9 +189,25 @@
 }
 
 /* --- Fokus ---------------------------------------------------------------
-   Ett ställe för hela appen. Mästaren saknade fokusringar helt innan. */
+   Ett ställe för hela appen. Mästaren saknade fokusringar helt innan.
+   Offseten är inte bara luft: den lägger ringen utanför knappen, mot
+   underlaget, så att den syns även på den guldfärgade aktiva växeln. */
 .ui-btn:focus-visible,
 .ui-toggle:focus-visible {
     outline: var(--focus-ring);
     outline-offset: 3px;
+}
+
+/* --- För skärmläsare -----------------------------------------------------
+   Text som bär information färgen annars är ensam om att visa. */
+.ui-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
 }

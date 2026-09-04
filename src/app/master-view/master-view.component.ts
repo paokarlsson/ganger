@@ -115,6 +115,18 @@ export class MasterViewComponent implements OnDestroy {
     return Array.from({ length: this.selectedQuestionCount }, (_, i) => i);
   }
 
+  /** Prickraderna bär sin information i färg. Etiketterna säger samma sak. */
+  get progressLabel(): string {
+    const correct = this.results.filter((r) => r.correct).length;
+    const at = Math.min(this.currentQuestion + 1, this.selectedQuestionCount);
+    return `Fråga ${at} av ${this.selectedQuestionCount}, ${correct} rätt hittills`;
+  }
+
+  get calibrationProgressLabel(): string {
+    const total = this.calibrationQuestions.length;
+    return `Fråga ${Math.min(this.calibrationIndex + 1, total)} av ${total}`;
+  }
+
   get streakVisible(): boolean {
     return this.consecutiveFast >= STREAK_VISIBLE_FROM;
   }

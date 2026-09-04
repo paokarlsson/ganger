@@ -20,6 +20,7 @@
                     <div class="menu-row">
                         @for (time of targetTimes; track time) {
                             <button type="button" class="option-btn ui-toggle" [class.is-active]="selectedTargetTime === time"
+                                [attr.aria-pressed]="selectedTargetTime === time"
                                 (click)="selectTargetTime(time)">{{time}}s</button>
                         }
                     </div>
@@ -30,6 +31,7 @@
                     <div class="menu-row">
                         @for (count of questionCounts; track count) {
                             <button type="button" class="option-btn ui-toggle" [class.is-active]="selectedQuestionCount === count"
+                                [attr.aria-pressed]="selectedQuestionCount === count"
                                 (click)="selectQuestionCount(count)">{{count}}</button>
                         }
                     </div>

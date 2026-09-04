@@ -12,6 +12,7 @@
             @for (button of levelButtons; track button.level) {
               <button type="button" class="level-btn ui-toggle"
                 [class.is-active]="selectedLevel === button.level"
+                [attr.aria-pressed]="selectedLevel === button.level"
                 (click)="selectLevel(button.level)">
                 <span class="level-num">{{ button.num }}</span>
                 <span class="level-label">{{ button.label }}</span>
@@ -26,6 +27,7 @@
             @for (count of questionCounts; track count) {
               <button type="button" class="count-btn ui-toggle"
                 [class.is-active]="selectedQuestionCount === count"
+                [attr.aria-pressed]="selectedQuestionCount === count"
                 (click)="selectQuestionCount(count)">{{ count }}</button>
             }
           </div>
@@ -42,7 +44,7 @@
         <div class="calibration-card ui-card ui-card--roomy">
           <div class="calibration-title ui-title">🎯 Snabbhetskalibrering</div>
           <div class="calibration-subtitle">Svara så snabbt du kan på dessa enkla tal</div>
-          <div class="calibration-progress">
+          <div class="calibration-progress" role="img" [attr.aria-label]="calibrationProgressLabel">
             @for (question of calibrationQuestions; track $index) {
               <div class="ui-dot ui-dot--lg" [class]="calibrationDotState($index)"></div>
             }
@@ -60,7 +62,9 @@
 
     @case ('game') {
       <div class="game-screen">
-        <div class="progress-bar">
+        <!-- Prickarna visar hur rundan går enbart med färg; etiketten säger
+             samma sak för den som inte ser dem. -->
+        <div class="progress-bar" role="img" [attr.aria-label]="progressLabel">
           @for (dot of progressDots; track dot) {
             <div class="ui-dot" [class]="dotState(dot)"></div>
           }
@@ -140,19 +144,30 @@
       <div class="heatmap-screen">
         <div class="heatmap-card ui-card">
           <div class="heatmap-title ui-title">Din värmekarta</div>
-          <div class="heatmap-grid">
-            <div class="heatmap-cell"></div>
-            @for (column of heatmapRows; track column.label) {
-              <div class="heatmap-cell heatmap-header">{{ column.label }}</div>
-            }
-            @for (row of heatmapRows; track row.label) {
-              <div class="heatmap-cell heatmap-label">{{ row.label }}</div>
-              @for (cell of row.cells; track $index) {
-                <div class="heatmap-cell heatmap-data" [style.background]="cell.color"
-                  [title]="cell.title">{{ cell.text }}</div>
+          <!-- En riktig tabell, så att varje tid hör ihop med sin rad och sin
+               kolumn även för den som inte ser rutnätet. -->
+          <table class="heatmap-grid">
+            <caption class="ui-visually-hidden">Snittid per tal, i sekunder</caption>
+            <thead>
+              <tr>
+                <td></td>
+                @for (column of heatmapRows; track column.label) {
+                  <th scope="col" class="heatmap-cell heatmap-header">{{ column.label }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of heatmapRows; track row.label) {
+                <tr>
+                  <th scope="row" class="heatmap-cell heatmap-label">{{ row.label }}</th>
+                  @for (cell of row.cells; track $index) {
+                    <td class="heatmap-cell heatmap-data" [style.background]="cell.color"
+                      [title]="cell.title">{{ cell.text }}</td>
+                  }
+                </tr>
               }
-            }
-          </div>
+            </tbody>
+          </table>
           <div class="heatmap-legend">
             <span>Snabb ✓</span>
             <div class="legend-bar"></div>
