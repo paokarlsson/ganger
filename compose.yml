@@ -1,6 +1,6 @@
 services:
   ganger:
-    image: node:20-alpine
+    image: node:24-alpine
     container_name: ganger
     # Utan detta skriver containern (som annars kör som root) rootägda filer
     # rakt in i den bind-mountade projektmappen (t.ex. .angular/cache och

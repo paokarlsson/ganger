@@ -43,7 +43,9 @@ cleared with the **Nollställ** button on the heat map screen.
 | `src/app/services/question.service.ts` | Loads the ranked questions for *Svep* |
 | `src/app/services/practice-stats.service.ts` | Times and calibration for *Mästaren* |
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 17.3.11.
+This project was generated with [Angular CLI](https://github.com/angular/angular-cli) and runs on
+Angular 22. Building it needs Node 22.22.3 or later (24 LTS is what CI and
+[compose.yml](compose.yml) use).
 
 ## Development server
 
