@@ -76,7 +76,7 @@
   </main>
 } @else {
   <div class="game">
-    <button type="button" class="back" (click)="showMenu()">← Meny</button>
+    <button type="button" class="back ui-btn ui-btn--quiet" (click)="showMenu()">← Meny</button>
     @switch (screen) {
       @case ('match') { <app-match-view /> }
       @case ('swipe') { <app-swipe-view /> }

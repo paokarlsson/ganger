@@ -1,17 +1,14 @@
+/* Meny, rubriker, växlar och knappar kommer från stilmallen i src/styles/.
+   Här ligger det som är Svepets eget: kortet, brasan, stämplarna och draget. */
+
 :host {
     --card-size: min(440px, 88vw, 62vh);
-    /* Knappfärger — mättade nog att bära vit text. Text mot den mörka
-       bakgrunden tar temats ljusare --accent-green/--accent-red i stället. */
-    --green: rgb(42, 166, 42);
-    --red: rgb(224, 69, 69);
 
     display: block;
     height: 100vh;
     height: 100dvh; /* vh räknar med adressfältet utfällt på iOS Safari */
     font-family: var(--font-body);
-    /* Kortet är gult sedan tidigare och ligger nära temats --accent-gold, så
-       det får ligga kvar — det är bordet under som blir mörkt. */
-    background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-deep) 100%);
+    background: var(--surface);
     color: var(--text-light);
 }
 
@@ -85,70 +82,33 @@
 
 .menu-card {
     width: min(360px, 88vw);
-    background: var(--bg-card);
-    border-radius: 15px;
-    padding: 1.5rem;
     text-align: center;
 }
 
 .menu-title {
-    font-family: var(--font-display);
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--accent-gold);
-    margin-bottom: 1.25rem;
+    margin-bottom: var(--space-4);
 }
 
-.menu-section { margin-bottom: 1.25rem; }
+.menu-section { margin-bottom: var(--space-4); }
 
 .menu-label {
-    font-family: var(--font-display);
-    color: var(--accent-gold);
-    font-size: 0.9rem;
-    margin-bottom: 0.6rem;
+    margin-bottom: var(--space-2);
 }
 
 .menu-row {
     display: flex;
     justify-content: center;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 .option-btn {
     flex: 1;
     padding: 0.7em 0;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--text-light);
-    font: inherit;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.option-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: var(--accent-gold);
-}
-
-.option-btn.active {
-    background: var(--accent-gold);
-    color: #333;
-    border-color: var(--accent-gold);
 }
 
 .start-btn {
     width: 100%;
     padding: 0.8em;
-    border: 0;
-    border-radius: 12px;
-    background: var(--accent-gold);
-    color: #333;
-    font: inherit;
-    font-size: 1.1rem;
-    font-weight: bold;
-    cursor: pointer;
 }
 
 .main {
@@ -196,8 +156,9 @@
     outline-offset: 3px;
 }
 
-.answer-key--true:focus-visible { background-color: var(--green); }
-.answer-key--false:focus-visible { background-color: var(--red); }
+/* Mörkare gröna och röda än temats accenter — de här bär vit text. */
+.answer-key--true:focus-visible { background-color: var(--green-deep); }
+.answer-key--false:focus-visible { background-color: var(--accent-red); }
 
 /* --- Kortet ---------------------------------------------------------------
    Ytterhöljet flyttas av CDK, innerkortet roterar. Tidigare skrev båda till
@@ -222,17 +183,16 @@
 }
 
 .game-card {
-    --mat-card-outlined-container-color: rgb(255, 222, 92);
+    --mat-card-outlined-container-color: var(--card-yellow);
     position: relative;
-    box-sizing: border-box;
     width: 100%;
     aspect-ratio: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     border: 0;
-    border-radius: 6px;
-    background-color: rgb(255, 222, 92);
+    border-radius: var(--radius-sm);
+    background-color: var(--card-yellow);
     /* Egen textfärg: värden ärvs från :host, som numera är ljus. */
     color: var(--bg-dark);
     font-family: var(--font-display);
@@ -242,9 +202,7 @@
     -webkit-user-select: none;
     -webkit-touch-callout: none; /* stoppar iOS kopiera-meny mitt i ett drag */
     transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
-    box-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2),
-        0 2px 2px 0 rgba(0, 0, 0, 0.14),
-        0 1px 5px 0 rgba(0, 0, 0, 0.12);
+    box-shadow: var(--shadow-card);
 }
 
 .game-card--leaving-right,
@@ -268,7 +226,7 @@
     top: 6%;
     padding: 0.1em 0.4em;
     border: 4px solid currentColor;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     font-size: calc(var(--card-size) * 0.06);
     letter-spacing: 0.08em;
     pointer-events: none;
@@ -300,57 +258,23 @@
 .feedback { color: var(--accent-green); }
 .feedback--wrong { color: var(--accent-red); }
 
-/* --- Slutskärm ------------------------------------------------------------ */
+/* --- Slutskärm ------------------------------------------------------------
+   Gult är spelkortets färg, inte panelernas: slutskärmen är ett vanligt
+   mörkt kort som menyn, så att knapparna kan vara appens vanliga. */
 .result-card {
+    display: flex;
     flex-direction: column;
-    gap: 1rem;
+    align-items: center;
+    gap: var(--space-3);
     width: min(360px, 84vw);
-    aspect-ratio: auto; /* hugger innehållet i stället för att bli en stor kvadrat */
-    padding: 2rem 1.25rem;
     text-align: center;
 }
 
-.result-title { margin: 0; }
-
 .result-score {
-    margin: 0;
     font-size: clamp(1.1rem, 5vw, 1.6rem);
 }
 
 .result-level {
-    margin: 0;
     font-size: clamp(0.9rem, 3.5vw, 1.1rem);
-    opacity: 0.8;
-}
-
-.again {
-    padding: 0.6em 1.2em;
-    border: 0;
-    border-radius: 12px;
-    /* Mörk knapp på det gula kortet — grönt mot gult bar för lite kontrast. */
-    background-color: var(--bg-dark);
-    font: inherit;
-    /* Kortet sätter en stor teckenstorlek åt påståendet — knappen ska inte ärva den. */
-    font-size: clamp(1rem, 4vw, 1.25rem);
-    font-weight: bold;
-    color: var(--text-light);
-    cursor: pointer;
-}
-
-.again:focus-visible {
-    outline: 3px solid var(--bg-dark);
-    outline-offset: 3px;
-}
-
-.again--ghost {
-    background-color: transparent;
-    color: var(--bg-dark);
-    box-shadow: inset 0 0 0 2px var(--bg-dark);
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .card-slot,
-    .game-card {
-        transition-duration: 1ms;
-    }
+    color: var(--text-muted);
 }

@@ -115,6 +115,18 @@ export class MasterViewComponent implements OnDestroy {
     return Array.from({ length: this.selectedQuestionCount }, (_, i) => i);
   }
 
+  /** Prickraderna bär sin information i färg. Etiketterna säger samma sak. */
+  get progressLabel(): string {
+    const correct = this.results.filter((r) => r.correct).length;
+    const at = Math.min(this.currentQuestion + 1, this.selectedQuestionCount);
+    return `Fråga ${at} av ${this.selectedQuestionCount}, ${correct} rätt hittills`;
+  }
+
+  get calibrationProgressLabel(): string {
+    const total = this.calibrationQuestions.length;
+    return `Fråga ${Math.min(this.calibrationIndex + 1, total)} av ${total}`;
+  }
+
   get streakVisible(): boolean {
     return this.consecutiveFast >= STREAK_VISIBLE_FROM;
   }
@@ -168,11 +180,12 @@ export class MasterViewComponent implements OnDestroy {
     this.startGame();
   }
 
-  calibrationDotState(index: number): 'done' | 'current' | '' {
+  /** Tillståndsklasserna kommer från stilmallens .ui-dot. */
+  calibrationDotState(index: number): 'is-done' | 'is-current' | '' {
     if (index < this.calibrationIndex) {
-      return 'done';
+      return 'is-done';
     }
-    return index === this.calibrationIndex ? 'current' : '';
+    return index === this.calibrationIndex ? 'is-current' : '';
   }
 
   /** Svaret prövas medan det skrivs, så snart det är lika långt som facit. */
@@ -228,11 +241,11 @@ export class MasterViewComponent implements OnDestroy {
     this.nextQuestion();
   }
 
-  dotState(index: number): 'correct' | 'wrong' | 'current' | '' {
+  dotState(index: number): 'is-correct' | 'is-wrong' | 'is-current' | '' {
     if (index < this.results.length) {
-      return this.results[index].correct ? 'correct' : 'wrong';
+      return this.results[index].correct ? 'is-correct' : 'is-wrong';
     }
-    return index === this.currentQuestion ? 'current' : '';
+    return index === this.currentQuestion ? 'is-current' : '';
   }
 
   onAnswerInput(): void {
