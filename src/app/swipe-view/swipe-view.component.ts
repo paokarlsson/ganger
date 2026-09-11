@@ -85,6 +85,8 @@ export class SwipeViewComponent implements OnDestroy {
   /** Stänger av övergångar i det ögonblick nästa kort läggs på plats. */
   instant = false;
 
+  /** Antal kort som lagts fram, uppvärmningen inräknad. Rondens längd mäts i
+   *  `totalAnswered`, som bara räknar de kort som gav poäng. */
   private answered = 0;
   private memory: RoundMemory = createRoundMemory();
   private cardShownAt = 0;
@@ -147,9 +149,16 @@ export class SwipeViewComponent implements OnDestroy {
     return this.calibrating ? `${level}, uppvärmning` : `${level}, ${this.heat.name}`;
   }
 
-  /** Rekordet att jaga, som det såg ut när ronden började. */
+  /** Rekordet att jaga. Läses ur statistiken, så att menyn visar det redan
+   *  innan spelaren kört en rond den här gången. */
   get bestStreak(): number {
-    return this.previousBestStreak;
+    return this.stats.swipeBestStreak;
+  }
+
+  /** Om ronden slog rekordet. Jämför mot vad som stod när den började —
+   *  `endRound()` har redan skrivit det nya. */
+  get beatRecord(): boolean {
+    return this.roundBestStreak > this.previousBestStreak;
   }
 
   /** 0 när kortet ligger stilla, 1 när det dragits hela vägen åt `dir`. */
@@ -163,7 +172,7 @@ export class SwipeViewComponent implements OnDestroy {
   }
 
   numberOfStatementsLeft(): number {
-    return Math.max(0, this.selectedQuestionCount - this.answered);
+    return Math.max(0, this.selectedQuestionCount - this.totalAnswered);
   }
 
   // --- Meny -------------------------------------------------------------
@@ -267,10 +276,17 @@ export class SwipeViewComponent implements OnDestroy {
     const correct = saysTrue === statement.isTrue;
     const timeSec = (performance.now() - this.cardShownAt) / 1000;
 
+    // Uppvärmningen räknas inte i poängen — en rond på tio kort ska vara tio
+    // kort, inte fem plus fem. Talen övas ändå: svaret går till statistiken,
+    // och en miss kommer tillbaka som ett sant kort precis som annars.
     if (correct) {
-      this.nrCorrect += 1;
+      if (!this.calibrating) {
+        this.nrCorrect += 1;
+      }
     } else {
-      this.nrWrong += 1;
+      if (!this.calibrating) {
+        this.nrWrong += 1;
+      }
       this.buzz();
       // Nästa gång talet kommer upp ska det vara sant — den rätta kopplingen
       // ska repeteras, inte den felaktiga.
@@ -309,7 +325,7 @@ export class SwipeViewComponent implements OnDestroy {
   }
 
   private settleNextCard(): void {
-    if (!this.roundIsEndless && this.answered >= this.selectedQuestionCount) {
+    if (!this.roundIsEndless && this.totalAnswered >= this.selectedQuestionCount) {
       this.endRound();
       return;
     }

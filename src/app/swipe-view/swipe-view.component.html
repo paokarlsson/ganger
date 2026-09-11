@@ -54,7 +54,7 @@
                 <p class="result-level">Nivå {{level}} av {{levelMax}}</p>
                 <p class="result-streak">
                     Längsta räcka: <strong>{{roundBestStreak}}</strong>
-                    @if (roundBestStreak > bestStreak) { — nytt rekord! 🔥 }
+                    @if (beatRecord) { — nytt rekord! 🔥 }
                 </p>
                 <button type="button" class="ui-btn ui-btn--primary" (click)="restart()">Spela igen</button>
                 <button type="button" class="ui-btn ui-btn--secondary" (click)="backToMenu()">Byt inställningar</button>
