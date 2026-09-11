@@ -1,20 +1,25 @@
-import { Component, HostListener, OnDestroy, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+import { Component, HostListener, OnDestroy, ViewChild, ChangeDetectionStrategy, inject } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { CdkDrag, CdkDragEnd, CdkDragMove } from '@angular/cdk/drag-drop';
+import { Fact } from '../facts/fact-catalog';
+import { needWeight } from '../facts/fact-selector';
+import { PENALTY_TIME } from '../master-view/levels';
+import { PracticeStatsService } from '../services/practice-stats.service';
 import {
   DEFAULT_QUESTION_COUNT,
   DEFAULT_TARGET_TIME,
   GeneratedStatement,
-  LEVEL_DOWN_STEP,
   LEVEL_MAX,
   LEVEL_MIN,
-  LEVEL_UP_STEP,
   QUESTION_COUNTS,
-  SLOW_TIME_MULTIPLIER,
-  START_LEVEL,
+  RoundMemory,
   TARGET_TIMES,
   TargetTime,
-  generateStatement,
+  createRoundMemory,
+  nextLevel,
+  nextStatement,
+  rememberMiss,
+  startLevel,
 } from './swipe-difficulty';
 
 /** Hur länge kortet flyger ut innan nästa fråga läggs fram. */
@@ -43,6 +48,8 @@ interface Feedback {
 export class SwipeViewComponent implements OnDestroy {
   @ViewChild(CdkDrag) private drag?: CdkDrag;
 
+  private readonly stats = inject(PracticeStatsService);
+
   readonly targetTimes = TARGET_TIMES;
   readonly questionCounts = QUESTION_COUNTS;
   readonly levelMax = LEVEL_MAX;
@@ -51,7 +58,7 @@ export class SwipeViewComponent implements OnDestroy {
   selectedTargetTime: TargetTime = DEFAULT_TARGET_TIME;
   selectedQuestionCount = DEFAULT_QUESTION_COUNT;
 
-  level = START_LEVEL;
+  level = startLevel(null, 0, false);
   /** Kort puls när nivån just ändrats, styr brasans animation. */
   levelFlash: '' | 'up' | 'down' = '';
 
@@ -69,6 +76,7 @@ export class SwipeViewComponent implements OnDestroy {
   instant = false;
 
   private answered = 0;
+  private memory: RoundMemory = createRoundMemory();
   private cardShownAt = 0;
   private samples: { x: number; t: number }[] = [];
   private advanceTimer?: ReturnType<typeof setTimeout>;
@@ -140,7 +148,12 @@ export class SwipeViewComponent implements OnDestroy {
     this.answered = 0;
     this.nrCorrect = 0;
     this.nrWrong = 0;
-    this.level = START_LEVEL;
+    this.memory = createRoundMemory();
+    this.level = startLevel(
+      this.stats.swipeLevel,
+      this.stats.masteredCount(),
+      this.stats.hasPractice,
+    );
     this.levelFlash = '';
     this.feedback = undefined;
     this.progress = 0;
@@ -194,7 +207,8 @@ export class SwipeViewComponent implements OnDestroy {
       return;
     }
 
-    const correct = saysTrue === this.currentStatement.isTrue;
+    const statement = this.currentStatement;
+    const correct = saysTrue === statement.isTrue;
     const timeSec = (performance.now() - this.cardShownAt) / 1000;
 
     if (correct) {
@@ -202,11 +216,15 @@ export class SwipeViewComponent implements OnDestroy {
     } else {
       this.nrWrong += 1;
       this.buzz();
+      // Nästa gång talet kommer upp ska det vara sant — den rätta kopplingen
+      // ska repeteras, inte den felaktiga.
+      rememberMiss(this.memory, statement.fact);
     }
-    this.adjustLevel(correct, timeSec);
+    this.recordAnswer(statement.fact, correct, timeSec);
+    this.adjustLevel(statement, correct, timeSec);
     this.answered += 1;
 
-    const { n1, n2 } = this.currentStatement;
+    const { n1, n2 } = statement;
     this.feedback = {
       correct,
       solution: `${n1} × ${n2} = ${n1 * n2}`,
@@ -239,20 +257,31 @@ export class SwipeViewComponent implements OnDestroy {
     requestAnimationFrame(() => (this.instant = false));
   }
 
+  /** Skickar svaret till den delade statistiken, i svepets egen kanal. Fel
+   *  svar får samma tidsstraff som i Mästaren så tiderna går att jämföra. */
+  private recordAnswer(fact: Fact, correct: boolean, timeSec: number): void {
+    const effectiveMs = (timeSec + (correct ? 0 : PENALTY_TIME)) * 1000;
+    this.stats.record(fact.a, fact.b, correct, effectiveMs, 'swipe');
+  }
+
   /** Nivån stiger försiktigt (ett steg) men sjunker snabbt (två) — samma
    *  princip som auto-läget i Mästaren, se master-view.component.ts. */
-  private adjustLevel(correct: boolean, timeSec: number): void {
-    const slowSeconds = this.selectedTargetTime * SLOW_TIME_MULTIPLIER;
+  private adjustLevel(
+    statement: GeneratedStatement,
+    correct: boolean,
+    timeSec: number,
+  ): void {
     const before = this.level;
-
-    if (correct && timeSec <= this.selectedTargetTime) {
-      this.level = Math.min(LEVEL_MAX, this.level + LEVEL_UP_STEP);
-    } else if (!correct || timeSec > slowSeconds) {
-      this.level = Math.max(LEVEL_MIN, this.level - LEVEL_DOWN_STEP);
-    }
-    // Mittemellan (rätt, varken snabbt eller långsamt): nivån ligger still.
+    this.level = nextLevel(
+      this.level,
+      statement.isTrue,
+      correct,
+      timeSec,
+      this.selectedTargetTime,
+    );
 
     if (this.level !== before) {
+      this.stats.swipeLevel = this.level;
       this.levelFlash = this.level > before ? 'up' : 'down';
       clearTimeout(this.flashTimer);
       this.flashTimer = setTimeout(() => (this.levelFlash = ''), LEVEL_FLASH_MS);
@@ -287,17 +316,13 @@ export class SwipeViewComponent implements OnDestroy {
   // --- Frågor ---------------------------------------------------------------
 
   private nextCard(): void {
-    let next = generateStatement(this.level);
-    // Slumpen ger ibland exakt samma kort två gånger i rad — dra om en gång.
-    if (this.currentStatement && this.sameCard(next, this.currentStatement)) {
-      next = generateStatement(this.level);
-    }
+    const next = nextStatement(this.level, this.memory, this.need);
     this.currentStatement = next;
     this.currentStatmentString = `${next.n1} × ${next.n2} = ${next.shown}`;
     this.cardShownAt = performance.now();
   }
 
-  private sameCard(a: GeneratedStatement, b: GeneratedStatement): boolean {
-    return a.n1 === b.n1 && a.n2 === b.n2 && a.shown === b.shown;
-  }
+  /** Spelarens vikt per tal — svaga och obeprövade tal dras oftare. */
+  private readonly need = (fact: Fact): number =>
+    needWeight(this.stats.performanceFor(fact.a, fact.b), this.stats.fastSeconds);
 }

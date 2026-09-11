@@ -3,6 +3,8 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./out-tsc/spec",
+    /* Referensdatan importeras bara av tester, som orakel för faktakatalogen. */
+    "resolveJsonModule": true,
     "types": [
       "vitest/globals"
     ]

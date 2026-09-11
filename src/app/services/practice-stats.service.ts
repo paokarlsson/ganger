@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { FactPerformance } from '../facts/fact-selector';
 import { DEFAULT_FAST_TIME, SLOW_TIME_MULTIPLIER } from '../master-view/levels';
 
 /** Statistiken för ett enskilt tal. `times` håller de fem senaste svaren i ms,
@@ -7,7 +8,18 @@ export interface QuestionStat {
   times: number[];
   correct: number;
   total: number;
+  /** Svep mäts för sig, se `record()`. */
+  swipe?: ChannelStat;
 }
+
+export interface ChannelStat {
+  times: number[];
+  correct: number;
+  total: number;
+}
+
+/** Skrivet svar eller svep. Tiderna är inte jämförbara mellan de två. */
+export type Channel = 'typed' | 'swipe';
 
 /** Äldre versioner sparade summan av alla tider i stället för de senaste. */
 interface LegacyQuestionStat {
@@ -15,10 +27,12 @@ interface LegacyQuestionStat {
   count?: number;
   correct?: number;
   times?: number[];
+  swipe?: ChannelStat;
 }
 
 const STATS_KEY = 'mult-heatmap';
 const CALIBRATION_KEY = 'mult-calibration';
+const SWIPE_LEVEL_KEY = 'swipe-level';
 
 /** Hur många tider per tal som sparas. */
 const MAX_TIMES = 5;
@@ -106,19 +120,100 @@ export class PracticeStatsService {
     return stat.times.reduce((sum, t) => sum + t, 0) / stat.times.length / 1000;
   }
 
-  record(a: number, b: number, correct: boolean, effectiveTimeMs: number): void {
+  /**
+   * Ett svep är igenkänning och går systematiskt snabbare än ett skrivet svar.
+   * Svepen får därför en egen kanal: `times` fortsätter att bara innehålla
+   * skrivna svar, så värmekartan och `masteredCount()` mäter samma sak som
+   * förut och `fastSeconds` — som kalibrerats på skrivna svar — jämförs bara
+   * med skrivna svar.
+   */
+  record(
+    a: number,
+    b: number,
+    correct: boolean,
+    effectiveTimeMs: number,
+    channel: Channel = 'typed',
+  ): void {
     const key = `${a}_${b}`;
     const stat = (this.stats[key] ??= { times: [], correct: 0, total: 0 });
+    const target: ChannelStat =
+      channel === 'swipe' ? (stat.swipe ??= { times: [], correct: 0, total: 0 }) : stat;
 
-    stat.times.push(effectiveTimeMs);
-    if (stat.times.length > MAX_TIMES) {
-      stat.times.shift();
+    target.times.push(effectiveTimeMs);
+    if (target.times.length > MAX_TIMES) {
+      target.times.shift();
     }
-    stat.total += 1;
+    target.total += 1;
     if (correct) {
-      stat.correct += 1;
+      target.correct += 1;
     }
     this.write(STATS_KEY, JSON.stringify(this.stats));
+  }
+
+  /**
+   * Spelarens läge på ett tal, oberoende av faktorernas ordning — 7 × 8 och
+   * 8 × 7 är samma kunskap även om de lagras var för sig. Skrivna svar går
+   * före svep när båda finns, eftersom de mäter framplockning och inte bara
+   * igenkänning.
+   */
+  performanceFor(a: number, b: number): FactPerformance | undefined {
+    const merged = this.mergedStat(a, b);
+    if (!merged) {
+      return undefined;
+    }
+
+    const typed = { times: merged.times, correct: merged.correct, total: merged.total };
+    const source = typed.times.length > 0 ? typed : merged.swipe;
+    if (!source || source.times.length === 0) {
+      return undefined;
+    }
+
+    return {
+      averageSeconds: source.times.reduce((sum, t) => sum + t, 0) / source.times.length / 1000,
+      accuracy: source.total > 0 ? source.correct / source.total : null,
+    };
+  }
+
+  /** Nivån Svep senast landade på, så brasan börjar där den slutade. */
+  get swipeLevel(): number | null {
+    const raw = this.readRaw(SWIPE_LEVEL_KEY);
+    const parsed = raw === null ? NaN : Number.parseInt(raw, 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  set swipeLevel(level: number) {
+    this.write(SWIPE_LEVEL_KEY, String(level));
+  }
+
+  private mergedStat(a: number, b: number): QuestionStat | undefined {
+    const one = this.statFor(a, b);
+    const other = a === b ? undefined : this.statFor(b, a);
+    if (!one) {
+      return other;
+    }
+    if (!other) {
+      return one;
+    }
+    return {
+      times: [...one.times, ...other.times],
+      correct: one.correct + other.correct,
+      total: one.total + other.total,
+      swipe: this.mergeChannel(one.swipe, other.swipe),
+    };
+  }
+
+  private mergeChannel(
+    one: ChannelStat | undefined,
+    other: ChannelStat | undefined,
+  ): ChannelStat | undefined {
+    if (!one || !other) {
+      return one ?? other;
+    }
+    return {
+      times: [...one.times, ...other.times],
+      correct: one.correct + other.correct,
+      total: one.total + other.total,
+    };
   }
 
   reset(): void {
@@ -126,6 +221,7 @@ export class PracticeStatsService {
     this.fastTime = null;
     this.remove(STATS_KEY);
     this.remove(CALIBRATION_KEY);
+    this.remove(SWIPE_LEVEL_KEY);
   }
 
   private migrate(stored: Record<string, LegacyQuestionStat>): Record<string, QuestionStat> {
@@ -139,6 +235,7 @@ export class PracticeStatsService {
           times: [count > 0 ? Math.round(data.totalTime / count) : 2000],
           correct: data.correct ?? 0,
           total: count,
+          swipe: data.swipe,
         };
         changed = true;
       } else {
@@ -146,6 +243,7 @@ export class PracticeStatsService {
           times: data.times ?? [],
           correct: data.correct ?? 0,
           total: data.count ?? (data as QuestionStat).total ?? 0,
+          swipe: data.swipe,
         };
       }
     }
