@@ -92,9 +92,22 @@ export class PracticeStatsService {
     return this.stats[`${a}_${b}`];
   }
 
-  /** Om spelaren hunnit svara på något alls. */
+  /**
+   * Om spelaren hunnit skriva några svar. Styr framstegsmätaren, som räknar
+   * skrivna svar — den som bara svept har inget att visa där ännu, och ska
+   * mötas av välkomsttexten och inte av "0 av 100 tal sitter".
+   */
   get hasPractice(): boolean {
-    return Object.keys(this.stats).length > 0;
+    return Object.values(this.stats).some((stat) => stat.times.length > 0);
+  }
+
+  /** Om det finns något sparat om spelaren alls — det som `reset()` rensar. */
+  get hasStoredProgress(): boolean {
+    return (
+      Object.keys(this.stats).length > 0 ||
+      this.fastTime !== null ||
+      this.swipeLevel !== null
+    );
   }
 
   /** Hur många av de hundra talen i tabellen som i snitt svaras på inom den

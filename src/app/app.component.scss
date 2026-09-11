@@ -75,6 +75,14 @@
     color: var(--text-light);
 }
 
+/* Ska gå att hitta för en vuxen som lämnar över surfplattan, men inte dra
+   till sig ett barn som letar efter spelknapparna. */
+.switch-player {
+    font-size: clamp(0.75rem, 3vw, 0.85rem);
+    padding: 0.35rem 0.8rem;
+    color: var(--text-muted);
+}
+
 .choices {
     width: min(420px, 92vw);
     /* Rutnät i stället för kolumn, så att korten blir lika höga även när en

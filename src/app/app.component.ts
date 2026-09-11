@@ -20,6 +20,8 @@ export class AppComponent {
   /** Hur många av de hundra talen som sitter, som andel och antal. */
   masteredCount = 0;
   hasPractice = false;
+  /** Om det finns något sparat att rensa — styr knappen för att byta spelare. */
+  hasStoredProgress = false;
 
   constructor(private readonly stats: PracticeStatsService) {
     this.readProgress();
@@ -36,11 +38,29 @@ export class AppComponent {
     this.readProgress();
   }
 
+  /**
+   * Allt spelet minns om den som övat hör till webbläsaren, inte till en
+   * inloggning. Delar syskon på surfplattan behöver den ena kunna börja från
+   * noll utan att leta upp nollställningen inne i Mästarens värmekarta.
+   */
+  switchPlayer(): void {
+    const confirmed = confirm(
+      'Börja om från noll? Allt spelet minns om den som övat försvinner: ' +
+        'vilka tal som sitter, tiderna och nivåerna. Det går inte att ångra.',
+    );
+    if (!confirmed) {
+      return;
+    }
+    this.stats.reset();
+    this.readProgress();
+  }
+
   /** Läses när menyn visas i stället för från mallen — att gå igenom hundra
    *  tal vid varje ändringsdetektering vore onödigt, och statistiken kan
    *  bara ha ändrats medan ett spel var igång. */
   private readProgress(): void {
     this.hasPractice = this.stats.hasPractice;
+    this.hasStoredProgress = this.stats.hasStoredProgress;
     this.masteredCount = this.stats.masteredCount();
   }
 }
