@@ -5,7 +5,7 @@
  * här bestäms bara hur en rond använder den: sant eller falskt, vad ronden
  * minns, och hur nivån rör sig.
  */
-import { DistractorKind, pickDistractor } from '../facts/distractors';
+import { DistractorKind, distractorPoolSize, pickDistractor } from '../facts/distractors';
 import { FACTS, Fact, factKey } from '../facts/fact-catalog';
 import { FactNeed, LEVEL_MAX, LEVEL_MIN, RECENT_MEMORY, selectFact } from '../facts/fact-selector';
 
@@ -22,9 +22,16 @@ export interface GeneratedStatement {
   kind?: DistractorKind;
 }
 
+/** Ronden som inte tar slut förrän spelaren själv säger till. */
+export const ENDLESS = 0;
+
 /** Antal kort per rond. */
-export const QUESTION_COUNTS = [10, 20, 30, 40] as const;
+export const QUESTION_COUNTS = [10, 20, 30, 40, ENDLESS] as const;
 export const DEFAULT_QUESTION_COUNT = 20;
+
+export function isEndless(questionCount: number): boolean {
+  return questionCount === ENDLESS;
+}
 
 /**
  * Så många kort ronden öppnar med för att mäta spelarens sveptakt. Nivån står
@@ -145,6 +152,12 @@ export function nextStatement(
   }
 
   const used = memory.shownFalse.get(key) ?? new Set<number>();
+  if (used.size >= distractorPoolSize(fact)) {
+    // Talet har visat allt det kan visa. Att börja om genom förrådet är bättre
+    // än att stanna kvar i `pickDistractor`s nödutgång, som drar helt fritt
+    // och därför kan lägga samma falska kort två gånger i rad.
+    used.clear();
+  }
   const { shown, kind } = pickDistractor(fact, level, used, rng);
   used.add(shown);
   memory.shownFalse.set(key, used);

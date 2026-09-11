@@ -38,6 +38,10 @@ const SWIPE_BASELINE_KEY = 'swipe-baseline';
 /** Hur många tider per tal som sparas. */
 const MAX_TIMES = 5;
 
+/** Hur länge skrivningar får samlas på hög. Varje skrivning serialiserar hela
+ *  statistiken, och en rond utan slut kan ge hundratals kort. */
+const STATS_WRITE_DELAY = 1000;
+
 /** Kalibrerad tid utanför det här spannet säger mer om ett tappat svar än om
  *  spelarens snabbhet. */
 const MIN_CALIBRATED_TIME = 0.8;
@@ -73,6 +77,8 @@ export class PracticeStatsService {
   private stats: Record<string, QuestionStat> = {};
   private fastTime: number | null = null;
   private baselineSamples: number[] = [];
+  private statsWriteTimer?: ReturnType<typeof setTimeout>;
+  private statsDirty = false;
 
   constructor() {
     this.stats = this.migrate(this.read<Record<string, LegacyQuestionStat>>(STATS_KEY) ?? {});
@@ -83,6 +89,28 @@ export class PracticeStatsService {
     this.baselineSamples = Array.isArray(samples)
       ? samples.filter((value): value is number => typeof value === 'number' && value > 0)
       : [];
+
+    // Ett besvarat kort får inte gå förlorat för att fliken läggs undan innan
+    // nästa skrivning hunnit.
+    if (typeof addEventListener === 'function') {
+      addEventListener('pagehide', () => this.flush());
+      addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          this.flush();
+        }
+      });
+    }
+  }
+
+  /** Skriver ned det som väntar. Anropas när en rond tar slut och när sidan
+   *  läggs undan; däremellan sköter fördröjningen det. */
+  flush(): void {
+    clearTimeout(this.statsWriteTimer);
+    this.statsWriteTimer = undefined;
+    if (this.statsDirty) {
+      this.statsDirty = false;
+      this.write(STATS_KEY, JSON.stringify(this.stats));
+    }
   }
 
   /** `null` innan spelaren kalibrerat sig. */
@@ -187,7 +215,7 @@ export class PracticeStatsService {
     if (correct) {
       target.correct += 1;
     }
-    this.write(STATS_KEY, JSON.stringify(this.stats));
+    this.scheduleStatsWrite();
   }
 
   /**
@@ -260,6 +288,11 @@ export class PracticeStatsService {
     this.write(SWIPE_LEVEL_KEY, String(level));
   }
 
+  private scheduleStatsWrite(): void {
+    this.statsDirty = true;
+    this.statsWriteTimer ??= setTimeout(() => this.flush(), STATS_WRITE_DELAY);
+  }
+
   private mergedStat(a: number, b: number): QuestionStat | undefined {
     const one = this.statFor(a, b);
     const other = a === b ? undefined : this.statFor(b, a);
@@ -292,6 +325,9 @@ export class PracticeStatsService {
   }
 
   reset(): void {
+    clearTimeout(this.statsWriteTimer);
+    this.statsWriteTimer = undefined;
+    this.statsDirty = false;
     this.stats = {};
     this.fastTime = null;
     this.baselineSamples = [];

@@ -30,6 +30,14 @@
     font-weight: bold;
 }
 
+/* Slutknappen i en rond utan slut. Ligger i toppraden och inte nära kortet,
+   så att den inte kan träffas av en tumme mitt i ett svep. */
+.stop-btn {
+    align-self: center;
+    padding: 0.35em 0.9em;
+    font-size: 0.85rem;
+}
+
 .score--correct { color: var(--accent-green); }
 .score--wrong { color: var(--accent-red); }
 

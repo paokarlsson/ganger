@@ -3,6 +3,9 @@
         @if (screen === 'game' || screen === 'result') {
             <span class="score score--correct">Rätt {{nrCorrect}}</span>
             <span class="score score--wrong">Fel {{nrWrong}}</span>
+            @if (screen === 'game' && roundIsEndless) {
+                <button type="button" class="stop-btn ui-toggle" (click)="stopRound()">Klar</button>
+            }
             <span class="flame" [class.flame--up]="levelFlash === 'up'" [class.flame--down]="levelFlash === 'down'"
                 [class.flame--warmup]="screen === 'game' && calibrating"
                 [style.--flame-scale]="0.6 + flameIntensity * 0.9" [title]="'Nivå ' + level + ' av ' + levelMax">
@@ -22,7 +25,10 @@
                         @for (count of questionCounts; track count) {
                             <button type="button" class="option-btn ui-toggle" [class.is-active]="selectedQuestionCount === count"
                                 [attr.aria-pressed]="selectedQuestionCount === count"
-                                (click)="selectQuestionCount(count)">{{count}}</button>
+                                [attr.aria-label]="count === endless ? 'Utan slut' : count + ' kort'"
+                                (click)="selectQuestionCount(count)">
+                                @if (count === endless) { ∞ } @else { {{count}} }
+                            </button>
                         }
                     </div>
                 </div>
@@ -72,6 +78,8 @@
             </span>
         } @else if (calibrating) {
             Uppvärmning
+        } @else if (roundIsEndless) {
+            Svepta: {{totalAnswered}}
         } @else {
             Kvar: {{numberOfStatementsLeft()}}
         }

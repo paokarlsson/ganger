@@ -148,6 +148,16 @@ export function poolsFor(fact: Fact): Record<DistractorKind, number[]> {
 const KINDS: DistractorKind[] = ['row-neighbour', 'table-twin', 'near-number', 'unit-trap'];
 
 /**
+ * Hur många olika fel-svar ett tal alls kan visa. En rond på fyrtio kort når
+ * aldrig slutet av förrådet, men en som pågår tills spelaren själv slutar gör
+ * det — och då behöver ronden veta om att det är dags att börja om.
+ */
+export function distractorPoolSize(fact: Fact): number {
+  const pools = poolsFor(fact);
+  return new Set(KINDS.flatMap((kind) => pools[kind])).size;
+}
+
+/**
  * Drar ett fel-svar för `fact`. `used` är de fel-svar talet redan visat den här
  * ronden — samma falska kort får inte komma igen, ett felaktigt påstående ska
  * inte hinna nötas in.

@@ -4,10 +4,13 @@ import { FACTS, factKey, isTableProduct } from '../facts/fact-catalog';
 import { LEVEL_MAX, LEVEL_MIN, RECENT_MEMORY } from '../facts/fact-selector';
 import {
   CALIBRATION_CARDS,
+  DEFAULT_QUESTION_COUNT,
   DEFAULT_START_LEVEL,
+  ENDLESS,
   FALSE_CARD_TIME_FACTOR,
   baselineSample,
   createRoundMemory,
+  isEndless,
   nextLevel,
   nextStatement,
   rememberMiss,
@@ -284,5 +287,34 @@ describe('nivån mot sveptakten', () => {
         settledLevel(1, 2.2, seed),
       );
     }
+  });
+});
+
+describe('en rond utan slut', () => {
+  it('håller fel-svaren tabellrimliga hur länge ronden än pågår', () => {
+    // En rond på fyrtio kort når aldrig slutet av ett tals fel-svarsförråd.
+    // En som pågår tills spelaren själv slutar gör det, och då föll
+    // `pickDistractor` förut ned i sin nödutgång, som drar fritt ur alla
+    // sorter — också de som bara testar sifferkänsla.
+    const rng = seeded(21);
+    const memory = createRoundMemory();
+    const shown: number[] = [];
+
+    for (let i = 0; i < 20000; i++) {
+      const statement = nextStatement({ level: 3, memory }, rng);
+      expect(statement.shown).toBeGreaterThan(0);
+      if (!statement.isTrue) {
+        expect(statement.shown).not.toBe(statement.n1 * statement.n2);
+        shown.push(statement.shown);
+      }
+    }
+
+    const plausible = shown.filter((value) => isTableProduct(value)).length;
+    expect(plausible / shown.length).toBeGreaterThan(0.75);
+  });
+
+  it('vet vad ett tomt förråd är', () => {
+    expect(isEndless(ENDLESS)).toBe(true);
+    expect(isEndless(DEFAULT_QUESTION_COUNT)).toBe(false);
   });
 });

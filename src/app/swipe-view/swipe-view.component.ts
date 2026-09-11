@@ -8,6 +8,7 @@ import { PracticeStatsService } from '../services/practice-stats.service';
 import {
   CALIBRATION_CARDS,
   DEFAULT_QUESTION_COUNT,
+  ENDLESS,
   GeneratedStatement,
   LEVEL_MAX,
   LEVEL_MIN,
@@ -15,6 +16,7 @@ import {
   RoundMemory,
   baselineSample,
   createRoundMemory,
+  isEndless,
   nextLevel,
   nextStatement,
   rememberMiss,
@@ -50,6 +52,7 @@ export class SwipeViewComponent implements OnDestroy {
   private readonly stats = inject(PracticeStatsService);
 
   readonly questionCounts = QUESTION_COUNTS;
+  readonly endless = ENDLESS;
   readonly levelMax = LEVEL_MAX;
 
   screen: Screen = 'menu';
@@ -84,6 +87,7 @@ export class SwipeViewComponent implements OnDestroy {
     clearTimeout(this.advanceTimer);
     clearTimeout(this.feedbackTimer);
     clearTimeout(this.flashTimer);
+    this.stats.flush();
   }
 
   /** Sant medan kortet flyger ut — då tas inga nya svar emot. */
@@ -118,6 +122,11 @@ export class SwipeViewComponent implements OnDestroy {
     return Math.max(0, dir * this.progress);
   }
 
+  /** Ronden som pågår tills spelaren själv säger stopp. */
+  get roundIsEndless(): boolean {
+    return isEndless(this.selectedQuestionCount);
+  }
+
   numberOfStatementsLeft(): number {
     return Math.max(0, this.selectedQuestionCount - this.answered);
   }
@@ -141,6 +150,13 @@ export class SwipeViewComponent implements OnDestroy {
 
   backToMenu(): void {
     this.screen = 'menu';
+  }
+
+  /** Slutknappen i en rond utan slut. Kortet som är på väg ut får inte lägga
+   *  fram nästa efteråt, så dess timer stoppas här. */
+  stopRound(): void {
+    clearTimeout(this.advanceTimer);
+    this.endRound();
   }
 
   private restartRound(): void {
@@ -251,10 +267,8 @@ export class SwipeViewComponent implements OnDestroy {
   }
 
   private settleNextCard(): void {
-    if (this.answered >= this.selectedQuestionCount) {
-      this.screen = 'result';
-      this.leaving = 0;
-      this.progress = 0;
+    if (!this.roundIsEndless && this.answered >= this.selectedQuestionCount) {
+      this.endRound();
       return;
     }
 
@@ -265,6 +279,14 @@ export class SwipeViewComponent implements OnDestroy {
     this.instant = true;
     this.drag?.reset();
     requestAnimationFrame(() => (this.instant = false));
+  }
+
+  private endRound(): void {
+    this.screen = 'result';
+    this.leaving = 0;
+    this.progress = 0;
+    // Statistiken skrivs fördröjt under ronden; här ska den sitta på disk.
+    this.stats.flush();
   }
 
   /** Skickar svaret till den delade statistiken, i svepets egen kanal. Fel
