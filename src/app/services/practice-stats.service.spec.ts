@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { PracticeStatsService } from './practice-stats.service';
+import { DEFAULT_SWIPE_BASELINE, PracticeStatsService } from './practice-stats.service';
 
 /** Tjänsten läser localStorage i konstruktorn, så den byggs efter varje uppsättning. */
 function serviceWith(stored: Record<string, unknown>): PracticeStatsService {
@@ -127,6 +127,79 @@ describe('PracticeStatsService', () => {
       stats.swipeLevel = 6;
 
       expect(stats.hasStoredProgress).toBe(true);
+    });
+  });
+
+  describe('sveptakt', () => {
+    it('faller tillbaka på grundtakten innan den mätts', () => {
+      const stats = serviceWith({});
+
+      expect(stats.hasSwipeBaseline).toBe(false);
+      expect(stats.swipeBaselineSeconds).toBe(DEFAULT_SWIPE_BASELINE);
+    });
+
+    it('tar medianen av mätningarna, inte snittet', () => {
+      // Ett tappat kort ska inte kunna dra takten med sig.
+      const stats = serviceWith({});
+      for (const seconds of [1.0, 1.1, 1.2, 1.3, 9.0]) {
+        stats.recordSwipeBaseline(seconds);
+      }
+
+      expect(stats.hasSwipeBaseline).toBe(true);
+      expect(stats.swipeBaselineSeconds).toBe(1.2);
+    });
+
+    it('rullar fönstret så att takten följer med när spelaren blir snabbare', () => {
+      const stats = serviceWith({});
+      for (let i = 0; i < 8; i++) {
+        stats.recordSwipeBaseline(2.0);
+      }
+      for (let i = 0; i < 8; i++) {
+        stats.recordSwipeBaseline(1.0);
+      }
+
+      expect(stats.swipeBaselineSeconds).toBe(1.0);
+    });
+
+    it('klipper orimliga tider i båda ändar', () => {
+      const fast = serviceWith({});
+      const slow = serviceWith({});
+      for (let i = 0; i < 3; i++) {
+        fast.recordSwipeBaseline(0.05);
+        slow.recordSwipeBaseline(30);
+      }
+
+      expect(fast.swipeBaselineSeconds).toBe(0.5);
+      expect(slow.swipeBaselineSeconds).toBe(3.0);
+    });
+
+    it('struntar i tider som inte är tider', () => {
+      const stats = serviceWith({});
+      stats.recordSwipeBaseline(Number.NaN);
+      stats.recordSwipeBaseline(0);
+      stats.recordSwipeBaseline(-2);
+
+      expect(stats.hasSwipeBaseline).toBe(false);
+    });
+
+    it('överlever en omstart och nollställs med resten', () => {
+      const stats = serviceWith({});
+      for (const seconds of [1.0, 1.2, 1.4]) {
+        stats.recordSwipeBaseline(seconds);
+      }
+
+      expect(new PracticeStatsService().swipeBaselineSeconds).toBe(1.2);
+      expect(stats.hasStoredProgress).toBe(true);
+
+      stats.reset();
+      expect(stats.hasSwipeBaseline).toBe(false);
+      expect(new PracticeStatsService().hasSwipeBaseline).toBe(false);
+    });
+
+    it('bortser från skräp i lagret', () => {
+      const stats = serviceWith({ 'swipe-baseline': '{"inte":"en lista"}' });
+
+      expect(stats.hasSwipeBaseline).toBe(false);
     });
   });
 
