@@ -10,15 +10,20 @@ import {
   DEFAULT_QUESTION_COUNT,
   ENDLESS,
   GeneratedStatement,
+  HEAT_TIERS,
+  HeatTier,
   LEVEL_MAX,
   LEVEL_MIN,
   QUESTION_COUNTS,
   RoundMemory,
   baselineSample,
   createRoundMemory,
+  heatTier,
   isEndless,
+  isFastAnswer,
   nextLevel,
   nextStatement,
+  nextStreak,
   rememberMiss,
   startLevel,
 } from './swipe-difficulty';
@@ -61,6 +66,11 @@ export class SwipeViewComponent implements OnDestroy {
   level = startLevel(null, 0, false);
   /** Kort puls när nivån just ändrats, styr brasans animation. */
   levelFlash: '' | 'up' | 'down' = '';
+
+  /** Snabba rätt i rad just nu, och den längsta räckan hittills i ronden. */
+  streak = 0;
+  roundBestStreak = 0;
+  private previousBestStreak = 0;
 
   currentStatement: GeneratedStatement | undefined;
   currentStatmentString = '';
@@ -112,9 +122,34 @@ export class SwipeViewComponent implements OnDestroy {
     return this.answered < CALIBRATION_CARDS;
   }
 
-  /** 0 vid lägsta nivån, 1 vid högsta — skalar brasan. */
+  /** 0 vid lägsta nivån, 1 vid högsta. */
   get flameIntensity(): number {
     return (this.level - LEVEL_MIN) / (LEVEL_MAX - LEVEL_MIN);
+  }
+
+  /** Vilket steg brasan står på, av räckan. */
+  get heat(): HeatTier {
+    return heatTier(this.streak);
+  }
+
+  get heatIndex(): number {
+    return HEAT_TIERS.indexOf(this.heat);
+  }
+
+  /** Nivån sätter grundstorleken, räckan multiplicerar den. Den som kan mycket
+   *  har en större glöd i botten; den som är på gång just nu har en brasa. */
+  get flameScale(): number {
+    return (0.75 + this.flameIntensity * 0.35) * this.heat.scale;
+  }
+
+  get flameLabel(): string {
+    const level = `Nivå ${this.level} av ${this.levelMax}`;
+    return this.calibrating ? `${level}, uppvärmning` : `${level}, ${this.heat.name}`;
+  }
+
+  /** Rekordet att jaga, som det såg ut när ronden började. */
+  get bestStreak(): number {
+    return this.previousBestStreak;
   }
 
   /** 0 när kortet ligger stilla, 1 när det dragits hela vägen åt `dir`. */
@@ -167,6 +202,9 @@ export class SwipeViewComponent implements OnDestroy {
     this.nrCorrect = 0;
     this.nrWrong = 0;
     this.memory = createRoundMemory();
+    this.streak = 0;
+    this.roundBestStreak = 0;
+    this.previousBestStreak = this.stats.swipeBestStreak;
     this.level = startLevel(
       this.stats.swipeLevel,
       this.stats.masteredCount(),
@@ -246,7 +284,11 @@ export class SwipeViewComponent implements OnDestroy {
         this.stats.recordSwipeBaseline(baselineSample(timeSec, statement.isTrue));
       }
     } else {
-      this.adjustLevel(statement, correct, timeSec);
+      const baseline = this.stats.swipeBaselineSeconds;
+      const fast = isFastAnswer(statement.isTrue, correct, timeSec, baseline);
+      this.adjustLevel(statement, correct, timeSec, baseline);
+      this.streak = nextStreak(this.streak, correct, fast);
+      this.roundBestStreak = Math.max(this.roundBestStreak, this.streak);
     }
     this.answered += 1;
 
@@ -285,6 +327,9 @@ export class SwipeViewComponent implements OnDestroy {
     this.screen = 'result';
     this.leaving = 0;
     this.progress = 0;
+    if (this.roundBestStreak > this.previousBestStreak) {
+      this.stats.swipeBestStreak = this.roundBestStreak;
+    }
     // Statistiken skrivs fördröjt under ronden; här ska den sitta på disk.
     this.stats.flush();
   }
@@ -303,15 +348,10 @@ export class SwipeViewComponent implements OnDestroy {
     statement: GeneratedStatement,
     correct: boolean,
     timeSec: number,
+    baselineSeconds: number,
   ): void {
     const before = this.level;
-    this.level = nextLevel(
-      this.level,
-      statement.isTrue,
-      correct,
-      timeSec,
-      this.stats.swipeBaselineSeconds,
-    );
+    this.level = nextLevel(this.level, statement.isTrue, correct, timeSec, baselineSeconds);
 
     if (this.level !== before) {
       this.stats.swipeLevel = this.level;

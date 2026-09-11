@@ -6,10 +6,16 @@
             @if (screen === 'game' && roundIsEndless) {
                 <button type="button" class="stop-btn ui-toggle" (click)="stopRound()">Klar</button>
             }
-            <span class="flame" [class.flame--up]="levelFlash === 'up'" [class.flame--down]="levelFlash === 'down'"
-                [class.flame--warmup]="screen === 'game' && calibrating"
-                [style.--flame-scale]="0.6 + flameIntensity * 0.9" [title]="'Nivå ' + level + ' av ' + levelMax">
-                🔥<span class="flame-level">{{level}}</span>
+            <span class="flame-slot" [attr.data-heat]="heatIndex"
+                [class.flame-slot--warmup]="screen === 'game' && calibrating">
+                <span class="flame" role="img" [attr.aria-label]="flameLabel"
+                    [class.flame--up]="levelFlash === 'up'" [class.flame--down]="levelFlash === 'down'"
+                    [style.--flame-scale]="flameScale">
+                    🔥<span class="flame-level" aria-hidden="true">{{level}}</span>
+                </span>
+                @if (screen === 'game' && !calibrating && heatIndex > 0) {
+                    <span class="flame-name" aria-hidden="true">{{heat.name}} ×{{streak}}</span>
+                }
             </span>
         }
     </header>
@@ -33,6 +39,10 @@
                     </div>
                 </div>
 
+                @if (bestStreak > 0) {
+                    <p class="menu-record">Rekord: {{bestStreak}} snabba rätt i rad</p>
+                }
+
                 <button type="button" class="start-btn ui-btn ui-btn--primary" (click)="start()">Kör! 🔥</button>
             </div>
         </section>
@@ -42,6 +52,10 @@
                 <p class="result-title ui-title ui-title--lg">Klart!</p>
                 <p class="result-score">{{nrCorrect}} av {{totalAnswered}} rätt</p>
                 <p class="result-level">Nivå {{level}} av {{levelMax}}</p>
+                <p class="result-streak">
+                    Längsta räcka: <strong>{{roundBestStreak}}</strong>
+                    @if (roundBestStreak > bestStreak) { — nytt rekord! 🔥 }
+                </p>
                 <button type="button" class="ui-btn ui-btn--primary" (click)="restart()">Spela igen</button>
                 <button type="button" class="ui-btn ui-btn--secondary" (click)="backToMenu()">Byt inställningar</button>
             </div>

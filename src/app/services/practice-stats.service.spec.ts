@@ -203,6 +203,26 @@ describe('PracticeStatsService', () => {
     });
   });
 
+  describe('swipeBestStreak', () => {
+    it('börjar på noll och sparas över en omstart', () => {
+      const stats = serviceWith({});
+      expect(stats.swipeBestStreak).toBe(0);
+
+      stats.swipeBestStreak = 12;
+      expect(new PracticeStatsService().swipeBestStreak).toBe(12);
+    });
+
+    it('är något att rensa, och nollställs med resten', () => {
+      const stats = serviceWith({});
+      stats.swipeBestStreak = 7;
+
+      expect(stats.hasStoredProgress).toBe(true);
+
+      stats.reset();
+      expect(stats.swipeBestStreak).toBe(0);
+    });
+  });
+
   describe('swipeLevel', () => {
     it('sparar och läser tillbaka nivån', () => {
       const stats = serviceWith({});

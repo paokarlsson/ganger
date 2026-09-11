@@ -8,10 +8,14 @@ import {
   DEFAULT_START_LEVEL,
   ENDLESS,
   FALSE_CARD_TIME_FACTOR,
+  HEAT_TIERS,
   baselineSample,
   createRoundMemory,
+  heatTier,
   isEndless,
+  isFastAnswer,
   nextLevel,
+  nextStreak,
   nextStatement,
   rememberMiss,
   startLevel,
@@ -316,5 +320,39 @@ describe('en rond utan slut', () => {
   it('vet vad ett tomt förråd är', () => {
     expect(isEndless(ENDLESS)).toBe(true);
     expect(isEndless(DEFAULT_QUESTION_COUNT)).toBe(false);
+  });
+});
+
+describe('brasan', () => {
+  it('mäter snabbt på samma sätt som nivån gör', () => {
+    // Brasan och nivån får aldrig säga emot varandra om vad som var snabbt.
+    expect(isFastAnswer(true, true, 2.5, 2)).toBe(true);
+    expect(isFastAnswer(true, true, 2.7, 2)).toBe(false);
+    expect(isFastAnswer(true, false, 0.5, 2)).toBe(false);
+  });
+
+  it('stiger på snabba rätt och slocknar på ett fel', () => {
+    expect(nextStreak(0, true, true)).toBe(1);
+    expect(nextStreak(4, true, true)).toBe(5);
+    expect(nextStreak(9, false, false)).toBe(0);
+  });
+
+  it('låter ett rätt man behövde tänka på hålla räckan vid liv', () => {
+    expect(nextStreak(4, true, false)).toBe(4);
+  });
+
+  it('byter steg precis vid tröskeln, och växer med varje steg', () => {
+    for (const tier of HEAT_TIERS) {
+      expect(heatTier(tier.from), tier.name).toBe(tier);
+    }
+    for (let i = 1; i < HEAT_TIERS.length; i++) {
+      expect(HEAT_TIERS[i].from).toBeGreaterThan(HEAT_TIERS[i - 1].from);
+      expect(HEAT_TIERS[i].scale).toBeGreaterThan(HEAT_TIERS[i - 1].scale);
+      expect(HEAT_TIERS[i].name).not.toBe(HEAT_TIERS[i - 1].name);
+    }
+  });
+
+  it('stannar på det högsta steget', () => {
+    expect(heatTier(1000)).toBe(HEAT_TIERS[HEAT_TIERS.length - 1]);
   });
 });

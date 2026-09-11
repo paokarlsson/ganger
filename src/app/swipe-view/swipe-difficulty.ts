@@ -70,6 +70,53 @@ export const SLOW_TIME_MULTIPLIER = 1.5;
  */
 export const FALSE_CARD_TIME_FACTOR = 1.3;
 
+/**
+ * Brasans steg, och hur många snabba rätt i rad vart och ett kräver.
+ *
+ * Nivån duger inte som mått på hur varm spelaren är just nu: den rör sig ett
+ * steg i taget och mättar — den som kan tabellen ligger på 9 eller 10 nästan
+ * jämt, och skulle då ha en maxad brasa hela tiden. Räckan gör det den inte
+ * kan. Den stiger fort, slocknar på ett fel, och är i en rond utan slut det
+ * enda som går att jaga.
+ */
+export interface HeatTier {
+  /** Antal snabba rätt i rad steget kräver. */
+  from: number;
+  /** Namnet syns i toppraden — färg och storlek får inte bära ensamma. */
+  name: string;
+  /** Hur många gånger så stor brasan ritas. */
+  scale: number;
+}
+
+export const HEAT_TIERS: readonly HeatTier[] = [
+  { from: 0, name: 'Glöd', scale: 1 },
+  { from: 3, name: 'Låga', scale: 1.5 },
+  { from: 6, name: 'Brasa', scale: 2 },
+  { from: 10, name: 'Eldstorm', scale: 2.6 },
+];
+
+export function heatTier(streak: number): HeatTier {
+  let tier = HEAT_TIERS[0];
+  for (const candidate of HEAT_TIERS) {
+    if (streak >= candidate.from) {
+      tier = candidate;
+    }
+  }
+  return tier;
+}
+
+/**
+ * Räckan efter ett svar. Ett fel släcker den — det är vad "on fire" betyder.
+ * Ett rätt som inte var snabbt håller den vid liv utan att elda på, så att
+ * ett tal man behövde tänka på inte straffas som en miss.
+ */
+export function nextStreak(streak: number, correct: boolean, fast: boolean): number {
+  if (!correct) {
+    return 0;
+  }
+  return fast ? streak + 1 : streak;
+}
+
 /** Nivån stiger försiktigt, sjunker snabbt. */
 export const LEVEL_UP_STEP = 1;
 export const LEVEL_DOWN_STEP = 2;

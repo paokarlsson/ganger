@@ -34,6 +34,7 @@ const STATS_KEY = 'mult-heatmap';
 const CALIBRATION_KEY = 'mult-calibration';
 const SWIPE_LEVEL_KEY = 'swipe-level';
 const SWIPE_BASELINE_KEY = 'swipe-baseline';
+const SWIPE_BEST_STREAK_KEY = 'swipe-best-streak';
 
 /** Hur många tider per tal som sparas. */
 const MAX_TIMES = 5;
@@ -161,6 +162,7 @@ export class PracticeStatsService {
       Object.keys(this.stats).length > 0 ||
       this.fastTime !== null ||
       this.baselineSamples.length > 0 ||
+      this.swipeBestStreak > 0 ||
       this.swipeLevel !== null
     );
   }
@@ -277,6 +279,18 @@ export class PracticeStatsService {
     this.write(SWIPE_BASELINE_KEY, JSON.stringify(this.baselineSamples));
   }
 
+  /** Längsta räcka snabba rätt spelaren haft. Rekordet att jaga i en rond
+   *  utan slut, som annars saknar mål. */
+  get swipeBestStreak(): number {
+    const raw = this.readRaw(SWIPE_BEST_STREAK_KEY);
+    const parsed = raw === null ? NaN : Number.parseInt(raw, 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  set swipeBestStreak(streak: number) {
+    this.write(SWIPE_BEST_STREAK_KEY, String(streak));
+  }
+
   /** Nivån Svep senast landade på, så brasan börjar där den slutade. */
   get swipeLevel(): number | null {
     const raw = this.readRaw(SWIPE_LEVEL_KEY);
@@ -335,6 +349,7 @@ export class PracticeStatsService {
     this.remove(CALIBRATION_KEY);
     this.remove(SWIPE_LEVEL_KEY);
     this.remove(SWIPE_BASELINE_KEY);
+    this.remove(SWIPE_BEST_STREAK_KEY);
   }
 
   private migrate(stored: Record<string, LegacyQuestionStat>): Record<string, QuestionStat> {
