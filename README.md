@@ -9,8 +9,17 @@ is any practice to count.
   right one. Background music and sound effects included.
 - **Svep** — a statement such as `7 × 8 = 54` is shown on a card. Swipe (or drag
   with the mouse, or press the arrow keys) right if it is correct, left if it is
-  not. The statements are generated at run time by `swipe-difficulty.ts`; the
-  curated set they were modelled on is kept next to that file as
+  not. Pick a round of 10 to 40 cards, or ∞ to keep going until you press
+  **Klar**. Every round opens with five cards from the anchor band (×1, ×10)
+  that measure how fast this player swipes; everything after that is judged
+  against that pace, so the level means the same thing for a quick player and a
+  slow one. It has to be measured on the anchor band and nowhere else: take the
+  median of every card instead and the threshold rises with the level and ends
+  up chasing its own tail. The level says which facts you get, and the fire says
+  how it is going right now — it grows with the run of fast correct answers and
+  goes out on a miss, which is what being on fire means. The statements are
+  generated at run time by `swipe-difficulty.ts`; the curated set they were
+  modelled on is kept next to that file as
   [`ranked-questions.reference.json`](src/app/swipe-view/ranked-questions.reference.json);
   nothing imports it, so it is not shipped.
 - **Mästaren** — type the answer against the clock. Pick a level (one table at a
@@ -44,12 +53,17 @@ the primary button carries dark text because white on `--accent-green` is
 2.1:1. Text on a red or green tint is light, never red or green — a colour
 against its own tint does not reach 4.5:1. Where colour carries meaning it is
 never alone: *Para ihop* marks tiles with ✓ and ✗, *Svep* stamps the card RÄTT
-or FEL, and *Mästaren*'s dot rows have an `aria-label` saying the same thing in
-words.
+or FEL and writes out the name of the fire's tier beside it, and *Mästaren*'s
+dot rows have an `aria-label` saying the same thing in words. *Svep*'s fire
+grows inside a box that is the same size at every tier, so that a card is never
+nudged out from under a thumb mid-swipe.
 
-*Mästaren* keeps its statistics in `localStorage` under `mult-heatmap` and
-`mult-calibration`, so they live in the browser they were practised in and are
-cleared with the **Nollställ** button on the heat map screen.
+Both games keep what they know about the player in `localStorage`, so it lives
+in the browser it was practised in: *Mästaren* under `mult-heatmap` and
+`mult-calibration`, *Svep* under `swipe-level`, `swipe-baseline` (the rolling
+window the swipe pace is the median of) and `swipe-best-streak`. All of it is
+cleared by the **Nollställ** button on the heat map screen, and by *Ny spelare*
+on the start screen.
 
 ## Structure
 
