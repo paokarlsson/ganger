@@ -47,6 +47,10 @@
     filter: drop-shadow(0 0 6px rgba(255, 140, 0, 0.5));
 }
 
+/* Under uppvärmningen mäts spelaren, och nivån står still. Brasan dämpas så
+   att det syns att den inte är med i leken än. */
+.flame--warmup { opacity: 0.45; }
+
 .flame--up { animation: flame-pulse-up 500ms ease; }
 .flame--down { animation: flame-pulse-down 500ms ease; }
 

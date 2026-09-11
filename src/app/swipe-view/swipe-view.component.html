@@ -4,6 +4,7 @@
             <span class="score score--correct">Rätt {{nrCorrect}}</span>
             <span class="score score--wrong">Fel {{nrWrong}}</span>
             <span class="flame" [class.flame--up]="levelFlash === 'up'" [class.flame--down]="levelFlash === 'down'"
+                [class.flame--warmup]="screen === 'game' && calibrating"
                 [style.--flame-scale]="0.6 + flameIntensity * 0.9" [title]="'Nivå ' + level + ' av ' + levelMax">
                 🔥<span class="flame-level">{{level}}</span>
             </span>
@@ -14,17 +15,6 @@
         <section class="menu">
             <div class="menu-card ui-card">
                 <div class="menu-title ui-title">Svep</div>
-
-                <div class="menu-section">
-                    <div class="menu-label ui-title ui-title--sm">Måltid per kort</div>
-                    <div class="menu-row">
-                        @for (time of targetTimes; track time) {
-                            <button type="button" class="option-btn ui-toggle" [class.is-active]="selectedTargetTime === time"
-                                [attr.aria-pressed]="selectedTargetTime === time"
-                                (click)="selectTargetTime(time)">{{time}}s</button>
-                        }
-                    </div>
-                </div>
 
                 <div class="menu-section">
                     <div class="menu-label ui-title ui-title--sm">Antal kort</div>
@@ -80,6 +70,8 @@
             <span class="feedback" [class.feedback--wrong]="!feedback.correct">
                 @if (feedback.correct) { Rätt! } @else { Fel — {{feedback.solution}} }
             </span>
+        } @else if (calibrating) {
+            Uppvärmning
         } @else {
             Kvar: {{numberOfStatementsLeft()}}
         }

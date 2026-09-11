@@ -6,15 +6,14 @@ import { needWeight } from '../facts/fact-selector';
 import { PENALTY_TIME } from '../master-view/levels';
 import { PracticeStatsService } from '../services/practice-stats.service';
 import {
+  CALIBRATION_CARDS,
   DEFAULT_QUESTION_COUNT,
-  DEFAULT_TARGET_TIME,
   GeneratedStatement,
   LEVEL_MAX,
   LEVEL_MIN,
   QUESTION_COUNTS,
   RoundMemory,
-  TARGET_TIMES,
-  TargetTime,
+  baselineSample,
   createRoundMemory,
   nextLevel,
   nextStatement,
@@ -50,12 +49,10 @@ export class SwipeViewComponent implements OnDestroy {
 
   private readonly stats = inject(PracticeStatsService);
 
-  readonly targetTimes = TARGET_TIMES;
   readonly questionCounts = QUESTION_COUNTS;
   readonly levelMax = LEVEL_MAX;
 
   screen: Screen = 'menu';
-  selectedTargetTime: TargetTime = DEFAULT_TARGET_TIME;
   selectedQuestionCount = DEFAULT_QUESTION_COUNT;
 
   level = startLevel(null, 0, false);
@@ -102,6 +99,15 @@ export class SwipeViewComponent implements OnDestroy {
     return this.nrCorrect + this.nrWrong;
   }
 
+  /**
+   * Ronden öppnar med några ankartal som mäter spelarens sveptakt. Nivån står
+   * still under dem — brasan ska inte röra sig på tider som ännu inte har
+   * något att jämföras med.
+   */
+  get calibrating(): boolean {
+    return this.answered < CALIBRATION_CARDS;
+  }
+
   /** 0 vid lägsta nivån, 1 vid högsta — skalar brasan. */
   get flameIntensity(): number {
     return (this.level - LEVEL_MIN) / (LEVEL_MAX - LEVEL_MIN);
@@ -117,10 +123,6 @@ export class SwipeViewComponent implements OnDestroy {
   }
 
   // --- Meny -------------------------------------------------------------
-
-  selectTargetTime(time: TargetTime): void {
-    this.selectedTargetTime = time;
-  }
 
   selectQuestionCount(count: number): void {
     this.selectedQuestionCount = count;
@@ -221,7 +223,15 @@ export class SwipeViewComponent implements OnDestroy {
       rememberMiss(this.memory, statement.fact);
     }
     this.recordAnswer(statement.fact, correct, timeSec);
-    this.adjustLevel(statement, correct, timeSec);
+    if (this.calibrating) {
+      // Bara kort som svepts rätt säger något om takten. Ett barn som svepar
+      // på måfå ska inte kunna sätta en omöjlig ribba åt sig själv.
+      if (correct) {
+        this.stats.recordSwipeBaseline(baselineSample(timeSec, statement.isTrue));
+      }
+    } else {
+      this.adjustLevel(statement, correct, timeSec);
+    }
     this.answered += 1;
 
     const { n1, n2 } = statement;
@@ -265,7 +275,8 @@ export class SwipeViewComponent implements OnDestroy {
   }
 
   /** Nivån stiger försiktigt (ett steg) men sjunker snabbt (två) — samma
-   *  princip som auto-läget i Mästaren, se master-view.component.ts. */
+   *  princip som auto-läget i Mästaren, se master-view.component.ts. Tröskeln
+   *  är spelarens egen sveptakt, mätt i öppningens kalibreringskort. */
   private adjustLevel(
     statement: GeneratedStatement,
     correct: boolean,
@@ -277,7 +288,7 @@ export class SwipeViewComponent implements OnDestroy {
       statement.isTrue,
       correct,
       timeSec,
-      this.selectedTargetTime,
+      this.stats.swipeBaselineSeconds,
     );
 
     if (this.level !== before) {
@@ -316,7 +327,12 @@ export class SwipeViewComponent implements OnDestroy {
   // --- Frågor ---------------------------------------------------------------
 
   private nextCard(): void {
-    const next = nextStatement(this.level, this.memory, this.need);
+    const next = nextStatement({
+      level: this.level,
+      memory: this.memory,
+      calibration: this.calibrating,
+      need: this.need,
+    });
     this.currentStatement = next;
     this.currentStatmentString = `${next.n1} × ${next.n2} = ${next.shown}`;
     this.cardShownAt = performance.now();
