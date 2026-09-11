@@ -90,6 +90,46 @@ describe('PracticeStatsService', () => {
     });
   });
 
+  describe('nollställning', () => {
+    it('rensar allt spelet minns om spelaren', () => {
+      const stats = serviceWith({});
+      stats.record(7, 8, true, 900);
+      stats.record(3, 4, true, 700, 'swipe');
+      stats.calibrate([1800, 2000, 2200]);
+      stats.swipeLevel = 9;
+
+      stats.reset();
+
+      // Inget får överleva — nästa barn ska börja från noll.
+      expect(stats.hasStoredProgress).toBe(false);
+      expect(stats.hasPractice).toBe(false);
+      expect(stats.masteredCount()).toBe(0);
+      expect(stats.statFor(7, 8)).toBeUndefined();
+      expect(stats.statFor(3, 4)).toBeUndefined();
+      expect(stats.calibratedFastTime).toBeNull();
+      expect(stats.swipeLevel).toBeNull();
+      expect(new PracticeStatsService().hasStoredProgress).toBe(false);
+    });
+
+    it('räknar svep som sparat men inte som skriven övning', () => {
+      // Framstegsmätaren mäter skrivna svar. Den som bara svept ska mötas av
+      // välkomsttexten, inte av "0 av 100 tal sitter" — men ska ändå kunna
+      // nollställas.
+      const stats = serviceWith({});
+      stats.record(3, 4, true, 700, 'swipe');
+
+      expect(stats.hasPractice).toBe(false);
+      expect(stats.hasStoredProgress).toBe(true);
+    });
+
+    it('ser en sparad svepnivå som något att rensa', () => {
+      const stats = serviceWith({});
+      stats.swipeLevel = 6;
+
+      expect(stats.hasStoredProgress).toBe(true);
+    });
+  });
+
   describe('swipeLevel', () => {
     it('sparar och läser tillbaka nivån', () => {
       const stats = serviceWith({});

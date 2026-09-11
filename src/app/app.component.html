@@ -19,6 +19,11 @@
       } @else {
         <p class="lead">Tre sätt att öva gångertabellen</p>
       }
+      @if (hasStoredProgress) {
+        <button type="button" class="switch-player ui-btn ui-btn--quiet" (click)="switchPlayer()">
+          Ny spelare? Börja om från noll
+        </button>
+      }
     </header>
 
     <div class="choices">
