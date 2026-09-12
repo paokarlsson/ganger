@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
 
 /** Smallest and largest factor a question is built from. */
 const MIN_FACTOR = 1;
@@ -13,7 +13,7 @@ const ROUND_SIZE = 5;
   templateUrl: 'match-view.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
 })
-export class MatchViewComponent {
+export class MatchViewComponent implements OnDestroy {
   playLoop: boolean = false;
 
   round: Question[] = [];
@@ -29,19 +29,36 @@ export class MatchViewComponent {
 
   constructor() {
     this.loopAudio = new Audio('assets/audio/loop.mp3');
+    this.loopAudio.loop = true;
+    this.loopAudio.volume = 0.1;
     this.rightAudio = new Audio('assets/audio/right.wav');
+    this.rightAudio.volume = 0.3;
     this.wrongAudio = new Audio('assets/audio/wrong.wav');
+    this.wrongAudio.volume = 0.3;
     this.next();
+  }
+
+  /**
+   * The audio elements are plain objects, not part of the template, so tearing
+   * the game down leaves them playing: going back to the menu would carry the
+   * music along, and starting the game again would build a second element that
+   * plays on top of the first one, with no way left to stop either.
+   */
+  ngOnDestroy(): void {
+    this.playLoop = false;
+    this.loopAudio.pause();
   }
 
   startStopLoopAudio() {
     this.playLoop = !this.playLoop;
     if (this.playLoop) {
-      this.loopAudio.loop = true;
-      this.loopAudio.volume = 0.1;
-      this.loopAudio
-        .play()
-        .catch((error) => console.error('Error starting loop:', error));
+      this.loopAudio.play().catch((error) => {
+        // Playback can be refused — an unsupported file, or a browser that
+        // wants a plainer gesture than this one. Say so with the icon rather
+        // than leaving it claiming that music is playing.
+        this.playLoop = false;
+        console.error('Error starting loop:', error);
+      });
     } else {
       this.loopAudio.pause();
     }
@@ -170,7 +187,6 @@ export class MatchViewComponent {
 
   private playWrong() {
     this.wrongAudio.currentTime = 0;
-    this.wrongAudio.volume = 0.3;
     this.wrongAudio
       .play()
       .catch((error) => console.error('Error playing effect:', error));
@@ -178,7 +194,6 @@ export class MatchViewComponent {
 
   private playSuccess() {
     this.rightAudio.currentTime = 0;
-    this.rightAudio.volume = 0.3;
     this.rightAudio
       .play()
       .catch((error) => console.error('Error playing effect:', error));
