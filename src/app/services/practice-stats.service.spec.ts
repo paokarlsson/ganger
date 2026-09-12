@@ -203,6 +203,64 @@ describe('PracticeStatsService', () => {
     });
   });
 
+  describe('svepkanalens mått', () => {
+    /** Sveptakt 1,0 s ger en snabbtröskel på 1,3 s. */
+    function withBaseline(): PracticeStatsService {
+      const stats = serviceWith({});
+      for (let i = 0; i < 5; i++) {
+        stats.recordSwipeBaseline(1);
+      }
+      return stats;
+    }
+
+    it('mäter svep mot sveptakten och inte mot skrivna svars tröskel', () => {
+      const stats = withBaseline();
+      stats.calibrate([3000, 3000, 3000]);
+
+      // De två tiderna är inte jämförbara, och får inte råka bli det.
+      expect(stats.swipeFastSeconds).toBeCloseTo(1.3, 10);
+      expect(stats.fastSeconds).toBe(3.6);
+      expect(stats.swipeSlowSeconds).toBeCloseTo(1.95, 10);
+    });
+
+    it('hittar talet oavsett vilken väg det lagrats', () => {
+      const stats = withBaseline();
+      stats.record(10, 3, true, 900, 'swipe');
+
+      expect(stats.swipeStatFor(3, 10)!.times).toEqual([900]);
+      expect(stats.swipeStatFor(10, 3)!.times).toEqual([900]);
+      expect(stats.swipeStatFor(3, 9)).toBeUndefined();
+    });
+
+    it('låter skrivna svar vara i fred', () => {
+      const stats = withBaseline();
+      stats.record(7, 8, true, 4000);
+
+      expect(stats.swipeStatFor(7, 8)).toBeUndefined();
+      expect(stats.swipeMasteredCount()).toBe(0);
+    });
+
+    it('räknar till 55, och bara det som svepts snabbt nog', () => {
+      const stats = withBaseline();
+      stats.record(7, 8, true, 1100, 'swipe');
+      stats.record(6, 6, true, 1100, 'swipe');
+      stats.record(9, 9, true, 2500, 'swipe');
+
+      expect(stats.swipeMasteredCount()).toBe(2);
+    });
+
+    it('vet om spelaren svept något alls', () => {
+      const stats = serviceWith({});
+      expect(stats.hasSwipePractice).toBe(false);
+
+      stats.record(7, 8, true, 4000);
+      expect(stats.hasSwipePractice).toBe(false);
+
+      stats.record(7, 8, true, 900, 'swipe');
+      expect(stats.hasSwipePractice).toBe(true);
+    });
+  });
+
   describe('swipeBestStreak', () => {
     it('börjar på noll och sparas över en omstart', () => {
       const stats = serviceWith({});

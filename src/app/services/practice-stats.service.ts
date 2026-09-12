@@ -1,6 +1,11 @@
 import { Injectable } from '@angular/core';
+import { FACTS } from '../facts/fact-catalog';
 import { FactPerformance } from '../facts/fact-selector';
 import { DEFAULT_FAST_TIME, SLOW_TIME_MULTIPLIER } from '../master-view/levels';
+import {
+  FAST_FACTOR,
+  SLOW_TIME_MULTIPLIER as SWIPE_SLOW_MULTIPLIER,
+} from '../swipe-view/swipe-difficulty';
 
 /** Statistiken för ett enskilt tal. `times` håller de fem senaste svaren i ms,
  *  med straffet inräknat, så att en gammal miss inte färgar värmekartan för evigt. */
@@ -182,8 +187,9 @@ export class PracticeStatsService {
     return mastered;
   }
 
-  /** Snittid i sekunder, eller `null` för ett tal som aldrig övats. */
-  averageSeconds(stat: QuestionStat | undefined): number | null {
+  /** Snittid i sekunder, eller `null` för ett tal som aldrig övats. Tar både
+   *  ett helt `QuestionStat` och en enskild kanal — bara `times` läses. */
+  averageSeconds(stat: ChannelStat | undefined): number | null {
     if (!stat || stat.times.length === 0) {
       return null;
     }
@@ -218,6 +224,54 @@ export class PracticeStatsService {
       target.correct += 1;
     }
     this.scheduleStatsWrite();
+  }
+
+  /**
+   * Vad ett svep ska hålla sig under för att räknas som automatiserat.
+   *
+   * Skild från `fastSeconds`, som gäller skrivna svar: ett svep är igenkänning
+   * och går systematiskt snabbare, och de två tiderna är inte jämförbara.
+   *
+   * Tröskeln är den för ett sant kort. Halva korten i en rond är falska och
+   * tar drygt en tredjedel längre, så en behärskad rutas snitt hamnar en bit
+   * över sveptakten — men fortfarande under den här tröskeln.
+   */
+  get swipeFastSeconds(): number {
+    return this.swipeBaselineSeconds * FAST_FACTOR;
+  }
+
+  get swipeSlowSeconds(): number {
+    return this.swipeFastSeconds * SWIPE_SLOW_MULTIPLIER;
+  }
+
+  /** Svepkanalen för ett tal, oavsett faktorernas ordning. Skild från
+   *  `performanceFor()`, som låter skrivna svar gå före svep. */
+  swipeStatFor(a: number, b: number): ChannelStat | undefined {
+    return this.mergedStat(a, b)?.swipe;
+  }
+
+  /** Om spelaren svept något alls — styr om Svepets värmekarta har något att
+   *  visa. Skild från `hasPractice`, som räknar skrivna svar. */
+  get hasSwipePractice(): boolean {
+    return Object.values(this.stats).some((stat) => (stat.swipe?.times.length ?? 0) > 0);
+  }
+
+  /**
+   * Hur många tal som svepts snabbt nog att räknas som automatiserade.
+   *
+   * Räknar till 55 och inte till 100 som Mästarens värmekarta: i Svep är
+   * 7 × 8 och 8 × 7 samma tal, och svepen lagras bara under den ena ordningen.
+   */
+  swipeMasteredCount(): number {
+    const fast = this.swipeFastSeconds;
+    let mastered = 0;
+    for (const fact of FACTS) {
+      const average = this.averageSeconds(this.swipeStatFor(fact.a, fact.b));
+      if (average !== null && average <= fast) {
+        mastered += 1;
+      }
+    }
+    return mastered;
   }
 
   /**
