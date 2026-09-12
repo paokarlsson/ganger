@@ -146,31 +146,31 @@
           <div class="heatmap-title ui-title">Din värmekarta</div>
           <!-- En riktig tabell, så att varje tid hör ihop med sin rad och sin
                kolumn även för den som inte ser rutnätet. -->
-          <table class="heatmap-grid">
+          <table class="ui-heat">
             <caption class="ui-visually-hidden">Snittid per tal, i sekunder</caption>
             <thead>
               <tr>
                 <td></td>
                 @for (column of heatmapRows; track column.label) {
-                  <th scope="col" class="heatmap-cell heatmap-header">{{ column.label }}</th>
+                  <th scope="col" class="ui-heat-cell ui-heat-cell--head">{{ column.label }}</th>
                 }
               </tr>
             </thead>
             <tbody>
               @for (row of heatmapRows; track row.label) {
                 <tr>
-                  <th scope="row" class="heatmap-cell heatmap-label">{{ row.label }}</th>
+                  <th scope="row" class="ui-heat-cell ui-heat-cell--head">{{ row.label }}</th>
                   @for (cell of row.cells; track $index) {
-                    <td class="heatmap-cell heatmap-data" [style.background]="cell.color"
+                    <td class="ui-heat-cell ui-heat-cell--data" [style.background]="cell.color"
                       [title]="cell.title">{{ cell.text }}</td>
                   }
                 </tr>
               }
             </tbody>
           </table>
-          <div class="heatmap-legend">
+          <div class="ui-heat-legend">
             <span>Snabb ✓</span>
-            <div class="legend-bar"></div>
+            <div class="ui-heat-legend-bar"></div>
             <span>Långsam</span>
           </div>
           <div class="heatmap-stats">

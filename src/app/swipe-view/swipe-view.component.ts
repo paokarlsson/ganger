@@ -1,10 +1,11 @@
 import { Component, HostListener, OnDestroy, ViewChild, ChangeDetectionStrategy, inject } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { CdkDrag, CdkDragEnd, CdkDragMove } from '@angular/cdk/drag-drop';
-import { Fact } from '../facts/fact-catalog';
+import { FACTS, Fact, MAX_FACTOR, MIN_FACTOR } from '../facts/fact-catalog';
 import { needWeight } from '../facts/fact-selector';
 import { PENALTY_TIME } from '../master-view/levels';
-import { PracticeStatsService } from '../services/practice-stats.service';
+import { ChannelStat, PracticeStatsService } from '../services/practice-stats.service';
+import { timeColor } from '../services/time-color';
 import {
   CALIBRATION_CARDS,
   DEFAULT_QUESTION_COUNT,
@@ -37,11 +38,19 @@ const FLING_SPEED = 0.6;
 /** Hur länge brasan pulsar efter att nivån ändrats. */
 const LEVEL_FLASH_MS = 500;
 
-type Screen = 'menu' | 'game' | 'result';
+type Screen = 'menu' | 'game' | 'result' | 'heatmap';
 
 interface Feedback {
   correct: boolean;
   solution: string;
+}
+
+interface HeatCell {
+  text: string;
+  color: string;
+  title: string;
+  /** Nedre halvan av rutnätet: talet står redan på andra sidan diagonalen. */
+  empty: boolean;
 }
 
 @Component({
@@ -71,6 +80,11 @@ export class SwipeViewComponent implements OnDestroy {
   streak = 0;
   roundBestStreak = 0;
   private previousBestStreak = 0;
+
+  /** Värmekartans rader, byggda när den öppnas. */
+  heatRows: { label: number; cells: HeatCell[] }[] = [];
+  swipeMastered = 0;
+  readonly factCount = FACTS.length;
 
   currentStatement: GeneratedStatement | undefined;
   currentStatmentString = '';
@@ -149,6 +163,16 @@ export class SwipeViewComponent implements OnDestroy {
     return this.calibrating ? `${level}, uppvärmning` : `${level}, ${this.heat.name}`;
   }
 
+  /** Om det finns svep att visa en värmekarta över. */
+  get hasSwipePractice(): boolean {
+    return this.stats.hasSwipePractice;
+  }
+
+  /** Sveptakten som text, måttet kartans färger utgår från. */
+  get baselineDisplay(): string {
+    return `${this.stats.swipeBaselineSeconds.toFixed(1)}s`;
+  }
+
   /** Rekordet att jaga. Läses ur statistiken, så att menyn visar det redan
    *  innan spelaren kört en rond den här gången. */
   get bestStreak(): number {
@@ -194,6 +218,11 @@ export class SwipeViewComponent implements OnDestroy {
 
   backToMenu(): void {
     this.screen = 'menu';
+  }
+
+  openHeatmap(): void {
+    this.buildHeatmap();
+    this.screen = 'heatmap';
   }
 
   /** Slutknappen i en rond utan slut. Kortet som är på väg ut får inte lägga
@@ -375,6 +404,59 @@ export class SwipeViewComponent implements OnDestroy {
       clearTimeout(this.flashTimer);
       this.flashTimer = setTimeout(() => (this.levelFlash = ''), LEVEL_FLASH_MS);
     }
+  }
+
+  /**
+   * Värmekartan över svepen. Bara halva rutnätet fylls: i Svep är 7 × 8 och
+   * 8 × 7 samma tal, och svepen lagras bara under den ena ordningen. Raden är
+   * den mindre faktorn, kolumnen den större, så de 55 talen hamnar ovanför
+   * diagonalen och ingen ruta står två gånger.
+   */
+  private buildHeatmap(): void {
+    const fast = this.stats.swipeFastSeconds;
+    const slow = this.stats.swipeSlowSeconds;
+    const rows: { label: number; cells: HeatCell[] }[] = [];
+
+    for (let row = MIN_FACTOR; row <= MAX_FACTOR; row++) {
+      const cells: HeatCell[] = [];
+      for (let col = MIN_FACTOR; col <= MAX_FACTOR; col++) {
+        if (col < row) {
+          cells.push({ text: '', color: '', title: '', empty: true });
+          continue;
+        }
+        const stat = this.stats.swipeStatFor(row, col);
+        const average = this.stats.averageSeconds(stat);
+        if (!stat || average === null) {
+          cells.push({
+            text: '—',
+            color: 'rgba(255,255,255,0.1)',
+            title: `${row} × ${col}: Ej svept`,
+            empty: false,
+          });
+          continue;
+        }
+        cells.push({
+          text: average.toFixed(1),
+          color: timeColor(average, fast, slow),
+          title: this.heatTitle(row, col, stat, average),
+          empty: false,
+        });
+      }
+      rows.push({ label: row, cells });
+    }
+
+    this.heatRows = rows;
+    this.swipeMastered = this.stats.swipeMasteredCount();
+  }
+
+  private heatTitle(row: number, col: number, stat: ChannelStat, average: number): string {
+    const accuracy = stat.total > 0 ? Math.round((stat.correct / stat.total) * 100) : 0;
+    return [
+      `${row} × ${col} = ${row * col}`,
+      `Snitt (senaste ${stat.times.length}): ${average.toFixed(1)}s`,
+      `Rätt: ${accuracy}%`,
+      `Svep: ${stat.total}`,
+    ].join('\n');
   }
 
   /** Tröskeln skalar med skärmen så att svepet känns lika på mobil och desktop. */

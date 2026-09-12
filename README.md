@@ -17,7 +17,13 @@ is any practice to count.
   median of every card instead and the threshold rises with the level and ends
   up chasing its own tail. The level says which facts you get, and the fire says
   how it is going right now — it grows with the run of fast correct answers and
-  goes out on a miss, which is what being on fire means. The statements are
+  goes out on a miss, which is what being on fire means. There is a heat map
+  too, reached from the menu once there is something to show. It fills half a
+  10 × 10 grid, because 7 × 8 and 8 × 7 are one fact here and the swipes are
+  only ever stored under one of the two orderings, and it counts to 55 rather
+  than to 100 for the same reason. Its colours are measured against the swipe
+  pace, never against *Mästaren*'s calibration — the two times are not
+  comparable. The statements are
   generated at run time by `swipe-difficulty.ts`; the curated set they were
   modelled on is kept next to that file as
   [`ranked-questions.reference.json`](src/app/swipe-view/ranked-questions.reference.json);
@@ -36,9 +42,10 @@ is no longer developed. *Mästaren* was ported from a standalone HTML prototype.
 All four surfaces share one style sheet, which lives in `src/styles/`:
 `_tokens.scss` holds the palette, fonts, radii and spacing as CSS variables,
 `_base.scss` the reset, and `_ui.scss` a small set of global `ui-` classes —
-card, title, button, toggle, dot and modal — that the components use instead of
-restyling the same widget once per game. A component's own stylesheet keeps only
-what is that game's own: the swipe card, the heat map, the matching board. The
+card, title, button, toggle, dot, modal and the heat map grid — that the
+components use instead of restyling the same widget once per game. A component's
+own stylesheet keeps only what is that game's own: the swipe card, the matching
+board, and each heat map screen's own layout around the shared grid. The
 `ui-` prefix in a template is the signal that the look comes from the shared
 sheet. The dark palette was *Mästaren*'s to begin with, and the yellow of
 *Svep*'s card is kept as its own token, deliberately lighter than the theme's
@@ -77,7 +84,8 @@ on the start screen.
 | `src/app/match-view/` | The *Para ihop* game |
 | `src/app/swipe-view/` | The *Svep* game |
 | `src/app/master-view/` | The *Mästaren* game, with its levels in `levels.ts` |
-| `src/app/services/practice-stats.service.ts` | Times and calibration for *Mästaren* |
+| `src/app/services/practice-stats.service.ts` | Times and calibration, for both *Mästaren* and *Svep* |
+| `src/app/services/time-color.ts` | The green-to-red scale both heat maps colour a time with |
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) and runs on
 Angular 22. Building it needs Node 22.22.3 or later (24 LTS is what CI and

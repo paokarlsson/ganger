@@ -1,5 +1,6 @@
 import { Component, ElementRef, OnDestroy, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { PracticeStatsService, QuestionStat } from '../services/practice-stats.service';
+import { timeColor } from '../services/time-color';
 import {
   CALIBRATION_QUESTIONS,
   DIFFICULTY,
@@ -589,13 +590,7 @@ export class MasterViewComponent implements OnDestroy {
 
   /** Grönt upp till den kalibrerade tiden, sedan gult mot rött. */
   private timeColor(seconds: number): string {
-    const fast = this.stats.fastSeconds;
-    const slow = this.stats.slowSeconds;
-    if (seconds <= fast) {
-      return 'hsl(140, 80%, 35%)';
-    }
-    const t = Math.max(0, Math.min(1, (seconds - fast) / (slow - fast)));
-    return `hsl(${50 * (1 - t)}, 75%, 45%)`;
+    return timeColor(seconds, this.stats.fastSeconds, this.stats.slowSeconds);
   }
 
   /** Fälten ligger bakom @if och finns först när vyn ritats om, så de slås
