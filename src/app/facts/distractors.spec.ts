@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import reference from '../swipe-view/ranked-questions.reference.json';
-import { DistractorKind, kindWeights, pickDistractor, poolsFor } from './distractors';
+import {
+  DistractorKind,
+  distractorPoolSize,
+  kindWeights,
+  pickDistractor,
+  poolsFor,
+} from './distractors';
 import { FACTS, factFor, isTableProduct } from './fact-catalog';
 import { LEVEL_MAX, LEVEL_MIN } from './fact-selector';
 
@@ -141,6 +147,18 @@ describe('pickDistractor', () => {
         expect(used.has(shown), `${fact.a}×${fact.b} upprepade ${shown}`).toBe(false);
         used.add(shown);
       }
+    }
+  });
+});
+
+describe('distractorPoolSize', () => {
+  it('räknar de olika fel-svar ett tal kan visa', () => {
+    for (const fact of FACTS) {
+      const pools = poolsFor(fact);
+      const values = new Set(Object.values(pools).flat());
+
+      expect(distractorPoolSize(fact), `${fact.a} × ${fact.b}`).toBe(values.size);
+      expect(distractorPoolSize(fact), `${fact.a} × ${fact.b}`).toBeGreaterThan(0);
     }
   });
 });

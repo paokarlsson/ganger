@@ -6,18 +6,24 @@ import { needWeight } from '../facts/fact-selector';
 import { PENALTY_TIME } from '../master-view/levels';
 import { PracticeStatsService } from '../services/practice-stats.service';
 import {
+  CALIBRATION_CARDS,
   DEFAULT_QUESTION_COUNT,
-  DEFAULT_TARGET_TIME,
+  ENDLESS,
   GeneratedStatement,
+  HEAT_TIERS,
+  HeatTier,
   LEVEL_MAX,
   LEVEL_MIN,
   QUESTION_COUNTS,
   RoundMemory,
-  TARGET_TIMES,
-  TargetTime,
+  baselineSample,
   createRoundMemory,
+  heatTier,
+  isEndless,
+  isFastAnswer,
   nextLevel,
   nextStatement,
+  nextStreak,
   rememberMiss,
   startLevel,
 } from './swipe-difficulty';
@@ -50,17 +56,21 @@ export class SwipeViewComponent implements OnDestroy {
 
   private readonly stats = inject(PracticeStatsService);
 
-  readonly targetTimes = TARGET_TIMES;
   readonly questionCounts = QUESTION_COUNTS;
+  readonly endless = ENDLESS;
   readonly levelMax = LEVEL_MAX;
 
   screen: Screen = 'menu';
-  selectedTargetTime: TargetTime = DEFAULT_TARGET_TIME;
   selectedQuestionCount = DEFAULT_QUESTION_COUNT;
 
   level = startLevel(null, 0, false);
   /** Kort puls när nivån just ändrats, styr brasans animation. */
   levelFlash: '' | 'up' | 'down' = '';
+
+  /** Snabba rätt i rad just nu, och den längsta räckan hittills i ronden. */
+  streak = 0;
+  roundBestStreak = 0;
+  private previousBestStreak = 0;
 
   currentStatement: GeneratedStatement | undefined;
   currentStatmentString = '';
@@ -75,6 +85,8 @@ export class SwipeViewComponent implements OnDestroy {
   /** Stänger av övergångar i det ögonblick nästa kort läggs på plats. */
   instant = false;
 
+  /** Antal kort som lagts fram, uppvärmningen inräknad. Rondens längd mäts i
+   *  `totalAnswered`, som bara räknar de kort som gav poäng. */
   private answered = 0;
   private memory: RoundMemory = createRoundMemory();
   private cardShownAt = 0;
@@ -87,6 +99,7 @@ export class SwipeViewComponent implements OnDestroy {
     clearTimeout(this.advanceTimer);
     clearTimeout(this.feedbackTimer);
     clearTimeout(this.flashTimer);
+    this.stats.flush();
   }
 
   /** Sant medan kortet flyger ut — då tas inga nya svar emot. */
@@ -102,9 +115,50 @@ export class SwipeViewComponent implements OnDestroy {
     return this.nrCorrect + this.nrWrong;
   }
 
-  /** 0 vid lägsta nivån, 1 vid högsta — skalar brasan. */
+  /**
+   * Ronden öppnar med några ankartal som mäter spelarens sveptakt. Nivån står
+   * still under dem — brasan ska inte röra sig på tider som ännu inte har
+   * något att jämföras med.
+   */
+  get calibrating(): boolean {
+    return this.answered < CALIBRATION_CARDS;
+  }
+
+  /** 0 vid lägsta nivån, 1 vid högsta. */
   get flameIntensity(): number {
     return (this.level - LEVEL_MIN) / (LEVEL_MAX - LEVEL_MIN);
+  }
+
+  /** Vilket steg brasan står på, av räckan. */
+  get heat(): HeatTier {
+    return heatTier(this.streak);
+  }
+
+  get heatIndex(): number {
+    return HEAT_TIERS.indexOf(this.heat);
+  }
+
+  /** Nivån sätter grundstorleken, räckan multiplicerar den. Den som kan mycket
+   *  har en större glöd i botten; den som är på gång just nu har en brasa. */
+  get flameScale(): number {
+    return (0.75 + this.flameIntensity * 0.35) * this.heat.scale;
+  }
+
+  get flameLabel(): string {
+    const level = `Nivå ${this.level} av ${this.levelMax}`;
+    return this.calibrating ? `${level}, uppvärmning` : `${level}, ${this.heat.name}`;
+  }
+
+  /** Rekordet att jaga. Läses ur statistiken, så att menyn visar det redan
+   *  innan spelaren kört en rond den här gången. */
+  get bestStreak(): number {
+    return this.stats.swipeBestStreak;
+  }
+
+  /** Om ronden slog rekordet. Jämför mot vad som stod när den började —
+   *  `endRound()` har redan skrivit det nya. */
+  get beatRecord(): boolean {
+    return this.roundBestStreak > this.previousBestStreak;
   }
 
   /** 0 när kortet ligger stilla, 1 när det dragits hela vägen åt `dir`. */
@@ -112,15 +166,16 @@ export class SwipeViewComponent implements OnDestroy {
     return Math.max(0, dir * this.progress);
   }
 
+  /** Ronden som pågår tills spelaren själv säger stopp. */
+  get roundIsEndless(): boolean {
+    return isEndless(this.selectedQuestionCount);
+  }
+
   numberOfStatementsLeft(): number {
-    return Math.max(0, this.selectedQuestionCount - this.answered);
+    return Math.max(0, this.selectedQuestionCount - this.totalAnswered);
   }
 
   // --- Meny -------------------------------------------------------------
-
-  selectTargetTime(time: TargetTime): void {
-    this.selectedTargetTime = time;
-  }
 
   selectQuestionCount(count: number): void {
     this.selectedQuestionCount = count;
@@ -141,6 +196,13 @@ export class SwipeViewComponent implements OnDestroy {
     this.screen = 'menu';
   }
 
+  /** Slutknappen i en rond utan slut. Kortet som är på väg ut får inte lägga
+   *  fram nästa efteråt, så dess timer stoppas här. */
+  stopRound(): void {
+    clearTimeout(this.advanceTimer);
+    this.endRound();
+  }
+
   private restartRound(): void {
     clearTimeout(this.advanceTimer);
     clearTimeout(this.feedbackTimer);
@@ -149,6 +211,9 @@ export class SwipeViewComponent implements OnDestroy {
     this.nrCorrect = 0;
     this.nrWrong = 0;
     this.memory = createRoundMemory();
+    this.streak = 0;
+    this.roundBestStreak = 0;
+    this.previousBestStreak = this.stats.swipeBestStreak;
     this.level = startLevel(
       this.stats.swipeLevel,
       this.stats.masteredCount(),
@@ -211,17 +276,36 @@ export class SwipeViewComponent implements OnDestroy {
     const correct = saysTrue === statement.isTrue;
     const timeSec = (performance.now() - this.cardShownAt) / 1000;
 
+    // Uppvärmningen räknas inte i poängen — en rond på tio kort ska vara tio
+    // kort, inte fem plus fem. Talen övas ändå: svaret går till statistiken,
+    // och en miss kommer tillbaka som ett sant kort precis som annars.
     if (correct) {
-      this.nrCorrect += 1;
+      if (!this.calibrating) {
+        this.nrCorrect += 1;
+      }
     } else {
-      this.nrWrong += 1;
+      if (!this.calibrating) {
+        this.nrWrong += 1;
+      }
       this.buzz();
       // Nästa gång talet kommer upp ska det vara sant — den rätta kopplingen
       // ska repeteras, inte den felaktiga.
       rememberMiss(this.memory, statement.fact);
     }
     this.recordAnswer(statement.fact, correct, timeSec);
-    this.adjustLevel(statement, correct, timeSec);
+    if (this.calibrating) {
+      // Bara kort som svepts rätt säger något om takten. Ett barn som svepar
+      // på måfå ska inte kunna sätta en omöjlig ribba åt sig själv.
+      if (correct) {
+        this.stats.recordSwipeBaseline(baselineSample(timeSec, statement.isTrue));
+      }
+    } else {
+      const baseline = this.stats.swipeBaselineSeconds;
+      const fast = isFastAnswer(statement.isTrue, correct, timeSec, baseline);
+      this.adjustLevel(statement, correct, timeSec, baseline);
+      this.streak = nextStreak(this.streak, correct, fast);
+      this.roundBestStreak = Math.max(this.roundBestStreak, this.streak);
+    }
     this.answered += 1;
 
     const { n1, n2 } = statement;
@@ -241,10 +325,8 @@ export class SwipeViewComponent implements OnDestroy {
   }
 
   private settleNextCard(): void {
-    if (this.answered >= this.selectedQuestionCount) {
-      this.screen = 'result';
-      this.leaving = 0;
-      this.progress = 0;
+    if (!this.roundIsEndless && this.totalAnswered >= this.selectedQuestionCount) {
+      this.endRound();
       return;
     }
 
@@ -257,6 +339,17 @@ export class SwipeViewComponent implements OnDestroy {
     requestAnimationFrame(() => (this.instant = false));
   }
 
+  private endRound(): void {
+    this.screen = 'result';
+    this.leaving = 0;
+    this.progress = 0;
+    if (this.roundBestStreak > this.previousBestStreak) {
+      this.stats.swipeBestStreak = this.roundBestStreak;
+    }
+    // Statistiken skrivs fördröjt under ronden; här ska den sitta på disk.
+    this.stats.flush();
+  }
+
   /** Skickar svaret till den delade statistiken, i svepets egen kanal. Fel
    *  svar får samma tidsstraff som i Mästaren så tiderna går att jämföra. */
   private recordAnswer(fact: Fact, correct: boolean, timeSec: number): void {
@@ -265,20 +358,16 @@ export class SwipeViewComponent implements OnDestroy {
   }
 
   /** Nivån stiger försiktigt (ett steg) men sjunker snabbt (två) — samma
-   *  princip som auto-läget i Mästaren, se master-view.component.ts. */
+   *  princip som auto-läget i Mästaren, se master-view.component.ts. Tröskeln
+   *  är spelarens egen sveptakt, mätt i öppningens kalibreringskort. */
   private adjustLevel(
     statement: GeneratedStatement,
     correct: boolean,
     timeSec: number,
+    baselineSeconds: number,
   ): void {
     const before = this.level;
-    this.level = nextLevel(
-      this.level,
-      statement.isTrue,
-      correct,
-      timeSec,
-      this.selectedTargetTime,
-    );
+    this.level = nextLevel(this.level, statement.isTrue, correct, timeSec, baselineSeconds);
 
     if (this.level !== before) {
       this.stats.swipeLevel = this.level;
@@ -316,7 +405,12 @@ export class SwipeViewComponent implements OnDestroy {
   // --- Frågor ---------------------------------------------------------------
 
   private nextCard(): void {
-    const next = nextStatement(this.level, this.memory, this.need);
+    const next = nextStatement({
+      level: this.level,
+      memory: this.memory,
+      calibration: this.calibrating,
+      need: this.need,
+    });
     this.currentStatement = next;
     this.currentStatmentString = `${next.n1} × ${next.n2} = ${next.shown}`;
     this.cardShownAt = performance.now();

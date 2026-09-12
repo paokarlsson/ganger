@@ -25,22 +25,78 @@
     justify-content: center;
     /* Annars hamnar poängen under skalets menyknapp på en smal skärm. */
     padding-left: var(--shell-back-space);
-    gap: clamp(1rem, 6vw, 2.5rem);
+    align-items: flex-end;
+    gap: clamp(0.75rem, 5vw, 2.5rem);
     font-size: clamp(1.1rem, 5vw, 2rem);
     font-weight: bold;
+}
+
+/* Slutknappen i en rond utan slut. Ligger i toppraden och inte nära kortet,
+   så att den inte kan träffas av en tumme mitt i ett svep. */
+.stop-btn {
+    align-self: center;
+    padding: 0.35em 0.9em;
+    font-size: 0.85rem;
 }
 
 .score--correct { color: var(--accent-green); }
 .score--wrong { color: var(--accent-red); }
 
 /* --- Brasan -----------------------------------------------------------
-   Skalan drivs av --flame-scale (satt inline från nivån), flash-klasserna
-   ger en kort puls när nivån just ändrats. */
+   Nivån sätter grundstorleken och räckan av snabba rätt multiplicerar den;
+   --flame-scale kommer färdigräknad från komponenten. data-heat är steget och
+   styr glöden bakom. Rutan är lika stor på alla steg, så att kortet under
+   inte flyttar sig mitt i ett svep. */
+.flame-slot {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    /* Egen fontstorlek: höjden nedan är satt i em och ska inte följa med
+       poängens clamp, som är större. */
+    font-size: clamp(1.3rem, 5vw, 1.8rem);
+    width: 2.9em;
+    height: 2.9em;
+}
+
+/* Glöden bakom brasan. Ligger bara under emojin och aldrig under poängen,
+   som annars skulle tappa kontrast mot sin bakgrund. */
+.flame-slot::before {
+    content: '';
+    position: absolute;
+    bottom: -0.25em;
+    left: 50%;
+    width: 3em;
+    height: 3em;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 150, 30, 0.55) 0%, rgba(255, 150, 30, 0) 70%);
+    opacity: var(--flame-glow, 0);
+    transition: opacity 300ms ease;
+    pointer-events: none;
+}
+
+.flame-slot[data-heat='1'] { --flame-glow: 0.35; }
+.flame-slot[data-heat='2'] { --flame-glow: 0.7; }
+.flame-slot[data-heat='3'] { --flame-glow: 1; }
+
+/* Flimret ligger på glöden och inte på brasan, som redan delar transform
+   mellan skalan och nivåpulsen. Den globala reduced-motion-regeln i
+   _base.scss stannar det. */
+.flame-slot[data-heat='2']::before,
+.flame-slot[data-heat='3']::before {
+    animation: ember-flicker 1.1s ease-in-out infinite;
+}
+
+/* Under uppvärmningen mäts spelaren, och nivån står still. Brasan dämpas så
+   att det syns att den inte är med i leken än. */
+.flame-slot--warmup { opacity: 0.45; }
+
 .flame {
     position: relative;
     display: inline-flex;
     align-items: center;
-    font-size: 1.4rem;
+    font-size: 1em;
     transform: scale(var(--flame-scale, 1));
     transform-origin: bottom center;
     transition: transform 300ms ease;
@@ -54,11 +110,32 @@
     position: absolute;
     right: -0.6em;
     bottom: -0.3em;
-    font-size: 0.6rem;
+    font-size: 0.42em;
     font-weight: bold;
     font-family: var(--font-body);
     color: var(--text-light);
     text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+}
+
+/* Stegets namn, så att storlek och färg inte bär betydelsen ensamma. Ligger
+   absolut under rutan och tar därför ingen höjd av toppraden. */
+.flame-name {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-body);
+    font-size: 0.62rem;
+    font-weight: bold;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--accent-orange);
+}
+
+@keyframes ember-flicker {
+    0%, 100% { opacity: var(--flame-glow, 0); transform: translateX(-50%) scale(1); }
+    50% { opacity: calc(var(--flame-glow, 0) * 0.6); transform: translateX(-50%) scale(1.14); }
 }
 
 @keyframes flame-pulse-up {
@@ -104,6 +181,16 @@
 .option-btn {
     flex: 1;
     padding: 0.7em 0;
+}
+
+.menu-record {
+    margin-bottom: var(--space-3);
+    color: var(--accent-orange);
+    font-weight: bold;
+}
+
+.result-streak {
+    margin-bottom: var(--space-3);
 }
 
 .start-btn {

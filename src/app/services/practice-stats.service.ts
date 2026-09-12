@@ -33,14 +33,40 @@ interface LegacyQuestionStat {
 const STATS_KEY = 'mult-heatmap';
 const CALIBRATION_KEY = 'mult-calibration';
 const SWIPE_LEVEL_KEY = 'swipe-level';
+const SWIPE_BASELINE_KEY = 'swipe-baseline';
+const SWIPE_BEST_STREAK_KEY = 'swipe-best-streak';
 
 /** Hur många tider per tal som sparas. */
 const MAX_TIMES = 5;
+
+/** Hur länge skrivningar får samlas på hög. Varje skrivning serialiserar hela
+ *  statistiken, och en rond utan slut kan ge hundratals kort. */
+const STATS_WRITE_DELAY = 1000;
 
 /** Kalibrerad tid utanför det här spannet säger mer om ett tappat svar än om
  *  spelarens snabbhet. */
 const MIN_CALIBRATED_TIME = 0.8;
 const MAX_CALIBRATED_TIME = 4.0;
+
+/** Så många svepmätningar sveptakten vilar på. Median över dem, så att ett
+ *  tappat kort inte drar iväg den. */
+const BASELINE_WINDOW = 8;
+
+/** Färre mätningar än så säger mer om slumpen än om spelaren. */
+const MIN_BASELINE_SAMPLES = 3;
+
+/** Sveptakt utanför det här spannet säger mer om ett tappat kort än om
+ *  spelarens fart. Golvet ligger lägre än för skrivna svar — ett svep är ett
+ *  finger, inte en siffra. */
+const MIN_SWIPE_BASELINE = 0.5;
+const MAX_SWIPE_BASELINE = 3.0;
+
+/** Sveptakten för en spelare vi ännu inte mätt.
+ *
+ *  ANTAGANDE: satt på känsla, strax under Mästarens 2 s eftersom igenkänning
+ *  går fortare än att skriva ett svar. Den gäller bara de första korten innan
+ *  mätningen finns, och bör kollas mot riktiga ronder. */
+export const DEFAULT_SWIPE_BASELINE = 1.5;
 
 /**
  * Sparar hur snabbt spelaren svarar på varje tal, samt den kalibrerade
@@ -51,12 +77,41 @@ const MAX_CALIBRATED_TIME = 4.0;
 export class PracticeStatsService {
   private stats: Record<string, QuestionStat> = {};
   private fastTime: number | null = null;
+  private baselineSamples: number[] = [];
+  private statsWriteTimer?: ReturnType<typeof setTimeout>;
+  private statsDirty = false;
 
   constructor() {
     this.stats = this.migrate(this.read<Record<string, LegacyQuestionStat>>(STATS_KEY) ?? {});
     const stored = this.readRaw(CALIBRATION_KEY);
     const parsed = stored === null ? NaN : Number.parseFloat(stored);
     this.fastTime = Number.isFinite(parsed) ? parsed : null;
+    const samples = this.read<unknown>(SWIPE_BASELINE_KEY);
+    this.baselineSamples = Array.isArray(samples)
+      ? samples.filter((value): value is number => typeof value === 'number' && value > 0)
+      : [];
+
+    // Ett besvarat kort får inte gå förlorat för att fliken läggs undan innan
+    // nästa skrivning hunnit.
+    if (typeof addEventListener === 'function') {
+      addEventListener('pagehide', () => this.flush());
+      addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          this.flush();
+        }
+      });
+    }
+  }
+
+  /** Skriver ned det som väntar. Anropas när en rond tar slut och när sidan
+   *  läggs undan; däremellan sköter fördröjningen det. */
+  flush(): void {
+    clearTimeout(this.statsWriteTimer);
+    this.statsWriteTimer = undefined;
+    if (this.statsDirty) {
+      this.statsDirty = false;
+      this.write(STATS_KEY, JSON.stringify(this.stats));
+    }
   }
 
   /** `null` innan spelaren kalibrerat sig. */
@@ -106,6 +161,8 @@ export class PracticeStatsService {
     return (
       Object.keys(this.stats).length > 0 ||
       this.fastTime !== null ||
+      this.baselineSamples.length > 0 ||
+      this.swipeBestStreak > 0 ||
       this.swipeLevel !== null
     );
   }
@@ -160,7 +217,7 @@ export class PracticeStatsService {
     if (correct) {
       target.correct += 1;
     }
-    this.write(STATS_KEY, JSON.stringify(this.stats));
+    this.scheduleStatsWrite();
   }
 
   /**
@@ -187,6 +244,53 @@ export class PracticeStatsService {
     };
   }
 
+  /**
+   * Spelarens sveptakt i sekunder: mediantiden för ett ankartal hen redan kan.
+   *
+   * Det är Svepets motsvarighet till Mästarens kalibrering — tröskeln ska
+   * beskriva *spelaren* och inte uppgiften, så den mäts bara på de tal vars
+   * svar bär en regel (×1, ×10). Mäts den på vilket kort som helst stiger den
+   * med nivån, och då jagar tröskeln sin egen svans.
+   */
+  get swipeBaselineSeconds(): number {
+    if (!this.hasSwipeBaseline) {
+      return DEFAULT_SWIPE_BASELINE;
+    }
+    const sorted = [...this.baselineSamples].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+    return Math.max(MIN_SWIPE_BASELINE, Math.min(median, MAX_SWIPE_BASELINE));
+  }
+
+  /** Om sveptakten vilar på tillräckligt många mätningar för att tro på. */
+  get hasSwipeBaseline(): boolean {
+    return this.baselineSamples.length >= MIN_BASELINE_SAMPLES;
+  }
+
+  /** Lägger till en mätning. Fönstret rullar, så takten följer med när
+   *  spelaren blir snabbare i stället för att frysa vid första ronden. */
+  recordSwipeBaseline(seconds: number): void {
+    if (!Number.isFinite(seconds) || seconds <= 0) {
+      return;
+    }
+    this.baselineSamples.push(seconds);
+    if (this.baselineSamples.length > BASELINE_WINDOW) {
+      this.baselineSamples.shift();
+    }
+    this.write(SWIPE_BASELINE_KEY, JSON.stringify(this.baselineSamples));
+  }
+
+  /** Längsta räcka snabba rätt spelaren haft. Rekordet att jaga i en rond
+   *  utan slut, som annars saknar mål. */
+  get swipeBestStreak(): number {
+    const raw = this.readRaw(SWIPE_BEST_STREAK_KEY);
+    const parsed = raw === null ? NaN : Number.parseInt(raw, 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  set swipeBestStreak(streak: number) {
+    this.write(SWIPE_BEST_STREAK_KEY, String(streak));
+  }
+
   /** Nivån Svep senast landade på, så brasan börjar där den slutade. */
   get swipeLevel(): number | null {
     const raw = this.readRaw(SWIPE_LEVEL_KEY);
@@ -196,6 +300,11 @@ export class PracticeStatsService {
 
   set swipeLevel(level: number) {
     this.write(SWIPE_LEVEL_KEY, String(level));
+  }
+
+  private scheduleStatsWrite(): void {
+    this.statsDirty = true;
+    this.statsWriteTimer ??= setTimeout(() => this.flush(), STATS_WRITE_DELAY);
   }
 
   private mergedStat(a: number, b: number): QuestionStat | undefined {
@@ -230,11 +339,17 @@ export class PracticeStatsService {
   }
 
   reset(): void {
+    clearTimeout(this.statsWriteTimer);
+    this.statsWriteTimer = undefined;
+    this.statsDirty = false;
     this.stats = {};
     this.fastTime = null;
+    this.baselineSamples = [];
     this.remove(STATS_KEY);
     this.remove(CALIBRATION_KEY);
     this.remove(SWIPE_LEVEL_KEY);
+    this.remove(SWIPE_BASELINE_KEY);
+    this.remove(SWIPE_BEST_STREAK_KEY);
   }
 
   private migrate(stored: Record<string, LegacyQuestionStat>): Record<string, QuestionStat> {
