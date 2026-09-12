@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { FACTS } from '../facts/fact-catalog';
 import { DEFAULT_SWIPE_BASELINE, PracticeStatsService } from './practice-stats.service';
 
 /** Tjänsten läser localStorage i konstruktorn, så den byggs efter varje uppsättning. */
@@ -247,6 +248,28 @@ describe('PracticeStatsService', () => {
       stats.record(9, 9, true, 2500, 'swipe');
 
       expect(stats.swipeMasteredCount()).toBe(2);
+    });
+
+    it('lägger alla 55 tal ovanför diagonalen och inget två gånger', () => {
+      // Det är antagandet Svepets värmekarta vilar på: raden är den mindre
+      // faktorn, kolumnen den större, och då ska varje tal finnas precis en
+      // gång. Katalogen lagrar dem efter lättaste faktor, inte efter storlek.
+      const stats = withBaseline();
+      for (const fact of FACTS) {
+        stats.record(fact.a, fact.b, true, 1000, 'swipe');
+      }
+
+      let found = 0;
+      for (let row = 1; row <= 10; row++) {
+        for (let col = row; col <= 10; col++) {
+          if (stats.swipeStatFor(row, col)) {
+            found += 1;
+          }
+        }
+      }
+
+      expect(found).toBe(FACTS.length);
+      expect(stats.swipeMasteredCount()).toBe(FACTS.length);
     });
 
     it('vet om spelaren svept något alls', () => {

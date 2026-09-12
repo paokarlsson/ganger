@@ -13,5 +13,7 @@ export function timeColor(seconds: number, fastSeconds: number, slowSeconds: num
   }
   const span = Math.max(slowSeconds - fastSeconds, Number.EPSILON);
   const t = Math.max(0, Math.min(1, (seconds - fastSeconds) / span));
-  return `hsl(${50 * (1 - t)}, 75%, 45%)`;
+  // Avrundad: annars faller flyttalsskräp som hsl(25.000000000000007) ut, och
+  // två lika lägen på skalan ger olika strängar.
+  return `hsl(${Math.round(50 * (1 - t) * 10) / 10}, 75%, 45%)`;
 }

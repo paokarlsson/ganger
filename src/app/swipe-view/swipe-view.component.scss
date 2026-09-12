@@ -15,7 +15,9 @@
 .container {
     box-sizing: border-box;
     display: grid;
-    grid-template-rows: auto 1fr auto;
+    /* minmax(0, 1fr) och inte 1fr: annars växer mittenraden med sitt innehåll
+       i stället för att låta värmekartan skrolla inuti den. */
+    grid-template-rows: auto minmax(0, 1fr) auto;
     height: 100%;
     padding: 0.5rem 0.5rem calc(0.5rem + env(safe-area-inset-bottom));
 }
@@ -196,6 +198,64 @@
 .start-btn {
     width: 100%;
     padding: 0.8em;
+}
+
+/* --- Värmekartan ----------------------------------------------------------
+   Rutnätet självt kommer ur _ui.scss; här ligger bara skärmens egen layout.
+   min-height: 0 är vad som låter kartan skrolla i stället för att tränga ut
+   rutan den ligger i på en kort skärm. */
+.heatmap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: 0;
+    overflow-y: auto;
+    padding-top: 42px; /* skalets menyknapp ligger ovanför kortet */
+    padding-bottom: var(--space-2);
+}
+
+.heatmap-card {
+    overflow-x: auto;
+    text-align: center;
+}
+
+.heatmap-title {
+    margin-bottom: var(--space-3);
+}
+
+.heatmap-stats {
+    margin-top: var(--space-4);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--line-soft);
+}
+
+.heatmap-mastered {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    color: var(--text-light);
+}
+
+.heatmap-mastered span {
+    color: var(--accent-green);
+    font-weight: 700;
+}
+
+.heatmap-baseline {
+    margin-top: var(--space-2);
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.heatmap-baseline .value {
+    color: var(--accent-gold);
+    font-family: var(--font-display);
+}
+
+.heat-btn {
+    width: 100%;
+    margin-top: var(--space-2);
+    padding: 0.6em;
 }
 
 .main {
