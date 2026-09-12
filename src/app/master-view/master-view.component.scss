@@ -363,64 +363,6 @@
     margin-bottom: var(--space-3);
 }
 
-.heatmap-grid {
-    border-collapse: separate;
-    border-spacing: 3px;
-    margin: 0 auto;
-    font-family: var(--font-display);
-    font-size: 0.8rem;
-}
-
-.heatmap-cell {
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    text-align: center;
-    vertical-align: middle;
-    border-radius: 4px;
-}
-
-.heatmap-header,
-.heatmap-label {
-    color: var(--text-muted);
-    font-weight: 600;
-}
-
-.heatmap-data {
-    color: white;
-    font-weight: 600;
-    font-size: 0.7rem;
-    cursor: pointer;
-    transition: transform 0.1s;
-}
-
-.heatmap-data:hover {
-    transform: scale(1.2);
-    z-index: 10;
-}
-
-.heatmap-legend {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: var(--space-2);
-    margin-top: var(--space-3);
-    font-size: 0.8rem;
-    color: var(--text-muted);
-}
-
-.legend-bar {
-    width: 150px;
-    height: 12px;
-    border-radius: 6px;
-    background: linear-gradient(90deg,
-        hsl(140, 80%, 35%) 0%,
-        hsl(140, 80%, 35%) 10%,
-        hsl(50, 75%, 45%) 25%,
-        hsl(25, 75%, 45%) 60%,
-        hsl(0, 75%, 45%) 100%);
-}
-
 .heatmap-stats {
     margin-top: var(--space-4);
     padding-top: var(--space-3);
@@ -449,10 +391,3 @@
     font-family: var(--font-display);
 }
 
-/* Hela tabellen ska rymmas på en telefon utan att behöva dras i sidled. */
-@media (max-width: 420px) {
-    .heatmap-cell {
-        width: 28px;
-        height: 28px;
-    }
-}
