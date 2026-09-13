@@ -177,12 +177,20 @@ The keys inside are machine-readable and stable: `mul:7x8`, always with the
 smaller factor first. The namespace leaves room for `add:7+8` and `div:56/7`
 without reshaping the document, and the canonical ordering is what makes 7 × 8
 and 8 × 7 *one* fact instead of two rows that had to be merged on every read.
-That is why the mastery count is now out of 55 rather than 100, on the start
-screen and under *Mästaren*'s heat map alike: it is the number *Svep* already
-counted to, and counting both orderings would be counting the same knowledge
-twice. *Mästaren*'s grid stays 10 × 10 — that is what the table looks like —
-but its two halves now mirror each other, because they are the same
-measurement.
+That is why the mastery count is out of 55 rather than 100: it is the number
+*Svep* already counted to, and counting both orderings would be counting the
+same knowledge twice.
+
+It is also why there is now one heat map rather than two. `src/app/heatmap/`
+draws the 55 facts as a triangle — the row is the smaller factor, the column
+the larger — so each fact appears exactly once, and the channel is a toggle on
+it rather than a second map. The colour is always measured against *that
+channel's own* threshold: a swipe is recognition and is systematically faster
+than a typed answer, so one shared scale would have made half the table look
+mastered on the wrong grounds. Seeing a fact green under **Svept** and red
+under **Skrivet** is not a fault in the map; it is the distinction between
+recognising an answer and being able to retrieve it, which is the movement the
+whole design is about.
 
 Alongside it, under `ganger-observations`, sits a short ring buffer of raw
 events from *Para ihop* — what was paired, how long it took, how many pairs
@@ -204,6 +212,18 @@ is free — so a later threshold can be set on that number rather than on taste.
 A mispairing is recorded too, with *both* facts and the answer that was chosen,
 because pairing 7 × 8 with 54 is the same kind of information the distractors
 are built from.
+
+Reading it back is what the **Exportera data** button on *Mästaren*'s heat map
+screen is for. The log lives in `localStorage` on the device it was practised
+on, and that device is a tablet with no developer tools — without a way out,
+the log is data nobody can read. The button puts both keys on the clipboard, or
+downloads them as a file where the clipboard is refused; both are needed,
+because the correlation above compares against swipe times, which live in the
+progress document. Drop the result in `tools/observations.json` and run
+`npm test`: `observation-analysis.ts` writes a report to
+`tools/observations-report.txt`. Neither file is committed — a child's response
+times do not belong in a public repo — and nothing in `src/app` imports the
+analysis, so it never reaches the bundle.
 
 *Para ihop* still picks its facts at random, even though the catalogue knows
 which ones are hard. That is deliberate: calibrating against the log needs an
@@ -230,8 +250,12 @@ All of it is cleared by the **Nollställ** button on the heat map screen, and by
 | `src/app/services/observation-log.ts` | Raw training events; written, not yet read |
 | `src/app/training/training-engine.ts` | What the game believes about the player, and what it does with that |
 | `src/app/training/auto-difficulty.ts` | How *Mästaren*'s auto mode moves between difficulty groups |
+| `src/app/heatmap/` | The one heat map, shared by both games |
+| `src/app/training/observation-analysis.ts` | Reads the observation log; not part of the app |
+| `src/app/services/progress-export.ts` | Gets the log and the progress off the device |
 | `src/app/services/time-color.ts` | The green-to-red scale both heat maps colour a time with |
 | `src/app/theme-picker/` | **Temporary** — the theme picker; see below |
+| `docs/plan.md` | What is decided, what is open, and which constants are guesses |
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) and runs on
 Angular 22. Building it needs Node 22.22.3 or later (24 LTS is what CI and
@@ -261,6 +285,12 @@ function from old state plus one event to new state, which is the shape the
 whole model is meant to have:
 
     old state + new event = new state
+
+Where this is all going — the remaining steps, the questions still open, and
+the constants that were set by feel rather than measured — is written down in
+[`docs/plan.md`](docs/plan.md), in Swedish, alongside the reasoning behind each
+one. Constants it lists are marked `ANTAGANDE:` where they are defined, so the
+code points back at it.
 
 `auto-difficulty.ts` is the newest of them and came out of
 `master-view.component.ts`, where the same rule lived as three mutable fields

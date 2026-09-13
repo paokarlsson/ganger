@@ -1,8 +1,10 @@
 import { Component, ElementRef, OnDestroy, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
+import { HeatmapComponent } from '../heatmap/heatmap.component';
 import { ObservationLog } from '../services/observation-log';
+import { ProgressExportService } from '../services/progress-export';
 import { timeColor } from '../services/time-color';
 import { AutoDifficultyState, initialAutoDifficulty } from '../training/auto-difficulty';
-import { ChannelStat, TrainingEngine } from '../training/training-engine';
+import { TrainingEngine } from '../training/training-engine';
 import {
   CALIBRATION_QUESTIONS,
   DIFFICULTY,
@@ -33,14 +35,6 @@ interface BreakdownRow {
   color: string;
 }
 
-interface HeatmapCell {
-  text: string;
-  /** Tom för en ruta utan mätning — den färgas av `--untested` i stället. */
-  color: string;
-  title: string;
-  untested: boolean;
-}
-
 /** Hur länge facit står kvar innan nästa fråga kommer. */
 const NEXT_QUESTION_DELAY_MS = { correct: 800, wrong: 1700 };
 
@@ -49,6 +43,7 @@ const STREAK_VISIBLE_FROM = 3;
 
 @Component({
   selector: 'app-master-view',
+  imports: [HeatmapComponent],
   templateUrl: './master-view.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './master-view.component.scss',
@@ -89,13 +84,13 @@ export class MasterViewComponent implements OnDestroy {
   resultBestTime = '';
   breakdown: BreakdownRow[] = [];
 
-  // Värmekarta
-  heatmapRows: { label: number; cells: HeatmapCell[] }[] = [];
-  masteredCount = 0;
-  factCount = 0;
+  // Värmekarta — rutnätet ligger i <app-heatmap>; kvar här är bara exporten.
+  /** Kvittens efter en export. Tom när inget exporterats den här gången. */
+  exportNotice = '';
 
   private readonly engine = inject(TrainingEngine);
   private readonly observations = inject(ObservationLog);
+  private readonly exporter = inject(ProgressExportService);
   private questions: Pair[] = [];
   private questionStartTime = 0;
   private timerHandle?: ReturnType<typeof setInterval>;
@@ -341,8 +336,28 @@ export class MasterViewComponent implements OnDestroy {
   // --- Värmekarta -----------------------------------------------------------
 
   openHeatmap(): void {
-    this.buildHeatmap();
     this.screen = 'heatmap';
+  }
+
+  /**
+   * Lägger allt spelet samlat i urklippet, eller som en fil när urklippet
+   * nekas. Knappen står här och ingen annanstans: det här är skärmen för den
+   * som vill titta på siffror, och exporten läses av `observation-analysis.ts`
+   * och inte av spelet.
+   */
+  exportProgress(): void {
+    this.exportNotice = '';
+    void this.exporter.share().then(
+      (how) => {
+        this.exportNotice =
+          how === 'clipboard' ? 'Kopierat till urklipp ✓' : 'Nedladdat som fil ✓';
+      },
+      () => (this.exportNotice = 'Det gick inte att exportera.'),
+    );
+  }
+
+  get canExport(): boolean {
+    return this.exporter.hasSomethingToExport;
   }
 
   resetStats(): void {
@@ -350,7 +365,8 @@ export class MasterViewComponent implements OnDestroy {
       return;
     }
     this.observations.clear();
-    void this.engine.reset().then(() => this.buildHeatmap());
+    // Tillbaka till menyn: kartan är tom nu, och menyn är där man ser det.
+    void this.engine.reset().then(() => (this.screen = 'menu'));
   }
 
   // --- Internt --------------------------------------------------------------
@@ -459,48 +475,6 @@ export class MasterViewComponent implements OnDestroy {
     });
   }
 
-  private buildHeatmap(): void {
-    const rows: { label: number; cells: HeatmapCell[] }[] = [];
-
-    for (let row = 1; row <= 10; row++) {
-      const cells: HeatmapCell[] = [];
-      for (let col = 1; col <= 10; col++) {
-        const stat = this.engine.statFor(row, col);
-        const average = this.engine.averageSeconds(stat);
-        if (!stat || average === null) {
-          cells.push({
-            text: '—',
-            color: '',
-            title: `${row} × ${col}: Ej testad`,
-            untested: true,
-          });
-          continue;
-        }
-        cells.push({
-          text: average.toFixed(1),
-          color: this.timeColor(average),
-          title: this.heatmapTitle(row, col, stat, average),
-          untested: false,
-        });
-      }
-      rows.push({ label: row, cells });
-    }
-
-    this.heatmapRows = rows;
-    this.masteredCount = this.engine.masteredCount();
-    this.factCount = this.engine.factCount;
-  }
-
-  private heatmapTitle(row: number, col: number, stat: ChannelStat, average: number): string {
-    const accuracy = stat.total > 0 ? Math.round((stat.correct / stat.total) * 100) : 0;
-    return [
-      `${row} × ${col} = ${row * col}`,
-      `Snitt (senaste ${stat.times.length}): ${average.toFixed(1)}s`,
-      `Rätt totalt: ${accuracy}%`,
-      `Försök: ${stat.total}`,
-    ].join('\n');
-  }
-
   /** Fisher-Yates på en kopia, så anroparens lista lämnas orörd. */
   private shuffle<T>(items: readonly T[]): T[] {
     const out = [...items];
@@ -511,7 +485,8 @@ export class MasterViewComponent implements OnDestroy {
     return out;
   }
 
-  /** Grönt upp till den kalibrerade tiden, sedan gult mot rött. */
+  /** Grönt upp till den kalibrerade tiden, sedan gult mot rött. Färgar
+   *  resultatskärmens uppdelning; värmekartan färgar sig själv. */
   private timeColor(seconds: number): string {
     return timeColor(seconds, this.engine.fastSeconds, this.engine.slowSeconds);
   }

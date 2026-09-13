@@ -58,13 +58,21 @@ const MIN_SWIPE_BASELINE = 0.5;
 const MAX_SWIPE_BASELINE = 3.0;
 
 /** Så stor andel av en grupp som ska sitta för att spelaren ska räknas som
- *  hemma där, och flyttas upp. */
+ *  hemma där, och flyttas upp.
+ *
+ *  ANTAGANDE: satt på känsla. Se docs/plan.md. */
 const AT_HOME_SHARE = 0.7;
 
-/** Färre svar än så säger för lite för att kalla ett tal automatiserat. */
+/** Färre svar än så säger för lite för att kalla ett tal automatiserat.
+ *
+ *  ANTAGANDE: satt på känsla. Tre svar är lite för en dom som styr vilka tal
+ *  spelaren möter härnäst. */
 const MIN_MASTERY_SAMPLES = 3;
 
-/** Hur många av de mest träningsvärda talen auto-läget slumpar bland. */
+/** Hur många av de mest träningsvärda talen auto-läget slumpar bland.
+ *
+ *  ANTAGANDE: satt på känsla. Bredden avgör hur förutsägbar ordningen blir,
+ *  och hur hårt ronden lutar mot det svåraste spelaren har. */
 const AUTO_CANDIDATES = 10;
 
 /** Sveptakten för en spelare vi ännu inte mätt.
@@ -158,7 +166,11 @@ export class TrainingEngine {
     return this.fastSeconds * SLOW_TIME_MULTIPLIER;
   }
 
-  /** Median av mätningarna plus 20 % marginal, klippt till ett rimligt spann. */
+  /** Median av mätningarna plus 20 % marginal, klippt till ett rimligt spann.
+   *
+   *  ANTAGANDE: marginalen är satt på känsla. Den är skillnaden mellan att
+   *  mäta spelarens toppfart och att mäta en fart hen kan hålla. Se
+   *  docs/plan.md. */
   calibrate(timesMs: number[]): void {
     const sorted = [...timesMs].sort((a, b) => a - b);
     const median = sorted[Math.floor(sorted.length / 2)] / 1000;
@@ -179,31 +191,32 @@ export class TrainingEngine {
   }
 
   /**
-   * De skrivna svaren på ett tal. 7 × 8 och 8 × 7 är ett och samma tal och
-   * lagras under en nyckel, så ordningen spelar ingen roll.
+   * Mätningarna på ett tal i en kanal. 7 × 8 och 8 × 7 är ett och samma tal
+   * och lagras under en nyckel, så ordningen spelar ingen roll.
    */
-  statFor(a: number, b: number): ChannelStat | undefined {
-    return this.channel(a, b, 'typed');
-  }
-
-  /** Svepen på ett tal, på samma villkor. */
-  swipeStatFor(a: number, b: number): ChannelStat | undefined {
-    return this.channel(a, b, 'swipe');
+  statFor(a: number, b: number, channel: Channel = 'typed'): ChannelStat | undefined {
+    const stat = this.progress.facts[progressKeyFor(a, b)]?.[channel];
+    return stat && stat.total > 0 ? stat : undefined;
   }
 
   /**
-   * Om spelaren hunnit skriva några svar. Styr framstegsmätaren, som räknar
-   * skrivna svar — den som bara svept har inget att visa där ännu, och ska
-   * mötas av välkomsttexten och inte av "0 tal sitter".
+   * Om spelaren gjort något alls i en kanal. Styr om det finns en värmekarta
+   * att visa, och om startsidan ska säga "0 tal sitter" eller hälsa.
    */
-  get hasPractice(): boolean {
-    return Object.values(this.progress.facts).some((entry) => entry.typed.times.length > 0);
+  hasPracticeIn(channel: Channel): boolean {
+    return Object.values(this.progress.facts).some((entry) => entry[channel].times.length > 0);
   }
 
-  /** Om spelaren svept något alls — styr om Svepets värmekarta har något att
-   *  visa. Skild från `hasPractice`, som räknar skrivna svar. */
-  get hasSwipePractice(): boolean {
-    return Object.values(this.progress.facts).some((entry) => entry.swipe.times.length > 0);
+  /** Skrivna svar. Framstegsmätaren räknar dem — den som bara svept har inget
+   *  att visa där ännu. */
+  get hasPractice(): boolean {
+    return this.hasPracticeIn('typed');
+  }
+
+  /** Om någon kanal har något att visa. Styr om värmekartan går att öppna:
+   *  den visar båda, så det räcker att en av dem är övad. */
+  get hasAnyPractice(): boolean {
+    return this.hasPracticeIn('typed') || this.hasPracticeIn('swipe');
   }
 
   /** Om det finns något sparat om spelaren alls — det som `reset()` rensar. */
@@ -212,18 +225,22 @@ export class TrainingEngine {
   }
 
   /**
-   * Hur många av tabellens tal som i snitt svaras på inom den snabba tiden —
-   * måttet både värmekartan och startsidan visar.
+   * Hur många av tabellens tal som i snitt besvaras inom den snabba tiden i en
+   * kanal — måttet värmekartan och startsidan visar.
    *
    * Räknar till 55 och inte till 100: 7 × 8 och 8 × 7 är samma kunskap, och
    * sedan nycklarna kanoniserats är de också en enda rad i lagret. Att räkna
    * dem som två skulle vara att räkna samma sak två gånger.
+   *
+   * Varje kanal mäts mot sin egen tröskel. Ett svep är igenkänning och går
+   * systematiskt snabbare än ett skrivet svar; att jämföra dem mot samma tid
+   * vore att kalla halva tabellen behärskad på fel grund.
    */
-  masteredCount(): number {
-    const fast = this.fastSeconds;
+  masteredCount(channel: Channel = 'typed'): number {
+    const fast = this.fastSecondsFor(channel);
     let mastered = 0;
     for (const fact of FACTS) {
-      const average = this.averageSeconds(this.statFor(fact.a, fact.b));
+      const average = this.averageSeconds(this.statFor(fact.a, fact.b, channel));
       if (average !== null && average <= fast) {
         mastered += 1;
       }
@@ -231,17 +248,23 @@ export class TrainingEngine {
     return mastered;
   }
 
-  /** Samma mått för svepen, mot svepens egen tröskel. */
-  swipeMasteredCount(): number {
-    const fast = this.swipeFastSeconds;
-    let mastered = 0;
-    for (const fact of FACTS) {
-      const average = this.averageSeconds(this.swipeStatFor(fact.a, fact.b));
-      if (average !== null && average <= fast) {
-        mastered += 1;
-      }
-    }
-    return mastered;
+  /** Tröskeln för «automatiserat» i en kanal. Aldrig jämförbar mellan två. */
+  fastSecondsFor(channel: Channel): number {
+    return channel === 'swipe' ? this.swipeFastSeconds : this.fastSeconds;
+  }
+
+  /** Var «segt» börjar i en kanal. Färgskalans andra ände. */
+  slowSecondsFor(channel: Channel): number {
+    return channel === 'swipe' ? this.swipeSlowSeconds : this.slowSeconds;
+  }
+
+  /**
+   * Takten kanalens tröskel vilar på, som text. Skrivna svar mäts mot en
+   * kalibrering, svep mot sveptakten, och de två är olika saker — därför har
+   * de olika etikett i kartan.
+   */
+  baselineSecondsFor(channel: Channel): number | null {
+    return channel === 'swipe' ? this.swipeBaselineSeconds : this.calibratedFastTime;
   }
 
   /** Snittid i sekunder, eller `null` för ett tal som aldrig övats. */
@@ -505,11 +528,6 @@ export class TrainingEngine {
       }
     }
     return mastered / pairs.length;
-  }
-
-  private channel(a: number, b: number, channel: Channel): ChannelStat | undefined {
-    const stat = this.progress.facts[progressKeyFor(a, b)]?.[channel];
-    return stat && stat.total > 0 ? stat : undefined;
   }
 
   private scheduleWrite(): void {

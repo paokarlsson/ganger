@@ -352,45 +352,18 @@
     align-items: center;
 }
 
-/* Värmekartan */
+/* Värmekartan bor i <app-heatmap>; här ligger bara skärmen runt den. De
+   projicerade knapparna behåller den här komponentens stilar. */
 .heatmap-screen {
     text-align: center;
 }
 
-.heatmap-card {
-    margin-bottom: var(--space-4);
-    overflow-x: auto;
+/* Kvittensen efter en export. Håller sin höjd även när den är tom, så att
+   knappraden ovanför inte flyttar sig. */
+.export-notice {
+  min-height: 1.2em;
+  margin: var(--space-1) 0 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: color-mix(in oklch, var(--tone) 62%, transparent);
 }
-
-.heatmap-title {
-    margin-bottom: var(--space-3);
-}
-
-.heatmap-stats {
-    margin-top: var(--space-4);
-    padding-top: var(--space-3);
-    border-top: 1px solid var(--line-soft);
-}
-
-.mastered-count {
-    font-family: var(--font-display);
-    font-size: 1.1rem;
-    color: var(--text-primary);
-}
-
-.mastered-count span {
-    color: var(--accent-green);
-    font-weight: 700;
-}
-
-.baseline-info {
-    margin-top: var(--space-2);
-    font-size: 0.9rem;
-    color: var(--text-muted);
-}
-
-.baseline-info .value {
-    color: var(--accent-highlight);
-    font-family: var(--font-display);
-}
-

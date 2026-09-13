@@ -16,13 +16,26 @@ export const LEVEL_MAX = 10;
 const FOCUS_AT_MIN_LEVEL = 4;
 const FOCUS_AT_MAX_LEVEL = FACTS.length;
 
-/** Hur brett fönstret är. Bredare = mer blandning mellan nivåerna. */
+/** Hur brett fönstret är. Bredare = mer blandning mellan nivåerna.
+ *
+ *  ANTAGANDE: satt på känsla. Bredden avgör hur mycket av tabellen en nivå
+ *  släpper fram, och därmed hur ofta ett för svårt tal dyker upp. Se
+ *  docs/plan.md. */
 const FOCUS_SPREAD = 9;
 
-/** Golvet som håller varje tal möjligt, hur långt från fokus det än ligger. */
+/** Golvet som håller varje tal möjligt, hur långt från fokus det än ligger.
+ *
+ *  ANTAGANDE: satt på känsla. Att det finns ett golv är en princip — annars
+ *  märks det aldrig att ett behärskat tal rostat — men just 0,02 är en
+ *  gissning om hur sällan «sällan» ska vara. */
 const WEIGHT_FLOOR = 0.02;
 
-/** Så många kort bakåt ett tal hålls borta för att inte komma igen direkt. */
+/** Så många kort bakåt ett tal hålls borta för att inte komma igen direkt.
+ *
+ *  ANTAGANDE: satt på känsla. Ett svårt tal ska återkomma efter några andra
+ *  uppgifter, inte omedelbart — men spärren slåss med en framtida kvot för
+ *  nya tal, som kan kräva ett nytt tal oftare än spärren släpper fram det.
+ *  Se docs/plan.md. */
 export const RECENT_MEMORY = 8;
 
 /** Vad spelaren presterat på ett tal. `null` betyder "aldrig övat". */
@@ -58,6 +71,10 @@ export function windowWeight(rank: number, level: number): number {
  * Hur mycket ett tal behöver övas. Ett obeprövat tal är värt att mäta, ett
  * långsamt eller felstavat värt att nöta, ett behärskat får komma sällan — men
  * aldrig aldrig, annars märks det inte när det rostar.
+ *
+ * ANTAGANDE: hela trappan nedan är satt på känsla — 0,15 för ett behärskat
+ * tal, taket på 3 för seghet, gränsen 0,9 rätt. Formen är resonerad, siffrorna
+ * är inte mätta. Se docs/plan.md.
  */
 export function needWeight(
   performance: FactPerformance | undefined,

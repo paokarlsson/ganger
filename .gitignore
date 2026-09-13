@@ -37,5 +37,7 @@ testem.log
 .DS_Store
 Thumbs.db
 
-# Build output published by CI, never committed
-/docs
+# Exporterad övningsdata. Ett barns svarstider hör inte hemma i ett publikt
+# repo; filen är indata till observation-analysis.report.spec.ts.
+/tools/observations.json
+/tools/observations-report.txt

@@ -36,6 +36,9 @@ export function isEndless(questionCount: number): boolean {
 /**
  * Så många kort ronden öppnar med för att mäta spelarens sveptakt. Nivån står
  * still under dem — det är spelaren som mäts, inte tvärtom.
+ *
+ * ANTAGANDE: satt på känsla. Fler kort ger en stabilare takt men en längre
+ * uppvärmning innan ronden känns som en rond. Se docs/plan.md.
  */
 export const CALIBRATION_CARDS = 5;
 
@@ -117,11 +120,19 @@ export function nextStreak(streak: number, correct: boolean, fast: boolean): num
   return fast ? streak + 1 : streak;
 }
 
-/** Nivån stiger försiktigt, sjunker snabbt. */
+/** Nivån stiger försiktigt, sjunker snabbt.
+ *
+ *  ANTAGANDE: asymmetrin är rätt i stabilt läge men fel under uppvärmningen,
+ *  som ska hitta spelarens nivå fort. Tanken är att uppsteget ska bero på
+ *  räckan och falla tillbaka hit när fönstret är slut. Se docs/plan.md,
+ *  öppen fråga 6. */
 export const LEVEL_UP_STEP = 1;
 export const LEVEL_DOWN_STEP = 2;
 
-/** Startnivå för en spelare vi inte vet något om. */
+/** Startnivå för en spelare vi inte vet något om.
+ *
+ *  ANTAGANDE: satt på känsla, mitt på skalan och en gnutta under. Principen är
+ *  att börja under det systemet tror och accelerera tills motstånd uppstår. */
 export const DEFAULT_START_LEVEL = 4;
 
 /** Antal tal `masteredCount()` räknar upp till. */
