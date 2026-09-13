@@ -15,8 +15,8 @@
     overflow-y: auto;
     background:
         /* Ett svagt gångertecken-mönster ovanpå appens vanliga botten. */
-        repeating-linear-gradient(45deg, rgba(var(--tone-rgb), 0.03) 0 2px, transparent 2px 22px),
-        repeating-linear-gradient(-45deg, rgba(var(--tone-rgb), 0.03) 0 2px, transparent 2px 22px),
+        repeating-linear-gradient(45deg, color-mix(in oklab, var(--tone) 3%, transparent) 0 2px, transparent 2px 22px),
+        repeating-linear-gradient(-45deg, color-mix(in oklab, var(--tone) 3%, transparent) 0 2px, transparent 2px 22px),
         var(--surface);
     color: var(--text-primary);
     text-align: center;
@@ -156,7 +156,7 @@
 }
 
 .art-pill {
-    fill: rgba(var(--tone-rgb), 0.16);
+    fill: color-mix(in oklab, var(--tone) 16%, transparent);
 }
 
 .art-link {
@@ -173,8 +173,8 @@
 }
 
 .art-card rect {
-    fill: rgba(var(--tone-rgb), 0.16);
-    stroke: rgba(var(--tone-rgb), 0.35);
+    fill: color-mix(in oklab, var(--tone) 16%, transparent);
+    stroke: color-mix(in oklab, var(--tone) 35%, transparent);
     stroke-width: 2;
 }
 
@@ -208,7 +208,7 @@
 }
 
 .art-ring {
-    stroke: rgba(var(--tone-rgb), 0.16);
+    stroke: color-mix(in oklab, var(--tone) 16%, transparent);
 }
 
 .art-ring-fill {
@@ -317,7 +317,7 @@
     z-index: 2; /* svepkortet ligger på z-index 1 */
     max-width: calc(var(--shell-back-space) - 0.5rem);
     background: var(--bg-card);
-    border-color: rgba(var(--tone-rgb), 0.25);
+    border-color: color-mix(in oklab, var(--tone) 25%, transparent);
     color: var(--text-primary);
 }
 

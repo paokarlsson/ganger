@@ -271,7 +271,7 @@ const STYLE_ID = 'ganger-teman';
             gap: 2px;
             padding: 3px;
             border-radius: var(--radius-sm);
-            background: rgba(var(--tone-rgb), 0.1);
+            background: color-mix(in oklab, var(--tone) 10%, transparent);
         }
 
         .chip {
@@ -433,16 +433,16 @@ function injectThemeStyles(): void {
 function fallbackPalette(mode: 'light' | 'dark'): Record<string, string> {
     return mode === 'light'
         ? {
-              '--bg-card': '#ffffff',
-              '--accent-highlight': '#8a6300',
-              '--accent-green': '#157a41',
-              '--accent-red': '#c3372b',
+              '--bg-card': 'oklch(0.999 0.002 85)',
+              '--accent-highlight': 'oklch(0.505 0.111 68)',
+              '--accent-green': 'oklch(0.505 0.125 155)',
+              '--accent-red': 'oklch(0.505 0.165 25)',
           }
         : {
-              '--bg-card': '#16213e',
-              '--accent-highlight': '#ffd700',
-              '--accent-green': '#2ecc71',
-              '--accent-red': '#ea6253',
+              '--bg-card': 'oklch(0.248 0.024 272)',
+              '--accent-highlight': 'oklch(0.84 0.155 82)',
+              '--accent-green': 'oklch(0.8 0.155 155)',
+              '--accent-red': 'oklch(0.72 0.165 25)',
           };
 }
 
