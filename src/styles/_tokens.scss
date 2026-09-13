@@ -1,57 +1,146 @@
 /* Appens formspråk i token-form. Allt som mer än en yta behöver ska stå här,
-   så att en ändring slår igenom i alla tre spelen och på startsidan. */
+   så att en ändring slår igenom i alla tre spelen och på startsidan.
+
+   Färgerna ligger i två paletter, en mörk och en ljus, och resten av appen
+   rör aldrig en färg direkt utan går via ett token. Två saker gör att det
+   fungerar i båda lägena:
+
+   - --tone-rgb är "motsatsen till underlaget", vit i mörkt läge och bläck i
+     ljust. Allt som förr var rgba(255, 255, 255, x) — ramar, svaga fyllningar,
+     mönstret på startsidan — räknas ur den, så en yta som lyfte sig ur en mörk
+     botten lyfter sig ur en ljus också.
+   - --on-highlight och --on-green är texten ovanpå de två färgerna som används
+     som fyllning. Förr stod --bg-floor där, vilket bara stämmer så länge
+     botten är mörk.
+
+   Lägena väljs så här: utan val följer appen systemets inställning, och
+   data-mode="light" eller "dark" på <html> vinner över den. */
+
+/* --- Mörk palett ---------------------------------------------------------- */
+@mixin dark-palette {
+    color-scheme: dark;
+
+    --bg-base: #1a1a2e;
+    --bg-floor: #0f0f23;
+    --bg-card: #16213e;
+    --bg-card-raised: #1e2b50;
+
+    --accent-highlight: #ffd700;
+    --on-highlight: #0f0f23;
+
+    --accent-green: #2ecc71;
+    /* Primärknappens gradient och den skugga den trycks ned mot. */
+    --green-deep: #27ae60;
+    --green-shadow: #1e8449;
+    /* Texten är mörk, inte vit: vitt mot det ljusa gröna gav 2.1:1. */
+    --on-green: #0f0f23;
+
+    /* Aningen ljusare än det ursprungliga #e74c3c, som låg på 4.46:1 mot
+       bakgrunden och därmed strax under WCAG:s 4.5:1 för brödtext. */
+    --accent-red: #ea6253;
+    --accent-orange: #f39c12;
+
+    /* Svepets kort är medvetet ljusare än --accent-highlight — det ska läsas
+       som ett spelkort på bordet, inte som en rubrik. Kortet är ett föremål
+       och behåller därför sin färg i båda lägena. */
+    --card-face: #ffde5c;
+    --card-ink: #1a1a2e;
+
+    --text-primary: #f0f0f0;
+    --text-muted: #9096a4;
+
+    /* Vitt: det som ska lyfta sig ur en mörk botten. */
+    --tone-rgb: 255, 255, 255;
+    /* Se --line-strong nedan. Mot en mörk botten räcker det här. */
+    --line-strong-alpha: 0.45;
+
+    --shadow-card: 0 3px 1px -2px rgba(0, 0, 0, 0.2),
+        0 2px 2px 0 rgba(0, 0, 0, 0.14),
+        0 1px 5px 0 rgba(0, 0, 0, 0.12);
+    /* Rubrikerna står mot en mörk botten och tål en skugga under sig. */
+    --title-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    --title-shadow-lg: 0 3px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* --- Ljus palett -----------------------------------------------------------
+   Inte den mörka spegelvänd: guldet, det gröna och det röda är mörkare här,
+   eftersom samma färg som bär text mot mörkt inte bär text mot ljust. Där de
+   i stället är fyllning — den aktiva växeln, primärknappen — är texten ovanpå
+   ljus, och det är vad --on-highlight och --on-green byter ut. */
+@mixin light-palette {
+    color-scheme: light;
+
+    --bg-base: #f7f8fc;
+    --bg-floor: #e8ebf5;
+    --bg-card: #ffffff;
+    --bg-card-raised: #eef1f9;
+
+    --accent-highlight: #8a6300;
+    --on-highlight: #fffdf5;
+
+    --accent-green: #157a41;
+    --green-deep: #106836;
+    --green-shadow: #0b4d28;
+    --on-green: #ffffff;
+
+    --accent-red: #c3372b;
+    --accent-orange: #9a5300;
+
+    --card-face: #ffde5c;
+    --card-ink: #1a1a2e;
+
+    --text-primary: #16203a;
+    --text-muted: #545d73;
+
+    /* Bläck: samma roll som vitt har i den mörka paletten. */
+    --tone-rgb: 16, 24, 48;
+    /* Högre än i mörkt läge: bläck mot ett vitt kort tar sig inte över 3:1
+       förrän här, medan vitt mot en mörk botten är där redan vid 0.45. */
+    --line-strong-alpha: 0.55;
+
+    --shadow-card: 0 1px 2px rgba(16, 24, 48, 0.06),
+        0 4px 12px rgba(16, 24, 48, 0.08);
+    /* Mot en ljus botten blir en skugga bakom texten smuts, inte djup. */
+    --title-shadow: none;
+    --title-shadow-lg: none;
+}
+
 :root {
     /* Originalet hämtade Fredoka och Nunito från Google Fonts. Appen ska
        fungera utan nätet, så den använder systemtypsnitt i stället. */
     --font-display: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
     --font-body: 'Segoe UI', system-ui, -apple-system, sans-serif;
 
-    --bg-dark: #1a1a2e;
-    --bg-deep: #0f0f23;
-    --bg-card: #16213e;
-    --bg-card-raised: #1e2b50;
-
     /* Alla fyra ytor ligger på samma botten. */
-    --surface: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-deep) 100%);
+    --surface: linear-gradient(135deg, var(--bg-base) 0%, var(--bg-floor) 100%);
 
-    --accent-gold: #ffd700;
-    --accent-green: #2ecc71;
-    /* Aningen ljusare än det ursprungliga #e74c3c, som låg på 4.46:1 mot
-       bakgrunden och därmed strax under WCAG:s 4.5:1 för brödtext. */
-    --accent-red: #ea6253;
-    --accent-orange: #f39c12;
-
-    /* Toningar för rätt- och felmarkerade ytor. Texten ovanpå dem är ljus,
-       inte grön eller röd — färg mot sin egen toning ger för lite kontrast. */
-    --tint-green: rgba(46, 204, 113, 0.2);
-    --tint-red: rgba(234, 98, 83, 0.2);
-    --tint-red-strong: rgba(234, 98, 83, 0.38);
-
-    /* Primärknappens gradient och den skugga den trycks ned mot. */
-    --green-deep: #27ae60;
-    --green-shadow: #1e8449;
-
-    /* Svepets kort är medvetet ljusare än --accent-gold — det ska läsas som
-       ett spelkort på bordet, inte som en rubrik. */
-    --card-yellow: rgb(255, 222, 92);
+    /* Toningar för rätt- och felmarkerade ytor, uträknade ur accenten i
+       stället för skrivna som en egen rgba — annars måste varje palett hålla
+       reda på samma färg två gånger. Texten ovanpå dem är den vanliga, inte
+       grön eller röd: färg mot sin egen toning ger för lite kontrast. */
+    --tint-green: color-mix(in srgb, var(--accent-green) 20%, transparent);
+    --tint-red: color-mix(in srgb, var(--accent-red) 20%, transparent);
+    --tint-red-strong: color-mix(in srgb, var(--accent-red) 38%, transparent);
+    --tint-highlight: color-mix(in srgb, var(--accent-highlight) 12%, transparent);
+    --line-highlight: color-mix(in srgb, var(--accent-highlight) 30%, transparent);
 
     /* Skalets menyknapp ligger över spelen i övre vänstra hörnet. Spel som
        ritar något i toppen håller sig undan så här långt in. */
     --shell-back-space: 7rem;
 
-    --text-light: #f0f0f0;
-    --text-muted: rgba(255, 255, 255, 0.5);
     /* Enbart för avdelare och annat som inte är en kontroll. */
-    --line-soft: rgba(255, 255, 255, 0.12);
+    --line-soft: rgba(var(--tone-rgb), 0.12);
 
     /* Ytor som lyfter sig ur bakgrunden utan att ta en egen färg. */
-    --fill-soft: rgba(255, 255, 255, 0.05);
-    --fill-hover: rgba(255, 255, 255, 0.15);
+    --fill-soft: rgba(var(--tone-rgb), 0.05);
+    --fill-quiet: rgba(var(--tone-rgb), 0.1);
+    --fill-hover: rgba(var(--tone-rgb), 0.15);
     /* Ramen runt en kontroll är det som gör den till en kontroll, så den
        ligger på 3:1 enligt WCAG 1.4.11 — och det mot båda sina grannar,
        alltså både underlaget utanför och kontrollens egen fyllning. Det
-       senare är vad som kräver så här hög alfa. */
-    --line-strong: rgba(255, 255, 255, 0.45);
+       senare är vad som kräver så här hög alfa. Hur hög står i paletten:
+       den skiljer sig åt mellan lägena. */
+    --line-strong: rgba(var(--tone-rgb), var(--line-strong-alpha));
 
     /* Tre radier räcker för hela appen: liten yta, panel och piller. */
     --radius-sm: 10px;
@@ -64,10 +153,21 @@
     --space-4: 1.35rem;
     --space-5: 2rem;
 
-    --shadow-card: 0 3px 1px -2px rgba(0, 0, 0, 0.2),
-        0 2px 2px 0 rgba(0, 0, 0, 0.14),
-        0 1px 5px 0 rgba(0, 0, 0, 0.12);
-
-    --focus-ring: 3px solid var(--accent-gold);
+    --focus-ring: 3px solid var(--accent-highlight);
     --motion-fast: 0.2s ease;
+
+    @include dark-palette;
+}
+
+/* Utan eget val i appen är det systemet som bestämmer. */
+@media (prefers-color-scheme: light) {
+    :root:not([data-mode='dark']) {
+        @include light-palette;
+    }
+}
+
+/* Ett val i appen väger tyngre än systemets. Samma specificitet som regeln
+   ovan, men den står senare och vinner därför. */
+:root[data-mode='light'] {
+    @include light-palette;
 }

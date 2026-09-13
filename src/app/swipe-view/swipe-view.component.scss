@@ -9,7 +9,7 @@
     height: 100dvh; /* vh räknar med adressfältet utfällt på iOS Safari */
     font-family: var(--font-body);
     background: var(--surface);
-    color: var(--text-light);
+    color: var(--text-primary);
 }
 
 .container {
@@ -115,8 +115,10 @@
     font-size: 0.42em;
     font-weight: bold;
     font-family: var(--font-body);
-    color: var(--text-light);
-    text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+    color: var(--text-primary);
+    /* Halon är underlagets färg och inte svart: siffran ligger ovanpå glöden
+       och behöver skiljas från den i båda lägena. */
+    text-shadow: 0 0 3px var(--bg-base), 0 0 6px var(--bg-base);
 }
 
 /* Stegets namn, så att storlek och färg inte bär betydelsen ensamma. Ligger
@@ -233,7 +235,7 @@
 .heatmap-mastered {
     font-family: var(--font-display);
     font-size: 1.1rem;
-    color: var(--text-light);
+    color: var(--text-primary);
 }
 
 .heatmap-mastered span {
@@ -248,7 +250,7 @@
 }
 
 .heatmap-baseline .value {
-    color: var(--accent-gold);
+    color: var(--accent-highlight);
     font-family: var(--font-display);
 }
 
@@ -294,18 +296,29 @@
     padding: 0.6em 1em;
     overflow: visible;
     clip-path: none;
+    border: 2px solid transparent;
     border-radius: 12px;
     font: inherit;
     font-weight: bold;
-    color: #fff;
+    /* Samma uppdelning som resten av appen: färgen bärs av ram och toning,
+       texten är den vanliga. Grönt respektive rött som fyllning under vit
+       text ligger på 3:1 och räcker inte för en knapptext den här storleken —
+       och en fast vit text bryts dessutom av det ljusa läget. */
+    color: var(--text-primary);
     cursor: pointer;
-    outline: 3px solid #fff;
+    outline: var(--focus-ring);
     outline-offset: 3px;
 }
 
-/* Mörkare gröna och röda än temats accenter — de här bär vit text. */
-.answer-key--true:focus-visible { background-color: var(--green-deep); }
-.answer-key--false:focus-visible { background-color: var(--accent-red); }
+.answer-key--true:focus-visible {
+    background-color: var(--tint-green);
+    border-color: var(--accent-green);
+}
+
+.answer-key--false:focus-visible {
+    background-color: var(--tint-red);
+    border-color: var(--accent-red);
+}
 
 /* --- Kortet ---------------------------------------------------------------
    Ytterhöljet flyttas av CDK, innerkortet roterar. Tidigare skrev båda till
@@ -330,7 +343,7 @@
 }
 
 .game-card {
-    --mat-card-outlined-container-color: var(--card-yellow);
+    --mat-card-outlined-container-color: var(--card-face);
     position: relative;
     width: 100%;
     aspect-ratio: 1;
@@ -339,9 +352,10 @@
     justify-content: center;
     border: 0;
     border-radius: var(--radius-sm);
-    background-color: var(--card-yellow);
-    /* Egen textfärg: värden ärvs från :host, som numera är ljus. */
-    color: var(--bg-dark);
+    background-color: var(--card-face);
+    /* Egen textfärg: kortet är gult i båda lägena, så texten på det kan
+       inte ärva appens — den har ett eget token. */
+    color: var(--card-ink);
     font-family: var(--font-display);
     font-size: calc(var(--card-size) * 0.105);
     font-weight: bold;

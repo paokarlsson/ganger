@@ -11,7 +11,7 @@
     padding: 15px;
     overflow-y: auto;
     background: var(--surface);
-    color: var(--text-light);
+    color: var(--text-primary);
 }
 
 .container {
@@ -136,7 +136,7 @@
     font-family: var(--font-display);
     font-size: clamp(2.25rem, 12vw, 3.5rem);
     font-weight: 700;
-    color: var(--text-light);
+    color: var(--text-primary);
     margin-bottom: var(--space-5);
 }
 
@@ -148,8 +148,8 @@
     text-align: center;
     border: 3px solid var(--line-strong);
     border-radius: var(--radius-sm);
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-light);
+    background: var(--fill-quiet);
+    color: var(--text-primary);
     outline: none;
     transition: border-color var(--motion-fast), background var(--motion-fast);
 }
@@ -166,7 +166,7 @@
 
 .answer-input:focus,
 .calibration-input:focus {
-    border-color: var(--accent-gold);
+    border-color: var(--accent-highlight);
 }
 
 .answer-input.correct {
@@ -183,7 +183,7 @@
 .answer-input:disabled {
     /* Fältet låses medan facit visas — det ska inte se avstängt ut. */
     opacity: 1;
-    -webkit-text-fill-color: var(--text-light);
+    -webkit-text-fill-color: var(--text-primary);
 }
 
 /* type="number" ger pilar som stjäl plats i de smala fälten. Mobilen visar
@@ -210,7 +210,7 @@
 }
 
 .timer span {
-    color: var(--accent-gold);
+    color: var(--accent-highlight);
 }
 
 .feedback {
@@ -231,7 +231,7 @@
 .streak-indicator {
     font-family: var(--font-display);
     font-size: 0.9rem;
-    color: var(--accent-gold);
+    color: var(--accent-highlight);
     margin-top: var(--space-2);
     opacity: 0;
     transition: opacity 0.3s;
@@ -271,8 +271,8 @@
 }
 
 .calibration-info {
-    background: rgba(255, 215, 0, 0.1);
-    border: 1px solid rgba(255, 215, 0, 0.3);
+    background: var(--tint-highlight);
+    border: 1px solid var(--line-highlight);
     border-radius: var(--radius-sm);
     padding: 12px;
     margin-bottom: var(--space-3);
@@ -284,7 +284,7 @@
 }
 
 .calibration-info .value {
-    color: var(--accent-gold);
+    color: var(--accent-highlight);
     font-family: var(--font-display);
     font-weight: 600;
 }
@@ -303,7 +303,7 @@
     font-family: var(--font-display);
     font-size: 2rem;
     font-weight: 700;
-    color: var(--text-light);
+    color: var(--text-primary);
 }
 
 .stat-label {
@@ -372,7 +372,7 @@
 .mastered-count {
     font-family: var(--font-display);
     font-size: 1.1rem;
-    color: var(--text-light);
+    color: var(--text-primary);
 }
 
 .mastered-count span {
@@ -387,7 +387,7 @@
 }
 
 .baseline-info .value {
-    color: var(--accent-gold);
+    color: var(--accent-highlight);
     font-family: var(--font-display);
 }
 

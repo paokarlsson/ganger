@@ -6,7 +6,7 @@
     height: 100%;
     font-family: var(--font-body);
     background: var(--surface);
-    color: var(--text-light);
+    color: var(--text-primary);
 }
 
 .wrapper {
@@ -37,7 +37,7 @@
 }
 
 .sound-btn:hover {
-    color: var(--accent-gold);
+    color: var(--accent-highlight);
 }
 
 .sound-btn:focus-visible {
@@ -72,7 +72,7 @@ main {
     border: 3px solid var(--line-strong);
     border-radius: var(--radius-pill);
     background: var(--bg-card);
-    color: var(--text-light);
+    color: var(--text-primary);
     font-family: var(--font-display);
     font-size: clamp(1.1rem, 5vw, 2rem);
     font-weight: bold;
@@ -84,7 +84,7 @@ main {
 
 .item:hover {
     background: var(--bg-card-raised);
-    border-color: var(--accent-gold);
+    border-color: var(--accent-highlight);
 }
 
 .item:focus-visible {
@@ -94,7 +94,7 @@ main {
 
 .item.selected {
     background: var(--bg-card-raised);
-    border-color: var(--accent-gold);
+    border-color: var(--accent-highlight);
 }
 
 /* Texten förblir ljus i båda lägena — grönt mot grön toning och rött mot röd

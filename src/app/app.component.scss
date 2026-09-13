@@ -15,10 +15,10 @@
     overflow-y: auto;
     background:
         /* Ett svagt gångertecken-mönster ovanpå appens vanliga botten. */
-        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.02) 0 2px, transparent 2px 22px),
-        repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.02) 0 2px, transparent 2px 22px),
+        repeating-linear-gradient(45deg, rgba(var(--tone-rgb), 0.03) 0 2px, transparent 2px 22px),
+        repeating-linear-gradient(-45deg, rgba(var(--tone-rgb), 0.03) 0 2px, transparent 2px 22px),
         var(--surface);
-    color: var(--text-light);
+    color: var(--text-primary);
     text-align: center;
 }
 
@@ -36,8 +36,8 @@
     font-size: clamp(2.75rem, 13vw, 4.25rem);
     font-weight: 700;
     letter-spacing: 0.06em;
-    color: var(--accent-gold);
-    text-shadow: 0 3px 12px rgba(0, 0, 0, 0.5);
+    color: var(--accent-highlight);
+    text-shadow: var(--title-shadow-lg);
 }
 
 .lead {
@@ -55,14 +55,14 @@
 .progress-track {
     height: 8px;
     border-radius: var(--radius-pill);
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--fill-quiet);
     overflow: hidden;
 }
 
 .progress-fill {
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, var(--accent-green), var(--accent-gold));
+    background: linear-gradient(90deg, var(--accent-green), var(--accent-highlight));
     transition: width 0.6s ease;
 }
 
@@ -72,7 +72,7 @@
 }
 
 .progress-text strong {
-    color: var(--text-light);
+    color: var(--text-primary);
 }
 
 /* Ska gå att hitta för en vuxen som lämnar över surfplattan, men inte dra
@@ -113,7 +113,7 @@
 .choice:hover,
 .choice:focus-visible {
     background: var(--bg-card-raised);
-    border-color: var(--accent-gold);
+    border-color: var(--accent-highlight);
     transform: translateY(-2px);
 }
 
@@ -156,11 +156,11 @@
 }
 
 .art-pill {
-    fill: rgba(255, 255, 255, 0.16);
+    fill: rgba(var(--tone-rgb), 0.16);
 }
 
 .art-link {
-    stroke: var(--accent-gold);
+    stroke: var(--accent-highlight);
     stroke-width: 2;
     stroke-linecap: round;
     opacity: 0.55;
@@ -173,8 +173,8 @@
 }
 
 .art-card rect {
-    fill: rgba(255, 255, 255, 0.16);
-    stroke: rgba(255, 255, 255, 0.35);
+    fill: rgba(var(--tone-rgb), 0.16);
+    stroke: rgba(var(--tone-rgb), 0.35);
     stroke-width: 2;
 }
 
@@ -208,11 +208,11 @@
 }
 
 .art-ring {
-    stroke: rgba(255, 255, 255, 0.16);
+    stroke: rgba(var(--tone-rgb), 0.16);
 }
 
 .art-ring-fill {
-    stroke: var(--accent-gold);
+    stroke: var(--accent-highlight);
     stroke-linecap: round;
     /* Omkretsen är ~126, så visaren står på drygt halva varvet. */
     stroke-dasharray: 74 126;
@@ -228,7 +228,7 @@
 }
 
 .art-text {
-    fill: var(--text-light);
+    fill: var(--text-primary);
     font-family: var(--font-display);
     font-size: 15px;
     font-weight: 700;
@@ -317,13 +317,13 @@
     z-index: 2; /* svepkortet ligger på z-index 1 */
     max-width: calc(var(--shell-back-space) - 0.5rem);
     background: var(--bg-card);
-    border-color: rgba(255, 255, 255, 0.25);
-    color: var(--text-light);
+    border-color: rgba(var(--tone-rgb), 0.25);
+    color: var(--text-primary);
 }
 
 .back:hover,
 .back:focus-visible {
     background: var(--bg-card-raised);
-    border-color: var(--accent-gold);
-    color: var(--text-light);
+    border-color: var(--accent-highlight);
+    color: var(--text-primary);
 }
