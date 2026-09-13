@@ -40,7 +40,7 @@ The swipe game was moved here from the separate `ganger-swipe` repository, which
 is no longer developed. *Mästaren* was ported from a standalone HTML prototype.
 
 All four surfaces share one style sheet, which lives in `src/styles/`:
-`_tokens.scss` holds the palette, fonts, radii and spacing as CSS variables,
+`_tokens.scss` holds the palettes, fonts, radii and spacing as CSS variables,
 `_base.scss` the reset, and `_ui.scss` a small set of global `ui-` classes —
 card, title, button, toggle, dot, modal and the heat map grid — that the
 components use instead of restyling the same widget once per game. A component's
@@ -49,15 +49,41 @@ board, and each heat map screen's own layout around the shared grid. The
 `ui-` prefix in a template is the signal that the look comes from the shared
 sheet. The dark palette was *Mästaren*'s to begin with, and the yellow of
 *Svep*'s card is kept as its own token, deliberately lighter than the theme's
-gold.
+highlight.
+
+`_tokens.scss` holds two palettes, a dark one and a light one, as SCSS mixins.
+Without a choice in the app the system decides, through
+`prefers-color-scheme`; `data-mode="light"` or `"dark"` on `<html>` outweighs
+it. Three tokens are what make one set of rules serve both:
+
+- `--tone-rgb` is *the opposite of the ground* — white against the dark
+  palette, ink against the light one. Everything that used to be written as
+  `rgba(255, 255, 255, x)` (borders, faint fills, the pattern on the start
+  screen) is computed from it, so a surface that lifted off a dark ground
+  lifts off a light one too. `--line-strong-alpha` goes with it, and is
+  higher in light mode: ink against a white card does not clear 3:1 until
+  0.55, where white against a dark ground is there at 0.45.
+- `--on-highlight` and `--on-green` are the text on the two colours that are
+  used as fills — the active toggle and the primary button. They used to read
+  `--bg-floor`, which only holds while the floor is dark.
+- `--card-ink` is the text on *Svep*'s card, which is a light card in both
+  modes and so cannot inherit the app's text colour.
+
+Colours a token needs but no palette should have to state twice — the green
+and red tints, the highlight's tint and border — are derived from the accent
+with `color-mix()` in `:root`.
 
 Several token values are pinned by WCAG 2.2 AA rather than by taste, so changing
 them is not free: `--accent-red` is lighter than a plain red because #e74c3c sat
 at 4.46:1 against the background, just under the 4.5:1 needed for body text;
 `--line-strong` is as bright as it is because a control's border needs 3:1
 against *both* neighbours, the surface outside and the control's own fill; and
-the primary button carries dark text because white on `--accent-green` is
-2.1:1. Text on a red or green tint is light, never red or green — a colour
+the primary button carries dark text in the dark palette because white on that
+`--accent-green` is 2.1:1 — which is exactly why the colour under the text is
+a token of its own, `--on-green`, and turns white where the light palette's
+green is dark enough to carry it. The light palette is not the dark one
+mirrored: its highlight, green and red are darker, because a colour that
+carries text against a dark ground does not carry it against a light one. Text on a red or green tint is light, never red or green — a colour
 against its own tint does not reach 4.5:1. Where colour carries meaning it is
 never alone: *Para ihop* marks tiles with ✓ and ✗, *Svep* stamps the card RÄTT
 or FEL and writes out the name of the fire's tier beside it, and *Mästaren*'s
@@ -86,10 +112,38 @@ on the start screen.
 | `src/app/master-view/` | The *Mästaren* game, with its levels in `levels.ts` |
 | `src/app/services/practice-stats.service.ts` | Times and calibration, for both *Mästaren* and *Svep* |
 | `src/app/services/time-color.ts` | The green-to-red scale both heat maps colour a time with |
+| `src/app/theme-picker/` | **Temporary** — the theme picker; see below |
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) and runs on
 Angular 22. Building it needs Node 22.22.3 or later (24 LTS is what CI and
 [compose.yml](compose.yml) use).
+
+## Temaväljaren (temporary)
+
+`src/app/theme-picker/` is scaffolding, not part of the app. It puts a **Tema**
+button in the bottom right corner that switches between a handful of candidate
+palettes and between Auto / Ljust / Mörkt, so a theme can be judged in the
+running games rather than in a swatch. The choice is kept in `localStorage`
+under `ganger-tema` and `ganger-lage`.
+
+It touches nothing else: it writes `data-theme` and `data-mode` on `<html>` and
+injects the candidate palettes as one `<style>` element, mirroring the rule
+order `_tokens.scss` already uses. Light and dark mode themselves are *not*
+temporary — they live in `_tokens.scss` and stay when this folder is gone.
+
+Every candidate palette was checked against the same WCAG 2.2 AA thresholds the
+section above lists — body text 4.5:1 against every ground it sits on, control
+borders 3:1 against both neighbours, text on a fill 4.5:1 against the fill.
+
+To remove it once a theme is settled on:
+
+1. Open the picker, pick the theme, press **Kopiera temats CSS**, and paste the
+   dark and light declarations into the two mixins in `src/styles/_tokens.scss`
+   (Midnatt is already what stands there).
+2. Delete `src/app/theme-picker/`.
+3. Delete the `<app-theme-picker />` tag in `src/app/app.component.html` and the
+   import and `imports:` entry in `src/app/app.component.ts`. All three are
+   marked `TILLFÄLLIG`.
 
 ## Development server
 

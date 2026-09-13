@@ -24,8 +24,8 @@
     font-family: var(--font-display);
     font-size: clamp(1.15rem, 4.5vw, 1.35rem);
     font-weight: 700;
-    color: var(--accent-gold);
-    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    color: var(--accent-highlight);
+    text-shadow: var(--title-shadow);
 }
 
 .ui-title--lg {
@@ -47,7 +47,7 @@
     border: 2px solid transparent;
     border-radius: var(--radius-pill);
     background: transparent;
-    color: var(--text-light);
+    color: var(--text-primary);
     cursor: pointer;
     transition: background var(--motion-fast), border-color var(--motion-fast),
         color var(--motion-fast), box-shadow var(--motion-fast);
@@ -66,7 +66,7 @@
     font-weight: 700;
     border-color: transparent;
     background: linear-gradient(180deg, var(--accent-green) 0%, var(--green-deep) 100%);
-    color: var(--bg-deep);
+    color: var(--on-green);
     box-shadow: 0 4px 0 var(--green-shadow);
 }
 
@@ -77,13 +77,13 @@
 
 /* Tillbaka, värmekarta, byt inställningar. */
 .ui-btn--secondary {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--fill-quiet);
     border-color: var(--line-strong);
 }
 
 .ui-btn--secondary:hover {
     background: var(--fill-hover);
-    border-color: var(--accent-gold);
+    border-color: var(--accent-highlight);
 }
 
 /* Avbryt, hoppa över — finns men ska inte dra blicken. */
@@ -96,8 +96,8 @@
 }
 
 .ui-btn--quiet:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: var(--text-light);
+    background: var(--fill-quiet);
+    color: var(--text-primary);
 }
 
 /* Nollställ statistiken, avbryt på riktigt. Rött bärs av ram och fyllning;
@@ -105,7 +105,7 @@
 .ui-btn--danger {
     background: var(--tint-red);
     border-color: var(--accent-red);
-    color: var(--text-light);
+    color: var(--text-primary);
 }
 
 .ui-btn--danger:hover {
@@ -122,7 +122,7 @@
     border: 2px solid var(--line-strong);
     border-radius: var(--radius-sm);
     background: var(--fill-soft);
-    color: var(--text-light);
+    color: var(--text-primary);
     cursor: pointer;
     transition: background var(--motion-fast), border-color var(--motion-fast),
         color var(--motion-fast);
@@ -130,13 +130,13 @@
 
 .ui-toggle:hover {
     background: var(--fill-hover);
-    border-color: var(--accent-gold);
+    border-color: var(--accent-highlight);
 }
 
 .ui-toggle.is-active {
-    background: var(--accent-gold);
-    border-color: var(--accent-gold);
-    color: var(--bg-deep);
+    background: var(--accent-highlight);
+    border-color: var(--accent-highlight);
+    color: var(--on-highlight);
 }
 
 /* --- Prickar -------------------------------------------------------------
@@ -164,7 +164,7 @@
 }
 
 .ui-dot.is-current {
-    background: var(--accent-gold);
+    background: var(--accent-highlight);
     transform: scale(1.3);
 }
 
