@@ -1,12 +1,14 @@
 # Ganger
 
 A small Angular app for practising the multiplication table. The start screen
-lets you pick one of three games, and shows how many of the hundred entries in
-the table are already answered fast enough to count as automatic — once there
-is any practice to count.
+lets you pick one of three games, and shows how many of the 55 facts in the
+table are already answered fast enough to count as automatic — once there is
+any practice to count.
 
 - **Para ihop** — match each question in the left column with its answer in the
-  right one. Background music and sound effects included.
+  right one. Background music and sound effects included. Its rounds are drawn
+  from the shared fact catalogue, and every pair it resolves is written to an
+  observation log; see below.
 - **Svep** — a statement such as `7 × 8 = 54` is shown on a card. Swipe (or drag
   with the mouse, or press the arrow keys) right if it is correct, left if it is
   not. Pick a round of 10 to 40 cards, or ∞ to keep going until you press
@@ -33,7 +35,7 @@ is any practice to count.
   round length. A short calibration measures how fast the player answers the
   easiest questions; everything after that is judged against that time. A wrong
   answer costs four seconds. The heat map shows the average time per table
-  entry, and how many of the hundred are answered fast enough to count as
+  entry, and how many of the 55 facts are answered fast enough to count as
   automatic.
 
 The swipe game was moved here from the separate `ganger-swipe` repository, which
@@ -152,12 +154,65 @@ dot rows have an `aria-label` saying the same thing in words. *Svep*'s fire
 grows inside a box that is the same size at every tier, so that a card is never
 nudged out from under a thumb mid-swipe.
 
-Both games keep what they know about the player in `localStorage`, so it lives
-in the browser it was practised in: *Mästaren* under `mult-heatmap` and
-`mult-calibration`, *Svep* under `swipe-level`, `swipe-baseline` (the rolling
-window the swipe pace is the median of) and `swipe-best-streak`. All of it is
-cleared by the **Nollställ** button on the heat map screen, and by *Ny spelare*
-on the start screen.
+All three games keep what they know about the player in `localStorage`, so it
+lives in the browser it was practised in. It is one document under one key,
+`ganger-progress`, and `src/app/services/progress-store.ts` is the only file
+that knows that. Everything else asks the repository for a document and gets
+one back; swapping `localStorage` for a database later is a new implementation
+of `ProgressRepository` and nothing else. The interface is asynchronous even
+though `localStorage` is not — a promise can be fulfilled synchronously, but a
+synchronous signature cannot be made asynchronous later without rewriting every
+caller. The document is read once at startup, before the first view is drawn
+(`provideAppInitializer` in `app.config.ts`), and everything after that reads
+the hydrated copy in memory, because the templates read it on every change
+detection and cannot wait for a promise.
+
+The document carries a `schemaVersion` so the next change of shape has
+somewhere to hang its migration. Version 1 — five separate keys, `mult-heatmap`,
+`mult-calibration`, `swipe-level`, `swipe-baseline` and `swipe-best-streak` — is
+read once, converted, and deleted; having no version number of its own, it is
+recognised by the shape of its keys instead.
+
+The keys inside are machine-readable and stable: `mul:7x8`, always with the
+smaller factor first. The namespace leaves room for `add:7+8` and `div:56/7`
+without reshaping the document, and the canonical ordering is what makes 7 × 8
+and 8 × 7 *one* fact instead of two rows that had to be merged on every read.
+That is why the mastery count is now out of 55 rather than 100, on the start
+screen and under *Mästaren*'s heat map alike: it is the number *Svep* already
+counted to, and counting both orderings would be counting the same knowledge
+twice. *Mästaren*'s grid stays 10 × 10 — that is what the table looks like —
+but its two halves now mirror each other, because they are the same
+measurement.
+
+Alongside it, under `ganger-observations`, sits a short ring buffer of raw
+events from *Para ihop* — what was paired, how long it took, how many pairs
+were still on the board. Nothing in the game reads it, and nothing is chosen
+from it. It is measurement, not pedagogy, and it exists to answer a question
+that cannot be answered without data: *do the times in Para ihop say anything
+about the same facts in Svep?* If they do not, the premise that matching is
+diagnostic is wrong, and it is cheaper to learn that now than after an engine
+has been built on top of the measure.
+
+It records three zero points per pair, not one, because there is no obvious
+answer to when a question *begins* in a game where five pairs lie on the table
+at once: since the round was dealt, since the previous pair was resolved, and
+since the first click of this exchange. Which of them says something about the
+player is an empirical question, and storing all three is cheaper than guessing
+wrong. It also records how many pairs were still on the board, which is the
+measure of how much elimination was available — with one pair left the answer
+is free — so a later threshold can be set on that number rather than on taste.
+A mispairing is recorded too, with *both* facts and the answer that was chosen,
+because pairing 7 × 8 with 54 is the same kind of information the distractors
+are built from.
+
+*Para ihop* still picks its facts at random, even though the catalogue knows
+which ones are hard. That is deliberate: calibrating against the log needs an
+unbiased sample of the whole table, and the moment the game starts choosing
+facts from what it already believes, the log becomes an echo of that belief
+rather than a measurement of the player.
+
+All of it is cleared by the **Nollställ** button on the heat map screen, and by
+*Ny spelare* on the start screen.
 
 ## Structure
 
@@ -171,13 +226,49 @@ on the start screen.
 | `src/app/match-view/` | The *Para ihop* game |
 | `src/app/swipe-view/` | The *Svep* game |
 | `src/app/master-view/` | The *Mästaren* game, with its levels in `levels.ts` |
-| `src/app/services/practice-stats.service.ts` | Times and calibration, for both *Mästaren* and *Svep* |
+| `src/app/services/progress-store.ts` | The stored document, its schema version and its migrations |
+| `src/app/services/observation-log.ts` | Raw training events; written, not yet read |
+| `src/app/training/training-engine.ts` | What the game believes about the player, and what it does with that |
+| `src/app/training/auto-difficulty.ts` | How *Mästaren*'s auto mode moves between difficulty groups |
 | `src/app/services/time-color.ts` | The green-to-red scale both heat maps colour a time with |
 | `src/app/theme-picker/` | **Temporary** — the theme picker; see below |
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) and runs on
 Angular 22. Building it needs Node 22.22.3 or later (24 LTS is what CI and
 [compose.yml](compose.yml) use).
+
+## Three layers
+
+The app is split so that the teaching is not spread across event handlers:
+
+| Layer | What it decides |
+| --- | --- |
+| The four view components | What is on screen |
+| `TrainingEngine` | What the player knows, and what should come next |
+| `ProgressRepository` | Where the bytes live |
+
+A view asks the engine a question — *how much does this fact need practice*,
+*what level should this round start at*, *was that swipe fast for this player* —
+and never reads a threshold or a stored time to work it out for itself. Where a
+component used to hold the answer, it now holds only the state of the round in
+front of it.
+
+The engine in turn owns none of the pure rules. Those stay in modules of their
+own, where they can be tested without a player: `facts/fact-selector.ts` picks a
+fact, `swipe-view/swipe-difficulty.ts` moves *Svep*'s level,
+`training/auto-difficulty.ts` moves *Mästaren*'s difficulty group. Each is a
+function from old state plus one event to new state, which is the shape the
+whole model is meant to have:
+
+    old state + new event = new state
+
+`auto-difficulty.ts` is the newest of them and came out of
+`master-view.component.ts`, where the same rule lived as three mutable fields
+and two nested `if` ladders. One detail is worth keeping in mind if it is ever
+rewritten: at the top of the ladder the streak keeps counting even though the
+difficulty cannot rise any further, because that same counter is what the cheer
+in the top row is showing — resetting it on a step that could not be taken
+would put the cheer out mid-run.
 
 ## Temaväljaren (temporary)
 

@@ -124,8 +124,8 @@ export const LEVEL_DOWN_STEP = 2;
 /** Startnivå för en spelare vi inte vet något om. */
 export const DEFAULT_START_LEVEL = 4;
 
-/** Antal celler i värmekartan — `masteredCount()` räknar upp till den här. */
-const HEATMAP_CELLS = 100;
+/** Antal tal `masteredCount()` räknar upp till. */
+const MASTERY_TOTAL = FACTS.length;
 
 /**
  * Talen kalibreringen mäter på: ankarbandet, alltså de tal vars lättaste
@@ -278,7 +278,7 @@ export function startLevel(
   if (!hasPractice) {
     return DEFAULT_START_LEVEL;
   }
-  const share = Math.min(1, masteredCount / HEATMAP_CELLS);
+  const share = Math.min(1, masteredCount / MASTERY_TOTAL);
   return clampLevel(Math.round(LEVEL_MIN + share * (LEVEL_MAX - LEVEL_MIN)));
 }
 

@@ -5,7 +5,8 @@ import { SwipeViewComponent } from './swipe-view/swipe-view.component';
 // TILLFÄLLIG: temaväljaren. Raden och den i imports nedan går bort med
 // mappen theme-picker/ — se README.
 import { ThemePickerComponent } from './theme-picker/theme-picker.component';
-import { PracticeStatsService } from './services/practice-stats.service';
+import { ObservationLog } from './services/observation-log';
+import { TrainingEngine } from './training/training-engine';
 
 /** Spelen som går att välja mellan, plus menyn de väljs från. */
 export type Screen = 'menu' | 'match' | 'swipe' | 'master';
@@ -20,14 +21,24 @@ export type Screen = 'menu' | 'match' | 'swipe' | 'master';
 export class AppComponent {
   screen: Screen = 'menu';
 
-  /** Hur många av de hundra talen som sitter, som andel och antal. */
+  /** Hur många av tabellens tal som sitter. Räknas mot `factCount`, som är 55
+   *  och inte 100: 7 × 8 och 8 × 7 är samma kunskap och en enda rad i lagret. */
   masteredCount = 0;
+  factCount = 0;
   hasPractice = false;
   /** Om det finns något sparat att rensa — styr knappen för att byta spelare. */
   hasStoredProgress = false;
 
-  constructor(private readonly stats: PracticeStatsService) {
+  constructor(
+    private readonly engine: TrainingEngine,
+    private readonly observations: ObservationLog,
+  ) {
     this.readProgress();
+  }
+
+  /** Mätarens bredd. Skild från antalet, som inte längre går mot 100. */
+  get masteredPercent(): number {
+    return this.factCount === 0 ? 0 : (this.masteredCount / this.factCount) * 100;
   }
 
   play(screen: Screen): void {
@@ -54,16 +65,17 @@ export class AppComponent {
     if (!confirmed) {
       return;
     }
-    this.stats.reset();
-    this.readProgress();
+    this.observations.clear();
+    void this.engine.reset().then(() => this.readProgress());
   }
 
   /** Läses när menyn visas i stället för från mallen — att gå igenom hundra
    *  tal vid varje ändringsdetektering vore onödigt, och statistiken kan
    *  bara ha ändrats medan ett spel var igång. */
   private readProgress(): void {
-    this.hasPractice = this.stats.hasPractice;
-    this.hasStoredProgress = this.stats.hasStoredProgress;
-    this.masteredCount = this.stats.masteredCount();
+    this.hasPractice = this.engine.hasPractice;
+    this.hasStoredProgress = this.engine.hasStoredProgress;
+    this.masteredCount = this.engine.masteredCount();
+    this.factCount = this.engine.factCount;
   }
 }

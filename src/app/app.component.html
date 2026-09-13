@@ -7,14 +7,14 @@
           class="progress"
           role="progressbar"
           aria-valuemin="0"
-          aria-valuemax="100"
+          [attr.aria-valuemax]="factCount"
           [attr.aria-valuenow]="masteredCount"
-          [attr.aria-valuetext]="masteredCount + ' av 100 tal sitter'"
+          [attr.aria-valuetext]="masteredCount + ' av ' + factCount + ' tal sitter'"
         >
           <div class="progress-track">
-            <div class="progress-fill" [style.width.%]="masteredCount"></div>
+            <div class="progress-fill" [style.width.%]="masteredPercent"></div>
           </div>
-          <p class="progress-text"><strong>{{ masteredCount }}</strong> av 100 tal sitter</p>
+          <p class="progress-text"><strong>{{ masteredCount }}</strong> av {{ factCount }} tal sitter</p>
         </div>
       } @else {
         <p class="lead">Tre sätt att öva gångertabellen</p>
