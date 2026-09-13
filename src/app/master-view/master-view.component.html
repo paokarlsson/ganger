@@ -181,8 +181,16 @@
         </div>
         <div class="heatmap-buttons">
           <button type="button" class="ui-btn ui-btn--secondary" (click)="showMenu()">Tillbaka</button>
+          @if (canExport) {
+            <button type="button" class="ui-btn ui-btn--quiet" (click)="exportProgress()">
+              ⬇️ Exportera data
+            </button>
+          }
           <button type="button" class="ui-btn ui-btn--danger" (click)="resetStats()">🗑️ Nollställ</button>
         </div>
+        <!-- Kvittensen står i en egen rad med fast plats, så att knapparna
+             inte hoppar när den dyker upp. -->
+        <p class="export-notice" aria-live="polite">{{ exportNotice }}</p>
       </div>
     }
   }

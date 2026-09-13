@@ -5,8 +5,11 @@
     "outDir": "./out-tsc/spec",
     /* Referensdatan importeras bara av tester, som orakel för faktakatalogen. */
     "resolveJsonModule": true,
+    /* node: rapportkörningen läser en exporterad fil från disk. Bara tester
+       ser de här typerna — appens tsconfig har dem inte. */
     "types": [
-      "vitest/globals"
+      "vitest/globals",
+      "node"
     ]
   },
   "include": [

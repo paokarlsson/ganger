@@ -185,9 +185,21 @@ premissen att pröva innan man avfärdar den en andra gång.
 *Först:* låt loggen samla. Den skriver redan, och verklig data från två barn är
 värd mer än fyra syntetiska arketyper.
 
-*Sedan:* läs den. En eftermiddag med en `ts-node`-snutt över en export av
-`ganger-observations` besvarar samma frågor på riktigt. Den viktigaste är den
-ingen simulering kan svara på, eftersom korrelationen är just det som är okänt:
+*Sedan:* läs den. Läsaren finns nu — `training/observation-analysis.ts`, med
+`observation-analysis.report.spec.ts` som körning. Så här används den:
+
+1. Öppna Mästarens värmekarta på enheten som övats på, tryck **Exportera
+   data**. Exporten tar med både loggen och framstegen; korrelationen nedan
+   kräver svepens tider, som ligger i framstegsdokumentet.
+2. Klistra in i `tools/observations.json` (ignorerad av git — ett barns
+   svarstider hör inte hemma i ett publikt repo).
+3. `npm test`. Rapporten hamnar i `tools/observations-report.txt`.
+
+Ingenting av det är del av spelet: inget i `src/app` importerar analysen, så
+den följer inte med i bygget.
+
+Rapporten svarar på den fråga ingen simulering kan besvara, eftersom
+korrelationen är just det som är okänt:
 
 > Korrelerar Para ihops tider med Svepets på samma tal?
 
@@ -195,10 +207,24 @@ Gör de inte det är premissen att matchning duger som diagnostik fel, och en
 motor ovanpå det måttet vore byggd på sand. Det är det billigaste tänkbara
 testet av den dyraste idén.
 
+Svaret är en rangkorrelation, en per nollpunkt. Rang och inte Pearson:
+svarstider är skeva, och frågan är om de tal som är långsamma i Para ihop
+*också* är de långsamma i Svep — en fråga om ordning, inte om linjär form.
+Rapporten säger också vad siffran betyder för beslutet, så att den går att läsa
+av någon som inte minns varför den skrevs.
+
 Loggens tre nollpunkter (`msSinceRoundStart`, `msSinceLastResolved`,
-`msSinceFirstTouch`) finns för att det inte går att avgöra på förhand vilken
-som säger något. `remaining` mäter hur stort uteslutningsrummet var — vid 1 är
-paret gratis — och är fältet en evidenströskel ska sättas på.
+`msSinceFirstTouch`) mäts var för sig, eftersom det inte går att avgöra på
+förhand vilken som bär signal. `remaining` mäter hur stort uteslutningsrummet
+var — vid 1 är paret gratis — och rapportens tabell över det är vad som avgör
+var tröskeln ska ligga. Tills den mätts räknas evidens från `MIN_REMAINING = 3`
+och uppåt, vilket är ett resonemang och inte en mätning: med två kvar är det en
+gissning med 50 % chans.
+
+**Kvar innan det här steget är klart:** data. Analysen är byggd och testad mot
+påhittade händelser, men ingen riktig export har lästs ännu. Rapporten vägrar
+tolka en korrelation som vilar på färre än åtta tal, så det behövs ett antal
+ronder innan den säger något.
 
 *Först därefter:* bygg blandningsregulatorn, och skriv loop-testerna i samma
 veva. Det är där ett simulerat spel faktiskt gör något som inte går att göra på

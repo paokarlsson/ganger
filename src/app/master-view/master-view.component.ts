@@ -1,5 +1,6 @@
 import { Component, ElementRef, OnDestroy, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { ObservationLog } from '../services/observation-log';
+import { ProgressExportService } from '../services/progress-export';
 import { timeColor } from '../services/time-color';
 import { AutoDifficultyState, initialAutoDifficulty } from '../training/auto-difficulty';
 import { ChannelStat, TrainingEngine } from '../training/training-engine';
@@ -93,9 +94,12 @@ export class MasterViewComponent implements OnDestroy {
   heatmapRows: { label: number; cells: HeatmapCell[] }[] = [];
   masteredCount = 0;
   factCount = 0;
+  /** Kvittens efter en export. Tom när inget exporterats den här gången. */
+  exportNotice = '';
 
   private readonly engine = inject(TrainingEngine);
   private readonly observations = inject(ObservationLog);
+  private readonly exporter = inject(ProgressExportService);
   private questions: Pair[] = [];
   private questionStartTime = 0;
   private timerHandle?: ReturnType<typeof setInterval>;
@@ -343,6 +347,27 @@ export class MasterViewComponent implements OnDestroy {
   openHeatmap(): void {
     this.buildHeatmap();
     this.screen = 'heatmap';
+  }
+
+  /**
+   * Lägger allt spelet samlat i urklippet, eller som en fil när urklippet
+   * nekas. Knappen står här och ingen annanstans: det här är skärmen för den
+   * som vill titta på siffror, och exporten läses av `observation-analysis.ts`
+   * och inte av spelet.
+   */
+  exportProgress(): void {
+    this.exportNotice = '';
+    void this.exporter.share().then(
+      (how) => {
+        this.exportNotice =
+          how === 'clipboard' ? 'Kopierat till urklipp ✓' : 'Nedladdat som fil ✓';
+      },
+      () => (this.exportNotice = 'Det gick inte att exportera.'),
+    );
+  }
+
+  get canExport(): boolean {
+    return this.exporter.hasSomethingToExport;
   }
 
   resetStats(): void {

@@ -394,3 +394,13 @@
     font-family: var(--font-display);
 }
 
+
+/* Kvittensen efter en export. Håller sin höjd även när den är tom, så att
+   knappraden ovanför inte flyttar sig. */
+.export-notice {
+  min-height: 1.2em;
+  margin: var(--space-1) 0 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: color-mix(in oklch, var(--tone) 62%, transparent);
+}

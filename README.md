@@ -205,6 +205,18 @@ A mispairing is recorded too, with *both* facts and the answer that was chosen,
 because pairing 7 × 8 with 54 is the same kind of information the distractors
 are built from.
 
+Reading it back is what the **Exportera data** button on *Mästaren*'s heat map
+screen is for. The log lives in `localStorage` on the device it was practised
+on, and that device is a tablet with no developer tools — without a way out,
+the log is data nobody can read. The button puts both keys on the clipboard, or
+downloads them as a file where the clipboard is refused; both are needed,
+because the correlation above compares against swipe times, which live in the
+progress document. Drop the result in `tools/observations.json` and run
+`npm test`: `observation-analysis.ts` writes a report to
+`tools/observations-report.txt`. Neither file is committed — a child's response
+times do not belong in a public repo — and nothing in `src/app` imports the
+analysis, so it never reaches the bundle.
+
 *Para ihop* still picks its facts at random, even though the catalogue knows
 which ones are hard. That is deliberate: calibrating against the log needs an
 unbiased sample of the whole table, and the moment the game starts choosing
@@ -230,6 +242,8 @@ All of it is cleared by the **Nollställ** button on the heat map screen, and by
 | `src/app/services/observation-log.ts` | Raw training events; written, not yet read |
 | `src/app/training/training-engine.ts` | What the game believes about the player, and what it does with that |
 | `src/app/training/auto-difficulty.ts` | How *Mästaren*'s auto mode moves between difficulty groups |
+| `src/app/training/observation-analysis.ts` | Reads the observation log; not part of the app |
+| `src/app/services/progress-export.ts` | Gets the log and the progress off the device |
 | `src/app/services/time-color.ts` | The green-to-red scale both heat maps colour a time with |
 | `src/app/theme-picker/` | **Temporary** — the theme picker; see below |
 | `docs/plan.md` | What is decided, what is open, and which constants are guesses |
