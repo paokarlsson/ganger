@@ -232,6 +232,7 @@ All of it is cleared by the **Nollställ** button on the heat map screen, and by
 | `src/app/training/auto-difficulty.ts` | How *Mästaren*'s auto mode moves between difficulty groups |
 | `src/app/services/time-color.ts` | The green-to-red scale both heat maps colour a time with |
 | `src/app/theme-picker/` | **Temporary** — the theme picker; see below |
+| `docs/plan.md` | What is decided, what is open, and which constants are guesses |
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) and runs on
 Angular 22. Building it needs Node 22.22.3 or later (24 LTS is what CI and
@@ -261,6 +262,12 @@ function from old state plus one event to new state, which is the shape the
 whole model is meant to have:
 
     old state + new event = new state
+
+Where this is all going — the remaining steps, the questions still open, and
+the constants that were set by feel rather than measured — is written down in
+[`docs/plan.md`](docs/plan.md), in Swedish, alongside the reasoning behind each
+one. Constants it lists are marked `ANTAGANDE:` where they are defined, so the
+code points back at it.
 
 `auto-difficulty.ts` is the newest of them and came out of
 `master-view.component.ts`, where the same rule lived as three mutable fields

@@ -48,15 +48,29 @@ export const DIFFICULTY: Record<Difficulty, Pair[]> = {
 /** Talen kalibreringen mäter svarstiden på. */
 export const CALIBRATION_QUESTIONS: Pair[] = [[1,1],[1,2],[2,1],[1,10],[10,1]];
 
-/** Antal sekunder som räknas som snabbt innan spelaren kalibrerats. */
+/** Antal sekunder som räknas som snabbt innan spelaren kalibrerats.
+ *
+ *  ANTAGANDE: satt på känsla. Gäller bara tills kalibreringen mätt spelaren,
+ *  men styr då allt: vad som räknas som automatiserat, och var auto-läget
+ *  börjar. Se docs/plan.md. */
 export const DEFAULT_FAST_TIME = 2.0;
 
-/** Långsamt = så här många gånger den snabba tiden. */
+/** Långsamt = så här många gånger den snabba tiden.
+ *
+ *  ANTAGANDE: satt på känsla, och betydligt vidare än Svepets 1,5 eftersom ett
+ *  skrivet svar rymmer både framplockning och skrivande. */
 export const SLOW_TIME_MULTIPLIER = 4;
 
-/** Sekunder som läggs på tiden vid fel svar. */
+/** Sekunder som läggs på tiden vid fel svar.
+ *
+ *  ANTAGANDE: satt på känsla. Straffet är det som gör att ett fel färgar
+ *  värmekartan, så storleken avgör hur länge en miss syns. */
 export const PENALTY_TIME = 4.0;
 
-/** Snabba svar i rad innan svårigheten höjs, respektive långsamma innan den sänks. */
+/** Snabba svar i rad innan svårigheten höjs, respektive långsamma innan den sänks.
+ *
+ *  ANTAGANDE: satta på känsla. Asymmetrin är principen — försiktig upp, snabb
+ *  ner — men 5 och 2 är gissningar, och de står i spänning med att systemet
+ *  ska accelerera under kalibreringsfönstret. Se docs/plan.md, öppen fråga 6. */
 export const UPGRADE_THRESHOLD = 5;
 export const DOWNGRADE_THRESHOLD = 2;

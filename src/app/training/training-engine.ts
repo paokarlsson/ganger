@@ -58,13 +58,21 @@ const MIN_SWIPE_BASELINE = 0.5;
 const MAX_SWIPE_BASELINE = 3.0;
 
 /** Så stor andel av en grupp som ska sitta för att spelaren ska räknas som
- *  hemma där, och flyttas upp. */
+ *  hemma där, och flyttas upp.
+ *
+ *  ANTAGANDE: satt på känsla. Se docs/plan.md. */
 const AT_HOME_SHARE = 0.7;
 
-/** Färre svar än så säger för lite för att kalla ett tal automatiserat. */
+/** Färre svar än så säger för lite för att kalla ett tal automatiserat.
+ *
+ *  ANTAGANDE: satt på känsla. Tre svar är lite för en dom som styr vilka tal
+ *  spelaren möter härnäst. */
 const MIN_MASTERY_SAMPLES = 3;
 
-/** Hur många av de mest träningsvärda talen auto-läget slumpar bland. */
+/** Hur många av de mest träningsvärda talen auto-läget slumpar bland.
+ *
+ *  ANTAGANDE: satt på känsla. Bredden avgör hur förutsägbar ordningen blir,
+ *  och hur hårt ronden lutar mot det svåraste spelaren har. */
 const AUTO_CANDIDATES = 10;
 
 /** Sveptakten för en spelare vi ännu inte mätt.
@@ -158,7 +166,11 @@ export class TrainingEngine {
     return this.fastSeconds * SLOW_TIME_MULTIPLIER;
   }
 
-  /** Median av mätningarna plus 20 % marginal, klippt till ett rimligt spann. */
+  /** Median av mätningarna plus 20 % marginal, klippt till ett rimligt spann.
+   *
+   *  ANTAGANDE: marginalen är satt på känsla. Den är skillnaden mellan att
+   *  mäta spelarens toppfart och att mäta en fart hen kan hålla. Se
+   *  docs/plan.md. */
   calibrate(timesMs: number[]): void {
     const sorted = [...timesMs].sort((a, b) => a - b);
     const median = sorted[Math.floor(sorted.length / 2)] / 1000;
