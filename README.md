@@ -74,12 +74,25 @@ rule, and a departure from it needs a reason:
   0.72 for red, which cannot go lighter without turning pink. In light mode
   they all sit at L 0.505 — the lightest they can be and still clear 4.5:1
   against `--bg-floor`.
-- **The button's ladder**: green 0.80, `--green-deep` 0.72, `--green-shadow`
-  0.60. An even step in L gives an even gradient; in hex the steps were
+- **The button's ladder**: green 0.80 at rest, `--green-deep` 0.72 pressed,
+  `--green-shadow` 0.60 for the edge underneath. One even step in L per state,
+  so the three read as one colour at three depths; in hex the steps were
   uneven.
 - **The one exception** is the accent that lifts. Blue and violet cannot be
   both that light and that coloured — sRGB runs out — so for those hues the
   lightness drops until chroma reaches 0.12, never below 0.72.
+
+The primary button is the one place where the app still wants to feel
+physical, and that is worth keeping in a game for children — what was dated
+was how it did it. The vertical gloss gradient is gone; a highlight from above
+is inherited from buttons that wanted to look like glass. What is left is a
+flat fill, an edge underneath that is the button's thickness, and a soft
+shadow under the edge that is the air down to the card — the edge alone made
+it a paper cutout rather than an object. Hover is computed rather than stored:
+one step in lightness away from the ground, up against a dark one and down
+against a light one, written with `oklch(from …)` so that only the lightness
+moves. Mixing toward `--tone` would have dragged the hue along and turned the
+green teal.
 
 Light mode is not dark mode mirrored. Its ground is warm (hue 85) rather than
 blue-grey: paper that leans yellow reads as paper, where the old `#f7f8fc`
@@ -117,7 +130,8 @@ against *both* neighbours, the surface outside and the control's own fill; and
 the primary button carries dark text in the dark palette because white on that
 `--accent-green` is 2:1 — which is exactly why the colour under the text is
 a token of its own, `--on-green`, and turns light where the light palette's
-green is dark enough to carry it. Text on a red or green tint is light, never
+green is dark enough to carry it; the weakest of that button's six
+combinations, three states across two palettes, is 5.5:1. Text on a red or green tint is light, never
 red or green — a colour against its own tint does not reach 4.5:1.
 
 Both heat maps colour a time on one scale, and that scale sweeps hue in OKLCH

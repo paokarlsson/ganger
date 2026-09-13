@@ -78,6 +78,9 @@
     --scrim: oklch(0.15 0.019 272 / 0.7);
     /* Se --line-strong nedan. Mot en mörk botten räcker det här. */
     --line-strong-alpha: 45%;
+    /* Ett steg i ljushet bort från underlaget, för en yta som hovras. Mot en
+       mörk botten går det uppåt. */
+    --lift: 0.04;
 
     --shadow-card: 0 3px 1px -2px oklch(0 0 0 / 0.2),
         0 2px 2px 0 oklch(0 0 0 / 0.14),
@@ -135,6 +138,9 @@
     /* Högre än i mörkt läge: bläck mot ett vitt kort tar sig inte över 3:1
        förrän här, medan det ljusa mot en mörk botten är där redan vid 45 %. */
     --line-strong-alpha: 58%;
+    /* Nedåt mot en ljus botten: samma steg bort från underlaget som i mörkt
+       läge, åt andra hållet. */
+    --lift: -0.04;
 
     --shadow-card: 0 1px 2px oklch(0.235 0.032 272 / 0.06),
         0 4px 12px oklch(0.235 0.032 272 / 0.08);
