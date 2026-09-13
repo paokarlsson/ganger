@@ -1,4 +1,5 @@
 import { Component, ElementRef, OnDestroy, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
+import { ObservationLog } from '../services/observation-log';
 import { ChannelStat, PracticeStatsService } from '../services/practice-stats.service';
 import { timeColor } from '../services/time-color';
 import {
@@ -96,6 +97,7 @@ export class MasterViewComponent implements OnDestroy {
   factCount = 0;
 
   private readonly stats = inject(PracticeStatsService);
+  private readonly observations = inject(ObservationLog);
   private questions: Pair[] = [];
   private questionStartTime = 0;
   private timerHandle?: ReturnType<typeof setInterval>;
@@ -351,6 +353,7 @@ export class MasterViewComponent implements OnDestroy {
     if (!confirm('Vill du verkligen nollställa all statistik och kalibrering?')) {
       return;
     }
+    this.observations.clear();
     void this.stats.reset().then(() => this.buildHeatmap());
   }
 

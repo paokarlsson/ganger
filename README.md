@@ -6,7 +6,9 @@ table are already answered fast enough to count as automatic — once there is
 any practice to count.
 
 - **Para ihop** — match each question in the left column with its answer in the
-  right one. Background music and sound effects included.
+  right one. Background music and sound effects included. Its rounds are drawn
+  from the shared fact catalogue, and every pair it resolves is written to an
+  observation log; see below.
 - **Svep** — a statement such as `7 × 8 = 54` is shown on a card. Swipe (or drag
   with the mouse, or press the arrow keys) right if it is correct, left if it is
   not. Pick a round of 10 to 40 cards, or ∞ to keep going until you press
@@ -182,6 +184,33 @@ twice. *Mästaren*'s grid stays 10 × 10 — that is what the table looks like �
 but its two halves now mirror each other, because they are the same
 measurement.
 
+Alongside it, under `ganger-observations`, sits a short ring buffer of raw
+events from *Para ihop* — what was paired, how long it took, how many pairs
+were still on the board. Nothing in the game reads it, and nothing is chosen
+from it. It is measurement, not pedagogy, and it exists to answer a question
+that cannot be answered without data: *do the times in Para ihop say anything
+about the same facts in Svep?* If they do not, the premise that matching is
+diagnostic is wrong, and it is cheaper to learn that now than after an engine
+has been built on top of the measure.
+
+It records three zero points per pair, not one, because there is no obvious
+answer to when a question *begins* in a game where five pairs lie on the table
+at once: since the round was dealt, since the previous pair was resolved, and
+since the first click of this exchange. Which of them says something about the
+player is an empirical question, and storing all three is cheaper than guessing
+wrong. It also records how many pairs were still on the board, which is the
+measure of how much elimination was available — with one pair left the answer
+is free — so a later threshold can be set on that number rather than on taste.
+A mispairing is recorded too, with *both* facts and the answer that was chosen,
+because pairing 7 × 8 with 54 is the same kind of information the distractors
+are built from.
+
+*Para ihop* still picks its facts at random, even though the catalogue knows
+which ones are hard. That is deliberate: calibrating against the log needs an
+unbiased sample of the whole table, and the moment the game starts choosing
+facts from what it already believes, the log becomes an echo of that belief
+rather than a measurement of the player.
+
 All of it is cleared by the **Nollställ** button on the heat map screen, and by
 *Ny spelare* on the start screen.
 
@@ -198,6 +227,7 @@ All of it is cleared by the **Nollställ** button on the heat map screen, and by
 | `src/app/swipe-view/` | The *Svep* game |
 | `src/app/master-view/` | The *Mästaren* game, with its levels in `levels.ts` |
 | `src/app/services/progress-store.ts` | The stored document, its schema version and its migrations |
+| `src/app/services/observation-log.ts` | Raw training events; written, not yet read |
 | `src/app/services/practice-stats.service.ts` | Times and calibration, for both *Mästaren* and *Svep* |
 | `src/app/services/time-color.ts` | The green-to-red scale both heat maps colour a time with |
 | `src/app/theme-picker/` | **Temporary** — the theme picker; see below |

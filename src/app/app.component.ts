@@ -5,6 +5,7 @@ import { SwipeViewComponent } from './swipe-view/swipe-view.component';
 // TILLFÄLLIG: temaväljaren. Raden och den i imports nedan går bort med
 // mappen theme-picker/ — se README.
 import { ThemePickerComponent } from './theme-picker/theme-picker.component';
+import { ObservationLog } from './services/observation-log';
 import { PracticeStatsService } from './services/practice-stats.service';
 
 /** Spelen som går att välja mellan, plus menyn de väljs från. */
@@ -28,7 +29,10 @@ export class AppComponent {
   /** Om det finns något sparat att rensa — styr knappen för att byta spelare. */
   hasStoredProgress = false;
 
-  constructor(private readonly stats: PracticeStatsService) {
+  constructor(
+    private readonly stats: PracticeStatsService,
+    private readonly observations: ObservationLog,
+  ) {
     this.readProgress();
   }
 
@@ -61,6 +65,7 @@ export class AppComponent {
     if (!confirmed) {
       return;
     }
+    this.observations.clear();
     void this.stats.reset().then(() => this.readProgress());
   }
 
