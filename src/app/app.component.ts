@@ -6,7 +6,7 @@ import { SwipeViewComponent } from './swipe-view/swipe-view.component';
 // mappen theme-picker/ — se README.
 import { ThemePickerComponent } from './theme-picker/theme-picker.component';
 import { ObservationLog } from './services/observation-log';
-import { PracticeStatsService } from './services/practice-stats.service';
+import { TrainingEngine } from './training/training-engine';
 
 /** Spelen som går att välja mellan, plus menyn de väljs från. */
 export type Screen = 'menu' | 'match' | 'swipe' | 'master';
@@ -30,7 +30,7 @@ export class AppComponent {
   hasStoredProgress = false;
 
   constructor(
-    private readonly stats: PracticeStatsService,
+    private readonly engine: TrainingEngine,
     private readonly observations: ObservationLog,
   ) {
     this.readProgress();
@@ -66,16 +66,16 @@ export class AppComponent {
       return;
     }
     this.observations.clear();
-    void this.stats.reset().then(() => this.readProgress());
+    void this.engine.reset().then(() => this.readProgress());
   }
 
   /** Läses när menyn visas i stället för från mallen — att gå igenom hundra
    *  tal vid varje ändringsdetektering vore onödigt, och statistiken kan
    *  bara ha ändrats medan ett spel var igång. */
   private readProgress(): void {
-    this.hasPractice = this.stats.hasPractice;
-    this.hasStoredProgress = this.stats.hasStoredProgress;
-    this.masteredCount = this.stats.masteredCount();
-    this.factCount = this.stats.factCount;
+    this.hasPractice = this.engine.hasPractice;
+    this.hasStoredProgress = this.engine.hasStoredProgress;
+    this.masteredCount = this.engine.masteredCount();
+    this.factCount = this.engine.factCount;
   }
 }

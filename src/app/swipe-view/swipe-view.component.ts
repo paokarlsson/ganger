@@ -2,13 +2,13 @@ import { Component, HostListener, OnDestroy, ViewChild, ChangeDetectionStrategy,
 import { MatCardModule } from '@angular/material/card';
 import { CdkDrag, CdkDragEnd, CdkDragMove } from '@angular/cdk/drag-drop';
 import { FACTS, Fact, MAX_FACTOR, MIN_FACTOR } from '../facts/fact-catalog';
-import { needWeight } from '../facts/fact-selector';
 import { PENALTY_TIME } from '../master-view/levels';
-import { ChannelStat, PracticeStatsService } from '../services/practice-stats.service';
+import { ChannelStat, TrainingEngine } from '../training/training-engine';
 import { timeColor } from '../services/time-color';
 import {
   CALIBRATION_CARDS,
   DEFAULT_QUESTION_COUNT,
+  DEFAULT_START_LEVEL,
   ENDLESS,
   GeneratedStatement,
   HEAT_TIERS,
@@ -17,16 +17,12 @@ import {
   LEVEL_MIN,
   QUESTION_COUNTS,
   RoundMemory,
-  baselineSample,
   createRoundMemory,
   heatTier,
   isEndless,
-  isFastAnswer,
-  nextLevel,
   nextStatement,
   nextStreak,
   rememberMiss,
-  startLevel,
 } from './swipe-difficulty';
 
 /** Hur länge kortet flyger ut innan nästa fråga läggs fram. */
@@ -66,7 +62,7 @@ interface HeatCell {
 export class SwipeViewComponent implements OnDestroy {
   @ViewChild(CdkDrag) private drag?: CdkDrag;
 
-  private readonly stats = inject(PracticeStatsService);
+  private readonly engine = inject(TrainingEngine);
 
   readonly questionCounts = QUESTION_COUNTS;
   readonly endless = ENDLESS;
@@ -75,7 +71,7 @@ export class SwipeViewComponent implements OnDestroy {
   screen: Screen = 'menu';
   selectedQuestionCount = DEFAULT_QUESTION_COUNT;
 
-  level = startLevel(null, 0, false);
+  level = DEFAULT_START_LEVEL;
   /** Kort puls när nivån just ändrats, styr brasans animation. */
   levelFlash: '' | 'up' | 'down' = '';
 
@@ -116,7 +112,7 @@ export class SwipeViewComponent implements OnDestroy {
     clearTimeout(this.advanceTimer);
     clearTimeout(this.feedbackTimer);
     clearTimeout(this.flashTimer);
-    this.stats.flush();
+    this.engine.flush();
   }
 
   /** Sant medan kortet flyger ut — då tas inga nya svar emot. */
@@ -168,18 +164,18 @@ export class SwipeViewComponent implements OnDestroy {
 
   /** Om det finns svep att visa en värmekarta över. */
   get hasSwipePractice(): boolean {
-    return this.stats.hasSwipePractice;
+    return this.engine.hasSwipePractice;
   }
 
   /** Sveptakten som text, måttet kartans färger utgår från. */
   get baselineDisplay(): string {
-    return `${this.stats.swipeBaselineSeconds.toFixed(1)}s`;
+    return `${this.engine.swipeBaselineSeconds.toFixed(1)}s`;
   }
 
   /** Rekordet att jaga. Läses ur statistiken, så att menyn visar det redan
    *  innan spelaren kört en rond den här gången. */
   get bestStreak(): number {
-    return this.stats.swipeBestStreak;
+    return this.engine.swipeBestStreak;
   }
 
   /** Om ronden slog rekordet. Jämför mot vad som stod när den började —
@@ -245,12 +241,8 @@ export class SwipeViewComponent implements OnDestroy {
     this.memory = createRoundMemory();
     this.streak = 0;
     this.roundBestStreak = 0;
-    this.previousBestStreak = this.stats.swipeBestStreak;
-    this.level = startLevel(
-      this.stats.swipeLevel,
-      this.stats.masteredCount(),
-      this.stats.hasPractice,
-    );
+    this.previousBestStreak = this.engine.swipeBestStreak;
+    this.level = this.engine.swipeStartLevel();
     this.levelFlash = '';
     this.feedback = undefined;
     this.progress = 0;
@@ -326,15 +318,10 @@ export class SwipeViewComponent implements OnDestroy {
     }
     this.recordAnswer(statement.fact, correct, timeSec);
     if (this.calibrating) {
-      // Bara kort som svepts rätt säger något om takten. Ett barn som svepar
-      // på måfå ska inte kunna sätta en omöjlig ribba åt sig själv.
-      if (correct) {
-        this.stats.recordSwipeBaseline(baselineSample(timeSec, statement.isTrue));
-      }
+      this.engine.recordSwipeCalibration(statement, correct, timeSec);
     } else {
-      const baseline = this.stats.swipeBaselineSeconds;
-      const fast = isFastAnswer(statement.isTrue, correct, timeSec, baseline);
-      this.adjustLevel(statement, correct, timeSec, baseline);
+      const fast = this.engine.isFastSwipe(statement, correct, timeSec);
+      this.adjustLevel(statement, correct, timeSec);
       this.streak = nextStreak(this.streak, correct, fast);
       this.roundBestStreak = Math.max(this.roundBestStreak, this.streak);
     }
@@ -376,33 +363,32 @@ export class SwipeViewComponent implements OnDestroy {
     this.leaving = 0;
     this.progress = 0;
     if (this.roundBestStreak > this.previousBestStreak) {
-      this.stats.swipeBestStreak = this.roundBestStreak;
+      this.engine.swipeBestStreak = this.roundBestStreak;
     }
     // Statistiken skrivs fördröjt under ronden; här ska den sitta på disk.
-    this.stats.flush();
+    this.engine.flush();
   }
 
   /** Skickar svaret till den delade statistiken, i svepets egen kanal. Fel
    *  svar får samma tidsstraff som i Mästaren så tiderna går att jämföra. */
   private recordAnswer(fact: Fact, correct: boolean, timeSec: number): void {
     const effectiveMs = (timeSec + (correct ? 0 : PENALTY_TIME)) * 1000;
-    this.stats.record(fact.a, fact.b, correct, effectiveMs, 'swipe');
+    this.engine.record(fact.a, fact.b, correct, effectiveMs, 'swipe');
   }
 
   /** Nivån stiger försiktigt (ett steg) men sjunker snabbt (två) — samma
-   *  princip som auto-läget i Mästaren, se master-view.component.ts. Tröskeln
-   *  är spelarens egen sveptakt, mätt i öppningens kalibreringskort. */
+   *  princip som auto-läget i Mästaren. Tröskeln är spelarens egen sveptakt,
+   *  och den läser motorn; vyn behöver inte veta att det finns en. */
   private adjustLevel(
     statement: GeneratedStatement,
     correct: boolean,
     timeSec: number,
-    baselineSeconds: number,
   ): void {
     const before = this.level;
-    this.level = nextLevel(this.level, statement.isTrue, correct, timeSec, baselineSeconds);
+    this.level = this.engine.nextSwipeLevel(this.level, statement, correct, timeSec);
 
     if (this.level !== before) {
-      this.stats.swipeLevel = this.level;
+      this.engine.swipeLevel = this.level;
       this.levelFlash = this.level > before ? 'up' : 'down';
       clearTimeout(this.flashTimer);
       this.flashTimer = setTimeout(() => (this.levelFlash = ''), LEVEL_FLASH_MS);
@@ -416,8 +402,8 @@ export class SwipeViewComponent implements OnDestroy {
    * diagonalen och ingen ruta står två gånger.
    */
   private buildHeatmap(): void {
-    const fast = this.stats.swipeFastSeconds;
-    const slow = this.stats.swipeSlowSeconds;
+    const fast = this.engine.swipeFastSeconds;
+    const slow = this.engine.swipeSlowSeconds;
     const rows: { label: number; cells: HeatCell[] }[] = [];
 
     for (let row = MIN_FACTOR; row <= MAX_FACTOR; row++) {
@@ -427,8 +413,8 @@ export class SwipeViewComponent implements OnDestroy {
           cells.push({ text: '', color: '', title: '', empty: true, untested: false });
           continue;
         }
-        const stat = this.stats.swipeStatFor(row, col);
-        const average = this.stats.averageSeconds(stat);
+        const stat = this.engine.swipeStatFor(row, col);
+        const average = this.engine.averageSeconds(stat);
         if (!stat || average === null) {
           cells.push({
             text: '—',
@@ -451,7 +437,7 @@ export class SwipeViewComponent implements OnDestroy {
     }
 
     this.heatRows = rows;
-    this.swipeMastered = this.stats.swipeMasteredCount();
+    this.swipeMastered = this.engine.swipeMasteredCount();
   }
 
   private heatTitle(row: number, col: number, stat: ChannelStat, average: number): string {
@@ -503,7 +489,7 @@ export class SwipeViewComponent implements OnDestroy {
     this.cardShownAt = performance.now();
   }
 
-  /** Spelarens vikt per tal — svaga och obeprövade tal dras oftare. */
-  private readonly need = (fact: Fact): number =>
-    needWeight(this.stats.performanceFor(fact.a, fact.b), this.stats.fastSeconds);
+  /** Spelarens vikt per tal — svaga och obeprövade tal dras oftare. Vikten är
+   *  motorns att bestämma; ronden vidarebefordrar den bara till urvalet. */
+  private readonly need = (fact: Fact): number => this.engine.needFor(fact);
 }

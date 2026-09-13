@@ -1,18 +1,16 @@
 import { Component, ElementRef, OnDestroy, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { ObservationLog } from '../services/observation-log';
-import { ChannelStat, PracticeStatsService } from '../services/practice-stats.service';
 import { timeColor } from '../services/time-color';
+import { AutoDifficultyState, initialAutoDifficulty } from '../training/auto-difficulty';
+import { ChannelStat, TrainingEngine } from '../training/training-engine';
 import {
   CALIBRATION_QUESTIONS,
   DIFFICULTY,
-  DOWNGRADE_THRESHOLD,
-  Difficulty,
   LEVELS,
   LEVEL_BUTTONS,
   Level,
   PENALTY_TIME,
   Pair,
-  UPGRADE_THRESHOLD,
 } from './levels';
 
 type Screen = 'menu' | 'calibration' | 'game' | 'result' | 'heatmap';
@@ -96,7 +94,7 @@ export class MasterViewComponent implements OnDestroy {
   masteredCount = 0;
   factCount = 0;
 
-  private readonly stats = inject(PracticeStatsService);
+  private readonly engine = inject(TrainingEngine);
   private readonly observations = inject(ObservationLog);
   private questions: Pair[] = [];
   private questionStartTime = 0;
@@ -104,9 +102,9 @@ export class MasterViewComponent implements OnDestroy {
   private advanceHandle?: ReturnType<typeof setTimeout>;
   private calibrationHandle?: ReturnType<typeof setTimeout>;
   private calibrationTimes: number[] = [];
-  private currentDifficulty: Difficulty = 'easy';
-  private consecutiveFast = 0;
-  private consecutiveSlow = 0;
+  /** Auto-lägets läge i skalan, och räknarna som flyttar det. Ett värde i
+   *  stället för tre fält — se `training/auto-difficulty.ts`. */
+  private auto: AutoDifficultyState = initialAutoDifficulty('easy');
   private gameAborted = false;
 
   ngOnDestroy(): void {
@@ -134,19 +132,19 @@ export class MasterViewComponent implements OnDestroy {
   }
 
   get streakVisible(): boolean {
-    return this.consecutiveFast >= STREAK_VISIBLE_FROM;
+    return this.auto.consecutiveFast >= STREAK_VISIBLE_FROM;
   }
 
   get consecutiveFastDisplay(): number {
-    return this.consecutiveFast;
+    return this.auto.consecutiveFast;
   }
 
   get calibratedTimeDisplay(): string {
-    return this.stats.fastSeconds.toFixed(1) + 's';
+    return this.engine.fastSeconds.toFixed(1) + 's';
   }
 
   get baselineDisplay(): string {
-    const calibrated = this.stats.calibratedFastTime;
+    const calibrated = this.engine.calibratedFastTime;
     return calibrated === null ? '—' : `${calibrated.toFixed(1)}s`;
   }
 
@@ -160,7 +158,7 @@ export class MasterViewComponent implements OnDestroy {
 
   /** Utan en mätt snabbhetstid har spelet inget att jämföra svaren mot. */
   start(): void {
-    if (this.stats.calibratedFastTime === null) {
+    if (this.engine.calibratedFastTime === null) {
       this.startCalibration();
     } else {
       this.startGame();
@@ -182,7 +180,7 @@ export class MasterViewComponent implements OnDestroy {
   }
 
   skipCalibration(): void {
-    this.stats.useDefaultCalibration();
+    this.engine.useDefaultCalibration();
     this.startGame();
   }
 
@@ -223,7 +221,7 @@ export class MasterViewComponent implements OnDestroy {
 
   private nextCalibrationQuestion(): void {
     if (this.calibrationIndex >= CALIBRATION_QUESTIONS.length) {
-      this.stats.calibrate(this.calibrationTimes);
+      this.engine.calibrate(this.calibrationTimes);
       this.startGame();
       return;
     }
@@ -241,8 +239,6 @@ export class MasterViewComponent implements OnDestroy {
     this.results = [];
     this.gameAborted = false;
     this.showAbortModal = false;
-    this.consecutiveFast = 0;
-    this.consecutiveSlow = 0;
     this.screen = 'game';
     this.nextQuestion();
   }
@@ -285,7 +281,7 @@ export class MasterViewComponent implements OnDestroy {
 
     this.isAnswering = false;
     clearInterval(this.timerHandle);
-    this.stats.record(a, b, isCorrect, timeMs);
+    this.engine.record(a, b, isCorrect, timeMs);
 
     this.results.push({
       a,
@@ -300,9 +296,9 @@ export class MasterViewComponent implements OnDestroy {
     if (isCorrect) {
       this.answerState = 'correct';
       this.feedbackKind = 'correct';
-      if (timeSec < this.stats.fastSeconds) {
+      if (timeSec < this.engine.fastSeconds) {
         this.feedbackText = '⚡ Blixtsnabbt!';
-      } else if (timeSec < this.stats.fastSeconds * 1.5) {
+      } else if (timeSec < this.engine.fastSeconds * 1.5) {
         this.feedbackText = '✓ Snyggt!';
       } else {
         this.feedbackText = '✓ Rätt!';
@@ -354,7 +350,7 @@ export class MasterViewComponent implements OnDestroy {
       return;
     }
     this.observations.clear();
-    void this.stats.reset().then(() => this.buildHeatmap());
+    void this.engine.reset().then(() => this.buildHeatmap());
   }
 
   // --- Internt --------------------------------------------------------------
@@ -417,13 +413,15 @@ export class MasterViewComponent implements OnDestroy {
 
   private buildQuestions(): Pair[] {
     if (this.selectedLevel === 'auto') {
-      this.currentDifficulty = this.startDifficulty();
+      this.auto = initialAutoDifficulty(this.engine.startDifficulty());
       // I auto-läget väljs varje fråga utifrån hur den förra gick, så bara
-      // den första kan bestämmas på förhand.
-      return [this.shuffle(this.questionsForDifficulty(this.currentDifficulty))[0]];
+      // den första kan bestämmas på förhand. Den dras jämnt ur gruppen och
+      // inte efter träningsvärde — ronden ska inte öppna med det svåraste
+      // spelaren har.
+      return [this.shuffle(DIFFICULTY[this.auto.difficulty])[0]];
     }
 
-    this.currentDifficulty = 'medium';
+    this.auto = initialAutoDifficulty('medium');
     const tables = LEVELS[this.selectedLevel];
     const pool: Pair[] = [];
     for (const table of tables) {
@@ -444,66 +442,9 @@ export class MasterViewComponent implements OnDestroy {
     return round.slice(0, this.selectedQuestionCount);
   }
 
-  /** Nivån att börja på: den lägsta där spelaren inte redan är hemma. */
-  private startDifficulty(): Difficulty {
-    if (this.masteredShare('easy') < 0.7) {
-      return 'easy';
-    }
-    return this.masteredShare('medium') >= 0.7 ? 'hard' : 'medium';
-  }
-
-  private masteredShare(difficulty: Difficulty): number {
-    const pairs = DIFFICULTY[difficulty];
-    let mastered = 0;
-    for (const [a, b] of pairs) {
-      const stat = this.stats.statFor(a, b);
-      const average = this.stats.averageSeconds(stat);
-      // Färre än tre svar är för lite för att kalla ett tal automatiserat.
-      if (stat && stat.times.length >= 3 && average !== null && average <= this.stats.fastSeconds) {
-        mastered += 1;
-      }
-    }
-    return mastered / pairs.length;
-  }
-
-  /** Talen inom en svårighet, de som behöver mest träning först. */
-  private questionsForDifficulty(difficulty: Difficulty): Pair[] {
-    return [...DIFFICULTY[difficulty]].sort(
-      (a, b) => this.trainingScore(b) - this.trainingScore(a),
-    );
-  }
-
-  private trainingScore(pair: Pair): number {
-    const stat = this.stats.statFor(pair[0], pair[1]);
-    const average = this.stats.averageSeconds(stat);
-    if (!stat || average === null) {
-      return 5; // Aldrig testad.
-    }
-    const accuracy = stat.total > 0 ? stat.correct / stat.total : 0;
-    if (accuracy < 0.7) {
-      return 10;
-    }
-    if (average > this.stats.slowSeconds) {
-      return 9;
-    }
-    if (average > this.stats.fastSeconds * 2) {
-      return 7;
-    }
-    if (average > this.stats.fastSeconds) {
-      return 4;
-    }
-    return 1; // Redan automatiserad.
-  }
-
   private nextAdaptiveQuestion(): Pair {
-    const pool = this.questionsForDifficulty(this.currentDifficulty);
-    const last = this.questions[this.questions.length - 1];
-    const filtered = pool.filter((q) => !(q[0] === last[0] && q[1] === last[1]));
-
-    // Slumpa bland de tio mest träningsvärda så att ordningen inte blir
-    // förutsägbar.
-    const candidates = this.shuffle(filtered.slice(0, 10));
-    return candidates[0] ?? filtered[0] ?? pool[0];
+    const previous = this.questions[this.questions.length - 1];
+    return this.engine.nextAutoQuestion(this.auto.difficulty, previous);
   }
 
   /** Svårigheten stiger först vid ihållande snabbhet, men sjunker snabbt. */
@@ -512,52 +453,20 @@ export class MasterViewComponent implements OnDestroy {
     if (!last) {
       return;
     }
-    const timeSec = last.timeMs / 1000;
-
-    if (last.correct && timeSec <= this.stats.fastSeconds) {
-      this.consecutiveFast += 1;
-      this.consecutiveSlow = 0;
-      if (this.consecutiveFast >= UPGRADE_THRESHOLD) {
-        if (this.currentDifficulty === 'easy') {
-          this.currentDifficulty = 'medium';
-          this.consecutiveFast = 0;
-        } else if (this.currentDifficulty === 'medium') {
-          this.currentDifficulty = 'hard';
-          this.consecutiveFast = 0;
-        }
-      }
-    } else if (!last.correct || timeSec > this.stats.slowSeconds) {
-      this.consecutiveSlow += 1;
-      this.consecutiveFast = 0;
-      if (this.consecutiveSlow >= DOWNGRADE_THRESHOLD) {
-        if (this.currentDifficulty === 'hard') {
-          this.currentDifficulty = 'medium';
-          this.consecutiveSlow = 0;
-        } else if (this.currentDifficulty === 'medium') {
-          this.currentDifficulty = 'easy';
-          this.consecutiveSlow = 0;
-        }
-      }
-    } else {
-      // Mittemellan: raden bryts inte, men den räknas ner.
-      this.consecutiveFast = Math.max(0, this.consecutiveFast - 1);
-    }
+    this.auto = this.engine.nextDifficulty(this.auto, {
+      correct: last.correct,
+      timeSec: last.timeMs / 1000,
+    });
   }
 
-  /**
-   * Rutnätet står kvar på 10 × 10 — det är gångertabellen som den ser ut — men
-   * sedan nycklarna kanoniserats speglar halvorna varandra: 7 × 8 och 8 × 7
-   * visar samma mätning, för det *är* samma mätning. Räkningen under kartan
-   * går därför mot 55 och inte mot 100.
-   */
   private buildHeatmap(): void {
     const rows: { label: number; cells: HeatmapCell[] }[] = [];
 
     for (let row = 1; row <= 10; row++) {
       const cells: HeatmapCell[] = [];
       for (let col = 1; col <= 10; col++) {
-        const stat = this.stats.statFor(row, col);
-        const average = this.stats.averageSeconds(stat);
+        const stat = this.engine.statFor(row, col);
+        const average = this.engine.averageSeconds(stat);
         if (!stat || average === null) {
           cells.push({
             text: '—',
@@ -578,8 +487,8 @@ export class MasterViewComponent implements OnDestroy {
     }
 
     this.heatmapRows = rows;
-    this.masteredCount = this.stats.masteredCount();
-    this.factCount = this.stats.factCount;
+    this.masteredCount = this.engine.masteredCount();
+    this.factCount = this.engine.factCount;
   }
 
   private heatmapTitle(row: number, col: number, stat: ChannelStat, average: number): string {
@@ -604,7 +513,7 @@ export class MasterViewComponent implements OnDestroy {
 
   /** Grönt upp till den kalibrerade tiden, sedan gult mot rött. */
   private timeColor(seconds: number): string {
-    return timeColor(seconds, this.stats.fastSeconds, this.stats.slowSeconds);
+    return timeColor(seconds, this.engine.fastSeconds, this.engine.slowSeconds);
   }
 
   /** Fälten ligger bakom @if och finns först när vyn ritats om, så de slås

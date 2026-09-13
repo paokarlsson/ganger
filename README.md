@@ -228,13 +228,47 @@ All of it is cleared by the **Nollställ** button on the heat map screen, and by
 | `src/app/master-view/` | The *Mästaren* game, with its levels in `levels.ts` |
 | `src/app/services/progress-store.ts` | The stored document, its schema version and its migrations |
 | `src/app/services/observation-log.ts` | Raw training events; written, not yet read |
-| `src/app/services/practice-stats.service.ts` | Times and calibration, for both *Mästaren* and *Svep* |
+| `src/app/training/training-engine.ts` | What the game believes about the player, and what it does with that |
+| `src/app/training/auto-difficulty.ts` | How *Mästaren*'s auto mode moves between difficulty groups |
 | `src/app/services/time-color.ts` | The green-to-red scale both heat maps colour a time with |
 | `src/app/theme-picker/` | **Temporary** — the theme picker; see below |
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) and runs on
 Angular 22. Building it needs Node 22.22.3 or later (24 LTS is what CI and
 [compose.yml](compose.yml) use).
+
+## Three layers
+
+The app is split so that the teaching is not spread across event handlers:
+
+| Layer | What it decides |
+| --- | --- |
+| The four view components | What is on screen |
+| `TrainingEngine` | What the player knows, and what should come next |
+| `ProgressRepository` | Where the bytes live |
+
+A view asks the engine a question — *how much does this fact need practice*,
+*what level should this round start at*, *was that swipe fast for this player* —
+and never reads a threshold or a stored time to work it out for itself. Where a
+component used to hold the answer, it now holds only the state of the round in
+front of it.
+
+The engine in turn owns none of the pure rules. Those stay in modules of their
+own, where they can be tested without a player: `facts/fact-selector.ts` picks a
+fact, `swipe-view/swipe-difficulty.ts` moves *Svep*'s level,
+`training/auto-difficulty.ts` moves *Mästaren*'s difficulty group. Each is a
+function from old state plus one event to new state, which is the shape the
+whole model is meant to have:
+
+    old state + new event = new state
+
+`auto-difficulty.ts` is the newest of them and came out of
+`master-view.component.ts`, where the same rule lived as three mutable fields
+and two nested `if` ladders. One detail is worth keeping in mind if it is ever
+rewritten: at the top of the ladder the streak keeps counting even though the
+difficulty cannot rise any further, because that same counter is what the cheer
+in the top row is showing — resetting it on a step that could not be taken
+would put the cheer out mid-run.
 
 ## Temaväljaren (temporary)
 

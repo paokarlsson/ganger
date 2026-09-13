@@ -9,7 +9,7 @@
  * byggs ovanpå måttet.
  *
  * Loggen ligger under en egen nyckel, skild från framstegsdokumentet.
- * `PracticeStatsService` serialiserar hela sitt dokument vid varje kort och
+ * `TrainingEngine` serialiserar hela sitt dokument vid varje kort och
  * har redan fått en fördröjning för att det blev för dyrt; händelserna i samma
  * dokument hade gjort den skrivningen dyrare för varje rond.
  *

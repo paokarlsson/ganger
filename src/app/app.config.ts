@@ -5,7 +5,7 @@ import {
   inject,
 } from '@angular/core';
 import { ObservationLog } from './services/observation-log';
-import { PracticeStatsService } from './services/practice-stats.service';
+import { TrainingEngine } from './training/training-engine';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -14,7 +14,7 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection(),
     // Framstegen läses en gång, innan första vyn ritas. Lagringen är asynkron;
     // allt efter uppstarten läser kopian i minnet och slipper vänta.
-    provideAppInitializer(() => inject(PracticeStatsService).hydrate()),
+    provideAppInitializer(() => inject(TrainingEngine).hydrate()),
     // Loggen är råa händelser och läses av ingenting i spelet ännu, men den
     // ska inte skriva över det som redan ligger där.
     provideAppInitializer(() => inject(ObservationLog).hydrate()),

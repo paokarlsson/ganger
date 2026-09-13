@@ -1,11 +1,23 @@
 import { Injectable } from '@angular/core';
-import { FACTS } from '../facts/fact-catalog';
-import { FactPerformance } from '../facts/fact-selector';
-import { DEFAULT_FAST_TIME, SLOW_TIME_MULTIPLIER } from '../master-view/levels';
+import { FACTS, Fact } from '../facts/fact-catalog';
+import { FactPerformance, needWeight } from '../facts/fact-selector';
+import {
+  DEFAULT_FAST_TIME,
+  DIFFICULTY,
+  Difficulty,
+  Pair,
+  SLOW_TIME_MULTIPLIER,
+} from '../master-view/levels';
 import {
   FAST_FACTOR,
+  GeneratedStatement,
   SLOW_TIME_MULTIPLIER as SWIPE_SLOW_MULTIPLIER,
+  baselineSample,
+  isFastAnswer,
+  nextLevel,
+  startLevel,
 } from '../swipe-view/swipe-difficulty';
+import { AnswerPace, AutoDifficultyState, nextAutoDifficulty } from './auto-difficulty';
 import {
   ChannelStat,
   LocalStorageProgressRepository,
@@ -16,9 +28,9 @@ import {
   emptyRecord,
   hasContent,
   progressKeyFor,
-} from './progress-store';
+} from '../services/progress-store';
 
-export type { ChannelStat } from './progress-store';
+export type { ChannelStat } from '../services/progress-store';
 
 /** Skrivet svar eller svep. Tiderna är inte jämförbara mellan de två. */
 export type Channel = 'typed' | 'swipe';
@@ -45,6 +57,16 @@ const MIN_BASELINE_SAMPLES = 3;
 const MIN_SWIPE_BASELINE = 0.5;
 const MAX_SWIPE_BASELINE = 3.0;
 
+/** Så stor andel av en grupp som ska sitta för att spelaren ska räknas som
+ *  hemma där, och flyttas upp. */
+const AT_HOME_SHARE = 0.7;
+
+/** Färre svar än så säger för lite för att kalla ett tal automatiserat. */
+const MIN_MASTERY_SAMPLES = 3;
+
+/** Hur många av de mest träningsvärda talen auto-läget slumpar bland. */
+const AUTO_CANDIDATES = 10;
+
 /** Sveptakten för en spelare vi ännu inte mätt.
  *
  *  ANTAGANDE: satt på känsla, strax under Mästarens 2 s eftersom igenkänning
@@ -53,14 +75,23 @@ const MAX_SWIPE_BASELINE = 3.0;
 export const DEFAULT_SWIPE_BASELINE = 1.5;
 
 /**
- * Vad spelet vet om den som övar, och vad det gör av den kunskapen.
+ * Pedagogiken. Vad spelet tror att spelaren kan, och vad det gör av den tron.
  *
- * Lagringen ligger inte här utan i `ProgressRepository`. Den här tjänsten
- * håller dokumentet i minnet, för mallarna läser det synkront vid varje
+ * Lagret ligger inte här utan bakom `ProgressRepository`, och UI:t ska inte
+ * innehålla någon av besluten nedan. Principen är densamma överallt:
+ *
+ *     gammalt tillstånd + ny händelse = nytt tillstånd
+ *
+ * Motorn håller dokumentet i minnet, för mallarna läser det synkront vid varje
  * ändringsdetektering och får inte vänta på ett löfte.
+ *
+ * De rena delarna av pedagogiken ligger kvar i egna moduler och testas där:
+ * `facts/fact-selector.ts` väljer tal, `swipe-view/swipe-difficulty.ts` rör
+ * Svepets nivå, `training/auto-difficulty.ts` rör Mästarens svårighetsgrupp.
+ * Motorn är det som kopplar ihop dem med vad spelaren faktiskt gjort.
  */
 @Injectable({ providedIn: 'root' })
-export class PracticeStatsService {
+export class TrainingEngine {
   /**
    * Sömmen mot lagringen. Byts den mot en implementation som talar med en
    * backend behöver ingenting annat i appen ändras.
@@ -353,6 +384,129 @@ export class PracticeStatsService {
     await this.repository.clear();
   }
 
+  // --- Vad som ska komma härnäst -------------------------------------------
+
+  /**
+   * Hur mycket ett tal behöver övas, som en vikt till urvalet. Låg i Svep, som
+   * frågar per kort; det är den här kopplingen mellan spelarens modell och
+   * `selectFact()` som gör att svaga och obeprövade tal kommer oftare.
+   */
+  needFor(fact: Fact): number {
+    return needWeight(this.performanceFor(fact.a, fact.b), this.fastSeconds);
+  }
+
+  /** Var Svepets brasa ska börja: där kunskapen är, inte mitt på skalan. */
+  swipeStartLevel(): number {
+    return startLevel(this.swipeLevel, this.masteredCount(), this.hasPractice);
+  }
+
+  /** Om ett svep var rätt *och* snabbt för just den här spelaren. */
+  isFastSwipe(statement: GeneratedStatement, correct: boolean, timeSec: number): boolean {
+    return isFastAnswer(statement.isTrue, correct, timeSec, this.swipeBaselineSeconds);
+  }
+
+  /**
+   * Nivån efter ett svep. Tröskeln läses ur spelarens egen takt här inne, så
+   * att vyn inte behöver känna till att det finns en sådan.
+   */
+  nextSwipeLevel(level: number, statement: GeneratedStatement, correct: boolean, timeSec: number): number {
+    return nextLevel(level, statement.isTrue, correct, timeSec, this.swipeBaselineSeconds);
+  }
+
+  /**
+   * Vad ett kalibreringskort bidrar med till sveptakten. Bara rätt svepta kort
+   * räknas — ett barn som svepar på måfå ska inte kunna sätta en omöjlig ribba
+   * åt sig själv.
+   */
+  recordSwipeCalibration(statement: GeneratedStatement, correct: boolean, timeSec: number): void {
+    if (correct) {
+      this.recordSwipeBaseline(baselineSample(timeSec, statement.isTrue));
+    }
+  }
+
+  // --- Mästarens auto-läge --------------------------------------------------
+
+  /** Gruppen att börja i: den lägsta där spelaren inte redan är hemma. */
+  startDifficulty(): Difficulty {
+    if (this.masteredShare('easy') < AT_HOME_SHARE) {
+      return 'easy';
+    }
+    return this.masteredShare('medium') >= AT_HOME_SHARE ? 'hard' : 'medium';
+  }
+
+  /** Svårighetsgruppen efter ett svar, mätt mot spelarens egna trösklar. */
+  nextDifficulty(
+    state: AutoDifficultyState,
+    answer: Pick<AnswerPace, 'correct' | 'timeSec'>,
+  ): AutoDifficultyState {
+    return nextAutoDifficulty(state, {
+      ...answer,
+      fastSeconds: this.fastSeconds,
+      slowSeconds: this.slowSeconds,
+    });
+  }
+
+  /**
+   * Nästa fråga i auto-läget: slumpad bland de mest träningsvärda i gruppen,
+   * så att ordningen inte blir förutsägbar, och aldrig samma tal två gånger i
+   * rad.
+   */
+  nextAutoQuestion(difficulty: Difficulty, previous: Pair | undefined): Pair {
+    const pool = this.questionsForDifficulty(difficulty);
+    const filtered = previous
+      ? pool.filter((q) => !(q[0] === previous[0] && q[1] === previous[1]))
+      : pool;
+    const candidates = shuffle(filtered.slice(0, AUTO_CANDIDATES));
+    return candidates[0] ?? filtered[0] ?? pool[0];
+  }
+
+  /** Talen inom en svårighet, de som behöver mest träning först. */
+  private questionsForDifficulty(difficulty: Difficulty): Pair[] {
+    return [...DIFFICULTY[difficulty]].sort((a, b) => this.trainingScore(b) - this.trainingScore(a));
+  }
+
+  /**
+   * Hur träningsvärt ett tal är. Grövre än `needFor()` med flit: Mästaren
+   * sorterar en lista, Svep viktar en dragning, och en trappa är lättare att
+   * läsa av i en sortering än en glidande skala.
+   */
+  trainingScore(pair: Pair): number {
+    const stat = this.statFor(pair[0], pair[1]);
+    const average = this.averageSeconds(stat);
+    if (!stat || average === null) {
+      return 5; // Aldrig testad.
+    }
+    const accuracy = stat.total > 0 ? stat.correct / stat.total : 0;
+    if (accuracy < 0.7) {
+      return 10;
+    }
+    if (average > this.slowSeconds) {
+      return 9;
+    }
+    if (average > this.fastSeconds * 2) {
+      return 7;
+    }
+    if (average > this.fastSeconds) {
+      return 4;
+    }
+    return 1; // Redan automatiserad.
+  }
+
+  /** Andelen tal i en grupp som sitter. */
+  private masteredShare(difficulty: Difficulty): number {
+    const pairs = DIFFICULTY[difficulty];
+    let mastered = 0;
+    for (const [a, b] of pairs) {
+      const stat = this.statFor(a, b);
+      const average = this.averageSeconds(stat);
+      // Färre än tre svar är för lite för att kalla ett tal automatiserat.
+      if (stat && stat.times.length >= MIN_MASTERY_SAMPLES && average !== null && average <= this.fastSeconds) {
+        mastered += 1;
+      }
+    }
+    return mastered / pairs.length;
+  }
+
   private channel(a: number, b: number, channel: Channel): ChannelStat | undefined {
     const stat = this.progress.facts[progressKeyFor(a, b)]?.[channel];
     return stat && stat.total > 0 ? stat : undefined;
@@ -362,4 +516,14 @@ export class PracticeStatsService {
     this.dirty = true;
     this.writeTimer ??= setTimeout(() => this.flush(), STATS_WRITE_DELAY);
   }
+}
+
+/** Fisher-Yates på en kopia, så anroparens lista lämnas orörd. */
+function shuffle<T>(items: readonly T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
 }
