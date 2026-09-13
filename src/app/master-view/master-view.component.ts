@@ -1,5 +1,5 @@
 import { Component, ElementRef, OnDestroy, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
-import { PracticeStatsService, QuestionStat } from '../services/practice-stats.service';
+import { ChannelStat, PracticeStatsService } from '../services/practice-stats.service';
 import { timeColor } from '../services/time-color';
 import {
   CALIBRATION_QUESTIONS,
@@ -93,6 +93,7 @@ export class MasterViewComponent implements OnDestroy {
   // Värmekarta
   heatmapRows: { label: number; cells: HeatmapCell[] }[] = [];
   masteredCount = 0;
+  factCount = 0;
 
   private readonly stats = inject(PracticeStatsService);
   private questions: Pair[] = [];
@@ -350,8 +351,7 @@ export class MasterViewComponent implements OnDestroy {
     if (!confirm('Vill du verkligen nollställa all statistik och kalibrering?')) {
       return;
     }
-    this.stats.reset();
-    this.buildHeatmap();
+    void this.stats.reset().then(() => this.buildHeatmap());
   }
 
   // --- Internt --------------------------------------------------------------
@@ -541,6 +541,12 @@ export class MasterViewComponent implements OnDestroy {
     }
   }
 
+  /**
+   * Rutnätet står kvar på 10 × 10 — det är gångertabellen som den ser ut — men
+   * sedan nycklarna kanoniserats speglar halvorna varandra: 7 × 8 och 8 × 7
+   * visar samma mätning, för det *är* samma mätning. Räkningen under kartan
+   * går därför mot 55 och inte mot 100.
+   */
   private buildHeatmap(): void {
     const rows: { label: number; cells: HeatmapCell[] }[] = [];
 
@@ -570,9 +576,10 @@ export class MasterViewComponent implements OnDestroy {
 
     this.heatmapRows = rows;
     this.masteredCount = this.stats.masteredCount();
+    this.factCount = this.stats.factCount;
   }
 
-  private heatmapTitle(row: number, col: number, stat: QuestionStat, average: number): string {
+  private heatmapTitle(row: number, col: number, stat: ChannelStat, average: number): string {
     const accuracy = stat.total > 0 ? Math.round((stat.correct / stat.total) * 100) : 0;
     return [
       `${row} × ${col} = ${row * col}`,

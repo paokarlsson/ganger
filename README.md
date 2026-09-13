@@ -1,9 +1,9 @@
 # Ganger
 
 A small Angular app for practising the multiplication table. The start screen
-lets you pick one of three games, and shows how many of the hundred entries in
-the table are already answered fast enough to count as automatic — once there
-is any practice to count.
+lets you pick one of three games, and shows how many of the 55 facts in the
+table are already answered fast enough to count as automatic — once there is
+any practice to count.
 
 - **Para ihop** — match each question in the left column with its answer in the
   right one. Background music and sound effects included.
@@ -33,7 +33,7 @@ is any practice to count.
   round length. A short calibration measures how fast the player answers the
   easiest questions; everything after that is judged against that time. A wrong
   answer costs four seconds. The heat map shows the average time per table
-  entry, and how many of the hundred are answered fast enough to count as
+  entry, and how many of the 55 facts are answered fast enough to count as
   automatic.
 
 The swipe game was moved here from the separate `ganger-swipe` repository, which
@@ -152,12 +152,38 @@ dot rows have an `aria-label` saying the same thing in words. *Svep*'s fire
 grows inside a box that is the same size at every tier, so that a card is never
 nudged out from under a thumb mid-swipe.
 
-Both games keep what they know about the player in `localStorage`, so it lives
-in the browser it was practised in: *Mästaren* under `mult-heatmap` and
-`mult-calibration`, *Svep* under `swipe-level`, `swipe-baseline` (the rolling
-window the swipe pace is the median of) and `swipe-best-streak`. All of it is
-cleared by the **Nollställ** button on the heat map screen, and by *Ny spelare*
-on the start screen.
+All three games keep what they know about the player in `localStorage`, so it
+lives in the browser it was practised in. It is one document under one key,
+`ganger-progress`, and `src/app/services/progress-store.ts` is the only file
+that knows that. Everything else asks the repository for a document and gets
+one back; swapping `localStorage` for a database later is a new implementation
+of `ProgressRepository` and nothing else. The interface is asynchronous even
+though `localStorage` is not — a promise can be fulfilled synchronously, but a
+synchronous signature cannot be made asynchronous later without rewriting every
+caller. The document is read once at startup, before the first view is drawn
+(`provideAppInitializer` in `app.config.ts`), and everything after that reads
+the hydrated copy in memory, because the templates read it on every change
+detection and cannot wait for a promise.
+
+The document carries a `schemaVersion` so the next change of shape has
+somewhere to hang its migration. Version 1 — five separate keys, `mult-heatmap`,
+`mult-calibration`, `swipe-level`, `swipe-baseline` and `swipe-best-streak` — is
+read once, converted, and deleted; having no version number of its own, it is
+recognised by the shape of its keys instead.
+
+The keys inside are machine-readable and stable: `mul:7x8`, always with the
+smaller factor first. The namespace leaves room for `add:7+8` and `div:56/7`
+without reshaping the document, and the canonical ordering is what makes 7 × 8
+and 8 × 7 *one* fact instead of two rows that had to be merged on every read.
+That is why the mastery count is now out of 55 rather than 100, on the start
+screen and under *Mästaren*'s heat map alike: it is the number *Svep* already
+counted to, and counting both orderings would be counting the same knowledge
+twice. *Mästaren*'s grid stays 10 × 10 — that is what the table looks like —
+but its two halves now mirror each other, because they are the same
+measurement.
+
+All of it is cleared by the **Nollställ** button on the heat map screen, and by
+*Ny spelare* on the start screen.
 
 ## Structure
 
@@ -171,6 +197,7 @@ on the start screen.
 | `src/app/match-view/` | The *Para ihop* game |
 | `src/app/swipe-view/` | The *Svep* game |
 | `src/app/master-view/` | The *Mästaren* game, with its levels in `levels.ts` |
+| `src/app/services/progress-store.ts` | The stored document, its schema version and its migrations |
 | `src/app/services/practice-stats.service.ts` | Times and calibration, for both *Mästaren* and *Svep* |
 | `src/app/services/time-color.ts` | The green-to-red scale both heat maps colour a time with |
 | `src/app/theme-picker/` | **Temporary** — the theme picker; see below |

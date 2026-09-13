@@ -6,46 +6,25 @@ import {
   FAST_FACTOR,
   SLOW_TIME_MULTIPLIER as SWIPE_SLOW_MULTIPLIER,
 } from '../swipe-view/swipe-difficulty';
+import {
+  ChannelStat,
+  LocalStorageProgressRepository,
+  MAX_TIMES,
+  ProgressDocument,
+  ProgressRepository,
+  emptyDocument,
+  emptyRecord,
+  hasContent,
+  progressKeyFor,
+} from './progress-store';
 
-/** Statistiken för ett enskilt tal. `times` håller de fem senaste svaren i ms,
- *  med straffet inräknat, så att en gammal miss inte färgar värmekartan för evigt. */
-export interface QuestionStat {
-  times: number[];
-  correct: number;
-  total: number;
-  /** Svep mäts för sig, se `record()`. */
-  swipe?: ChannelStat;
-}
-
-export interface ChannelStat {
-  times: number[];
-  correct: number;
-  total: number;
-}
+export type { ChannelStat } from './progress-store';
 
 /** Skrivet svar eller svep. Tiderna är inte jämförbara mellan de två. */
 export type Channel = 'typed' | 'swipe';
 
-/** Äldre versioner sparade summan av alla tider i stället för de senaste. */
-interface LegacyQuestionStat {
-  totalTime?: number;
-  count?: number;
-  correct?: number;
-  times?: number[];
-  swipe?: ChannelStat;
-}
-
-const STATS_KEY = 'mult-heatmap';
-const CALIBRATION_KEY = 'mult-calibration';
-const SWIPE_LEVEL_KEY = 'swipe-level';
-const SWIPE_BASELINE_KEY = 'swipe-baseline';
-const SWIPE_BEST_STREAK_KEY = 'swipe-best-streak';
-
-/** Hur många tider per tal som sparas. */
-const MAX_TIMES = 5;
-
 /** Hur länge skrivningar får samlas på hög. Varje skrivning serialiserar hela
- *  statistiken, och en rond utan slut kan ge hundratals kort. */
+ *  dokumentet, och en rond utan slut kan ge hundratals kort. */
 const STATS_WRITE_DELAY = 1000;
 
 /** Kalibrerad tid utanför det här spannet säger mer om ett tappat svar än om
@@ -74,28 +53,25 @@ const MAX_SWIPE_BASELINE = 3.0;
 export const DEFAULT_SWIPE_BASELINE = 1.5;
 
 /**
- * Sparar hur snabbt spelaren svarar på varje tal, samt den kalibrerade
- * snabbhetstiden allt annat mäts mot. Allt ligger i localStorage — spelet har
- * ingen backend, och statistiken hör till webbläsaren den övats i.
+ * Vad spelet vet om den som övar, och vad det gör av den kunskapen.
+ *
+ * Lagringen ligger inte här utan i `ProgressRepository`. Den här tjänsten
+ * håller dokumentet i minnet, för mallarna läser det synkront vid varje
+ * ändringsdetektering och får inte vänta på ett löfte.
  */
 @Injectable({ providedIn: 'root' })
 export class PracticeStatsService {
-  private stats: Record<string, QuestionStat> = {};
-  private fastTime: number | null = null;
-  private baselineSamples: number[] = [];
-  private statsWriteTimer?: ReturnType<typeof setTimeout>;
-  private statsDirty = false;
+  /**
+   * Sömmen mot lagringen. Byts den mot en implementation som talar med en
+   * backend behöver ingenting annat i appen ändras.
+   */
+  private repository: ProgressRepository = new LocalStorageProgressRepository();
+
+  private progress: ProgressDocument = emptyDocument();
+  private writeTimer?: ReturnType<typeof setTimeout>;
+  private dirty = false;
 
   constructor() {
-    this.stats = this.migrate(this.read<Record<string, LegacyQuestionStat>>(STATS_KEY) ?? {});
-    const stored = this.readRaw(CALIBRATION_KEY);
-    const parsed = stored === null ? NaN : Number.parseFloat(stored);
-    this.fastTime = Number.isFinite(parsed) ? parsed : null;
-    const samples = this.read<unknown>(SWIPE_BASELINE_KEY);
-    this.baselineSamples = Array.isArray(samples)
-      ? samples.filter((value): value is number => typeof value === 'number' && value > 0)
-      : [];
-
     // Ett besvarat kort får inte gå förlorat för att fliken läggs undan innan
     // nästa skrivning hunnit.
     if (typeof addEventListener === 'function') {
@@ -108,25 +84,43 @@ export class PracticeStatsService {
     }
   }
 
+  /**
+   * Läser in framstegen. Anropas en gång vid uppstart, före första vyn ritas,
+   * se `app.config.ts`. Allt efter det läser den hydrerade kopian i minnet.
+   */
+  async hydrate(): Promise<void> {
+    this.progress = await this.repository.load();
+  }
+
+  /** Pekar om lagringen. Finns för testerna och för den dag lagret byts ut. */
+  useRepository(repository: ProgressRepository): void {
+    this.repository = repository;
+  }
+
   /** Skriver ned det som väntar. Anropas när en rond tar slut och när sidan
    *  läggs undan; däremellan sköter fördröjningen det. */
   flush(): void {
-    clearTimeout(this.statsWriteTimer);
-    this.statsWriteTimer = undefined;
-    if (this.statsDirty) {
-      this.statsDirty = false;
-      this.write(STATS_KEY, JSON.stringify(this.stats));
+    clearTimeout(this.writeTimer);
+    this.writeTimer = undefined;
+    if (this.dirty) {
+      this.dirty = false;
+      void this.repository.save(this.progress);
     }
+  }
+
+  /** Antalet tal spelet känner till — det `masteredCount()` räknar mot. */
+  get factCount(): number {
+    return FACTS.length;
   }
 
   /** `null` innan spelaren kalibrerat sig. */
   get calibratedFastTime(): number | null {
-    return this.fastTime;
+    return this.progress.typedCalibration;
   }
 
-  /** Tiden ett svar ska hålla sig under för att räknas som automatiserat. */
+  /** Tiden ett skrivet svar ska hålla sig under för att räknas som automatiserat. */
   get fastSeconds(): number {
-    return this.fastTime ?? DEFAULT_FAST_TIME;
+    return this.progress.typedCalibration ?? DEFAULT_FAST_TIME;
   }
 
   get slowSeconds(): number {
@@ -138,57 +132,88 @@ export class PracticeStatsService {
     const sorted = [...timesMs].sort((a, b) => a - b);
     const median = sorted[Math.floor(sorted.length / 2)] / 1000;
     const withMargin = Math.round(median * 1.2 * 10) / 10;
-    this.fastTime = Math.max(MIN_CALIBRATED_TIME, Math.min(withMargin, MAX_CALIBRATED_TIME));
-    this.write(CALIBRATION_KEY, String(this.fastTime));
+    this.progress.typedCalibration = Math.max(
+      MIN_CALIBRATED_TIME,
+      Math.min(withMargin, MAX_CALIBRATED_TIME),
+    );
+    this.scheduleWrite();
+    this.flush();
   }
 
   /** Används när spelaren hoppar över kalibreringen. */
   useDefaultCalibration(): void {
-    this.fastTime = DEFAULT_FAST_TIME;
-    this.write(CALIBRATION_KEY, String(this.fastTime));
+    this.progress.typedCalibration = DEFAULT_FAST_TIME;
+    this.scheduleWrite();
+    this.flush();
   }
 
-  statFor(a: number, b: number): QuestionStat | undefined {
-    return this.stats[`${a}_${b}`];
+  /**
+   * De skrivna svaren på ett tal. 7 × 8 och 8 × 7 är ett och samma tal och
+   * lagras under en nyckel, så ordningen spelar ingen roll.
+   */
+  statFor(a: number, b: number): ChannelStat | undefined {
+    return this.channel(a, b, 'typed');
+  }
+
+  /** Svepen på ett tal, på samma villkor. */
+  swipeStatFor(a: number, b: number): ChannelStat | undefined {
+    return this.channel(a, b, 'swipe');
   }
 
   /**
    * Om spelaren hunnit skriva några svar. Styr framstegsmätaren, som räknar
    * skrivna svar — den som bara svept har inget att visa där ännu, och ska
-   * mötas av välkomsttexten och inte av "0 av 100 tal sitter".
+   * mötas av välkomsttexten och inte av "0 tal sitter".
    */
   get hasPractice(): boolean {
-    return Object.values(this.stats).some((stat) => stat.times.length > 0);
+    return Object.values(this.progress.facts).some((entry) => entry.typed.times.length > 0);
+  }
+
+  /** Om spelaren svept något alls — styr om Svepets värmekarta har något att
+   *  visa. Skild från `hasPractice`, som räknar skrivna svar. */
+  get hasSwipePractice(): boolean {
+    return Object.values(this.progress.facts).some((entry) => entry.swipe.times.length > 0);
   }
 
   /** Om det finns något sparat om spelaren alls — det som `reset()` rensar. */
   get hasStoredProgress(): boolean {
-    return (
-      Object.keys(this.stats).length > 0 ||
-      this.fastTime !== null ||
-      this.baselineSamples.length > 0 ||
-      this.swipeBestStreak > 0 ||
-      this.swipeLevel !== null
-    );
+    return hasContent(this.progress);
   }
 
-  /** Hur många av de hundra talen i tabellen som i snitt svaras på inom den
-   *  snabba tiden — måttet både värmekartan och startsidan visar. */
+  /**
+   * Hur många av tabellens tal som i snitt svaras på inom den snabba tiden —
+   * måttet både värmekartan och startsidan visar.
+   *
+   * Räknar till 55 och inte till 100: 7 × 8 och 8 × 7 är samma kunskap, och
+   * sedan nycklarna kanoniserats är de också en enda rad i lagret. Att räkna
+   * dem som två skulle vara att räkna samma sak två gånger.
+   */
   masteredCount(): number {
+    const fast = this.fastSeconds;
     let mastered = 0;
-    for (let a = 1; a <= 10; a++) {
-      for (let b = 1; b <= 10; b++) {
-        const average = this.averageSeconds(this.statFor(a, b));
-        if (average !== null && average <= this.fastSeconds) {
-          mastered += 1;
-        }
+    for (const fact of FACTS) {
+      const average = this.averageSeconds(this.statFor(fact.a, fact.b));
+      if (average !== null && average <= fast) {
+        mastered += 1;
       }
     }
     return mastered;
   }
 
-  /** Snittid i sekunder, eller `null` för ett tal som aldrig övats. Tar både
-   *  ett helt `QuestionStat` och en enskild kanal — bara `times` läses. */
+  /** Samma mått för svepen, mot svepens egen tröskel. */
+  swipeMasteredCount(): number {
+    const fast = this.swipeFastSeconds;
+    let mastered = 0;
+    for (const fact of FACTS) {
+      const average = this.averageSeconds(this.swipeStatFor(fact.a, fact.b));
+      if (average !== null && average <= fast) {
+        mastered += 1;
+      }
+    }
+    return mastered;
+  }
+
+  /** Snittid i sekunder, eller `null` för ett tal som aldrig övats. */
   averageSeconds(stat: ChannelStat | undefined): number | null {
     if (!stat || stat.times.length === 0) {
       return null;
@@ -198,10 +223,10 @@ export class PracticeStatsService {
 
   /**
    * Ett svep är igenkänning och går systematiskt snabbare än ett skrivet svar.
-   * Svepen får därför en egen kanal: `times` fortsätter att bara innehålla
-   * skrivna svar, så värmekartan och `masteredCount()` mäter samma sak som
-   * förut och `fastSeconds` — som kalibrerats på skrivna svar — jämförs bara
-   * med skrivna svar.
+   * Svepen har därför en egen kanal: `typed` innehåller bara skrivna svar, så
+   * värmekartan och `masteredCount()` mäter samma sak som förut och
+   * `fastSeconds` — som kalibrerats på skrivna svar — jämförs bara med
+   * skrivna svar.
    */
   record(
     a: number,
@@ -210,10 +235,8 @@ export class PracticeStatsService {
     effectiveTimeMs: number,
     channel: Channel = 'typed',
   ): void {
-    const key = `${a}_${b}`;
-    const stat = (this.stats[key] ??= { times: [], correct: 0, total: 0 });
-    const target: ChannelStat =
-      channel === 'swipe' ? (stat.swipe ??= { times: [], correct: 0, total: 0 }) : stat;
+    const entry = (this.progress.facts[progressKeyFor(a, b)] ??= emptyRecord());
+    const target = entry[channel];
 
     target.times.push(effectiveTimeMs);
     if (target.times.length > MAX_TIMES) {
@@ -223,7 +246,7 @@ export class PracticeStatsService {
     if (correct) {
       target.correct += 1;
     }
-    this.scheduleStatsWrite();
+    this.scheduleWrite();
   }
 
   /**
@@ -244,54 +267,19 @@ export class PracticeStatsService {
     return this.swipeFastSeconds * SWIPE_SLOW_MULTIPLIER;
   }
 
-  /** Svepkanalen för ett tal, oavsett faktorernas ordning. Skild från
-   *  `performanceFor()`, som låter skrivna svar gå före svep. */
-  swipeStatFor(a: number, b: number): ChannelStat | undefined {
-    return this.mergedStat(a, b)?.swipe;
-  }
-
-  /** Om spelaren svept något alls — styr om Svepets värmekarta har något att
-   *  visa. Skild från `hasPractice`, som räknar skrivna svar. */
-  get hasSwipePractice(): boolean {
-    return Object.values(this.stats).some((stat) => (stat.swipe?.times.length ?? 0) > 0);
-  }
-
   /**
-   * Hur många tal som svepts snabbt nog att räknas som automatiserade.
-   *
-   * Räknar till 55 och inte till 100 som Mästarens värmekarta: i Svep är
-   * 7 × 8 och 8 × 7 samma tal, och svepen lagras bara under den ena ordningen.
-   */
-  swipeMasteredCount(): number {
-    const fast = this.swipeFastSeconds;
-    let mastered = 0;
-    for (const fact of FACTS) {
-      const average = this.averageSeconds(this.swipeStatFor(fact.a, fact.b));
-      if (average !== null && average <= fast) {
-        mastered += 1;
-      }
-    }
-    return mastered;
-  }
-
-  /**
-   * Spelarens läge på ett tal, oberoende av faktorernas ordning — 7 × 8 och
-   * 8 × 7 är samma kunskap även om de lagras var för sig. Skrivna svar går
-   * före svep när båda finns, eftersom de mäter framplockning och inte bara
-   * igenkänning.
+   * Spelarens läge på ett tal. Skrivna svar går före svep när båda finns,
+   * eftersom de mäter framplockning och inte bara igenkänning.
    */
   performanceFor(a: number, b: number): FactPerformance | undefined {
-    const merged = this.mergedStat(a, b);
-    if (!merged) {
+    const entry = this.progress.facts[progressKeyFor(a, b)];
+    if (!entry) {
       return undefined;
     }
-
-    const typed = { times: merged.times, correct: merged.correct, total: merged.total };
-    const source = typed.times.length > 0 ? typed : merged.swipe;
-    if (!source || source.times.length === 0) {
+    const source = entry.typed.times.length > 0 ? entry.typed : entry.swipe;
+    if (source.times.length === 0) {
       return undefined;
     }
-
     return {
       averageSeconds: source.times.reduce((sum, t) => sum + t, 0) / source.times.length / 1000,
       accuracy: source.total > 0 ? source.correct / source.total : null,
@@ -310,14 +298,14 @@ export class PracticeStatsService {
     if (!this.hasSwipeBaseline) {
       return DEFAULT_SWIPE_BASELINE;
     }
-    const sorted = [...this.baselineSamples].sort((a, b) => a - b);
+    const sorted = [...this.progress.swipeBaseline].sort((a, b) => a - b);
     const median = sorted[Math.floor(sorted.length / 2)];
     return Math.max(MIN_SWIPE_BASELINE, Math.min(median, MAX_SWIPE_BASELINE));
   }
 
   /** Om sveptakten vilar på tillräckligt många mätningar för att tro på. */
   get hasSwipeBaseline(): boolean {
-    return this.baselineSamples.length >= MIN_BASELINE_SAMPLES;
+    return this.progress.swipeBaseline.length >= MIN_BASELINE_SAMPLES;
   }
 
   /** Lägger till en mätning. Fönstret rullar, så takten följer med när
@@ -326,150 +314,52 @@ export class PracticeStatsService {
     if (!Number.isFinite(seconds) || seconds <= 0) {
       return;
     }
-    this.baselineSamples.push(seconds);
-    if (this.baselineSamples.length > BASELINE_WINDOW) {
-      this.baselineSamples.shift();
+    this.progress.swipeBaseline.push(seconds);
+    if (this.progress.swipeBaseline.length > BASELINE_WINDOW) {
+      this.progress.swipeBaseline.shift();
     }
-    this.write(SWIPE_BASELINE_KEY, JSON.stringify(this.baselineSamples));
+    this.scheduleWrite();
+    this.flush();
   }
 
   /** Längsta räcka snabba rätt spelaren haft. Rekordet att jaga i en rond
    *  utan slut, som annars saknar mål. */
   get swipeBestStreak(): number {
-    const raw = this.readRaw(SWIPE_BEST_STREAK_KEY);
-    const parsed = raw === null ? NaN : Number.parseInt(raw, 10);
-    return Number.isFinite(parsed) ? parsed : 0;
+    return this.progress.swipeBestStreak;
   }
 
   set swipeBestStreak(streak: number) {
-    this.write(SWIPE_BEST_STREAK_KEY, String(streak));
+    this.progress.swipeBestStreak = streak;
+    this.scheduleWrite();
+    this.flush();
   }
 
   /** Nivån Svep senast landade på, så brasan börjar där den slutade. */
   get swipeLevel(): number | null {
-    const raw = this.readRaw(SWIPE_LEVEL_KEY);
-    const parsed = raw === null ? NaN : Number.parseInt(raw, 10);
-    return Number.isFinite(parsed) ? parsed : null;
+    return this.progress.swipeLevel;
   }
 
   set swipeLevel(level: number) {
-    this.write(SWIPE_LEVEL_KEY, String(level));
+    this.progress.swipeLevel = level;
+    this.scheduleWrite();
+    this.flush();
   }
 
-  private scheduleStatsWrite(): void {
-    this.statsDirty = true;
-    this.statsWriteTimer ??= setTimeout(() => this.flush(), STATS_WRITE_DELAY);
+  async reset(): Promise<void> {
+    clearTimeout(this.writeTimer);
+    this.writeTimer = undefined;
+    this.dirty = false;
+    this.progress = emptyDocument();
+    await this.repository.clear();
   }
 
-  private mergedStat(a: number, b: number): QuestionStat | undefined {
-    const one = this.statFor(a, b);
-    const other = a === b ? undefined : this.statFor(b, a);
-    if (!one) {
-      return other;
-    }
-    if (!other) {
-      return one;
-    }
-    return {
-      times: [...one.times, ...other.times],
-      correct: one.correct + other.correct,
-      total: one.total + other.total,
-      swipe: this.mergeChannel(one.swipe, other.swipe),
-    };
+  private channel(a: number, b: number, channel: Channel): ChannelStat | undefined {
+    const stat = this.progress.facts[progressKeyFor(a, b)]?.[channel];
+    return stat && stat.total > 0 ? stat : undefined;
   }
 
-  private mergeChannel(
-    one: ChannelStat | undefined,
-    other: ChannelStat | undefined,
-  ): ChannelStat | undefined {
-    if (!one || !other) {
-      return one ?? other;
-    }
-    return {
-      times: [...one.times, ...other.times],
-      correct: one.correct + other.correct,
-      total: one.total + other.total,
-    };
-  }
-
-  reset(): void {
-    clearTimeout(this.statsWriteTimer);
-    this.statsWriteTimer = undefined;
-    this.statsDirty = false;
-    this.stats = {};
-    this.fastTime = null;
-    this.baselineSamples = [];
-    this.remove(STATS_KEY);
-    this.remove(CALIBRATION_KEY);
-    this.remove(SWIPE_LEVEL_KEY);
-    this.remove(SWIPE_BASELINE_KEY);
-    this.remove(SWIPE_BEST_STREAK_KEY);
-  }
-
-  private migrate(stored: Record<string, LegacyQuestionStat>): Record<string, QuestionStat> {
-    const stats: Record<string, QuestionStat> = {};
-    let changed = false;
-
-    for (const [key, data] of Object.entries(stored)) {
-      if (data.times === undefined && data.totalTime !== undefined) {
-        const count = data.count ?? 0;
-        stats[key] = {
-          times: [count > 0 ? Math.round(data.totalTime / count) : 2000],
-          correct: data.correct ?? 0,
-          total: count,
-          swipe: data.swipe,
-        };
-        changed = true;
-      } else {
-        stats[key] = {
-          times: data.times ?? [],
-          correct: data.correct ?? 0,
-          total: data.count ?? (data as QuestionStat).total ?? 0,
-          swipe: data.swipe,
-        };
-      }
-    }
-    if (changed) {
-      this.write(STATS_KEY, JSON.stringify(stats));
-    }
-    return stats;
-  }
-
-  // localStorage kan kasta i privat läge och när sajtdata är avstängt. Spelet
-  // ska gå att spela ändå, bara utan att statistiken följer med.
-  private readRaw(key: string): string | null {
-    try {
-      return localStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  }
-
-  private read<T>(key: string): T | null {
-    const raw = this.readRaw(key);
-    if (raw === null) {
-      return null;
-    }
-    try {
-      return JSON.parse(raw) as T;
-    } catch {
-      return null;
-    }
-  }
-
-  private write(key: string, value: string): void {
-    try {
-      localStorage.setItem(key, value);
-    } catch {
-      // Statistiken får leva kvar i minnet under sessionen.
-    }
-  }
-
-  private remove(key: string): void {
-    try {
-      localStorage.removeItem(key);
-    } catch {
-      // Se write().
-    }
+  private scheduleWrite(): void {
+    this.dirty = true;
+    this.writeTimer ??= setTimeout(() => this.flush(), STATS_WRITE_DELAY);
   }
 }

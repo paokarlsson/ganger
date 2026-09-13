@@ -20,14 +20,21 @@ export type Screen = 'menu' | 'match' | 'swipe' | 'master';
 export class AppComponent {
   screen: Screen = 'menu';
 
-  /** Hur många av de hundra talen som sitter, som andel och antal. */
+  /** Hur många av tabellens tal som sitter. Räknas mot `factCount`, som är 55
+   *  och inte 100: 7 × 8 och 8 × 7 är samma kunskap och en enda rad i lagret. */
   masteredCount = 0;
+  factCount = 0;
   hasPractice = false;
   /** Om det finns något sparat att rensa — styr knappen för att byta spelare. */
   hasStoredProgress = false;
 
   constructor(private readonly stats: PracticeStatsService) {
     this.readProgress();
+  }
+
+  /** Mätarens bredd. Skild från antalet, som inte längre går mot 100. */
+  get masteredPercent(): number {
+    return this.factCount === 0 ? 0 : (this.masteredCount / this.factCount) * 100;
   }
 
   play(screen: Screen): void {
@@ -54,8 +61,7 @@ export class AppComponent {
     if (!confirmed) {
       return;
     }
-    this.stats.reset();
-    this.readProgress();
+    void this.stats.reset().then(() => this.readProgress());
   }
 
   /** Läses när menyn visas i stället för från mallen — att gå igenom hundra
@@ -65,5 +71,6 @@ export class AppComponent {
     this.hasPractice = this.stats.hasPractice;
     this.hasStoredProgress = this.stats.hasStoredProgress;
     this.masteredCount = this.stats.masteredCount();
+    this.factCount = this.stats.factCount;
   }
 }
