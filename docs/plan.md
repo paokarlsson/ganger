@@ -92,7 +92,8 @@ Två saker följer:
 - **Nivån bör sluta vara en egen kraft** och bara definiera var gränsen går —
   vilka otränade tal som räknas som «nära det du kan».
 
-Avgörs av: steg 4. En simulering som oscillerar är svaret.
+Avgörs av: steg 4. Ett loop-test som oscillerar är svaret — och det testet
+skrivs ihop med regulatorn, inte före den.
 
 ### 2. Styr på lyckandegrad, inte på «snabbt → höj»
 
@@ -152,13 +153,66 @@ Avgörs av: ett produktbeslut, inte av en mätning.
 
 ## Kvarvarande steg
 
-### Steg 4 — simuleringsriggen, och först därefter regulatorn
+### Steg 4 — läs loggen, och testa regulatorn när den byggs
 
-Ordningen är viktig. Siffrorna i modellen är gissningar, och det enda sättet
-att veta är att köra dem.
+Siffrorna i modellen är gissningar, och det går inte att se på koden vad de gör
+tillsammans över en hel rond. Frågan är bara vem som ska svara.
 
-Bygg en rigg med syntetiska elever — nybörjare, mellanläge, säker,
-snabb-och-slarvig — och testa **invarianter**, inte siffror:
+**Inte en simulering.** Ett tidigare utkast av den här planen föreslog en rigg
+med syntetiska elever — nybörjare, mellanläge, säker, snabb-och-slarvig — som
+skulle köras tusentals ronder mot motorn. Den var fel dimensionerad för det här
+projektet, av tre skäl:
+
+- Användarbasen är ett par barn vid ett köksbord, och de går att titta på medan
+  de spelar. Ingen simulerad elev slår den upplösningen.
+- En simulering validerar loopen mot *modellen* av en elev. Att bygga en
+  trovärdig elevmodell är ungefär lika svårt som att bygga träningsloopen, och
+  är modellen fel producerar riggen en välformulerad bekräftelse av de egna
+  antagandena — med en auktoritet den inte förtjänar.
+- De rena reglerna är redan testade var för sig. Hålet är smalare än det ser
+  ut: det gäller bara vad som händer över en hel rond.
+
+Att bygga en vindtunnel för att välja mellan två pappersflygplan är fel även
+när vindtunneln i sig är välbyggd.
+
+Argumentet hänger på användarbasen, så det vänder om den gör det: växer den
+förbi vad som går att titta på, eller ska konstanterna trimmas på riktigt —
+hundra varianter, leta optimum — då är en rigg rätt verktyg igen. Det är
+premissen att pröva innan man avfärdar den en andra gång.
+
+**Gör så här i stället.**
+
+*Först:* låt loggen samla. Den skriver redan, och verklig data från två barn är
+värd mer än fyra syntetiska arketyper.
+
+*Sedan:* läs den. En eftermiddag med en `ts-node`-snutt över en export av
+`ganger-observations` besvarar samma frågor på riktigt. Den viktigaste är den
+ingen simulering kan svara på, eftersom korrelationen är just det som är okänt:
+
+> Korrelerar Para ihops tider med Svepets på samma tal?
+
+Gör de inte det är premissen att matchning duger som diagnostik fel, och en
+motor ovanpå det måttet vore byggd på sand. Det är det billigaste tänkbara
+testet av den dyraste idén.
+
+Loggens tre nollpunkter (`msSinceRoundStart`, `msSinceLastResolved`,
+`msSinceFirstTouch`) finns för att det inte går att avgöra på förhand vilken
+som säger något. `remaining` mäter hur stort uteslutningsrummet var — vid 1 är
+paret gratis — och är fältet en evidenströskel ska sättas på.
+
+*Först därefter:* bygg blandningsregulatorn, och skriv loop-testerna i samma
+veva. Det är där ett simulerat spel faktiskt gör något som inte går att göra på
+annat sätt: en återkopplad regulator kan oscillera på ett sätt som är osynligt
+i ett enskilt kort, och osynligt för ett barn som bara tycker att det känns
+konstigt. Men det ska vara en handfull tester med en avsiktligt korkad falsk
+spelare på ett tjugotal rader, skrivna tillsammans med regulatorn de testar —
+inte ett `simulation/`-bygge med arketyper och spårningsutskrifter.
+
+Testa **invarianter**, inte siffror. Ett test som låser `FOCUS_SPREAD` till 9
+låser fast gissningen och är värdelöst; ett test som säger att lyckandegraden
+inte får falla under 75 % fångar att någon ändrat 9 till 3 och gjort träningen
+till ett prov. Konstanterna ska vara fria att justera — det är loopens
+*beteende* som ska ligga fast:
 
 - lyckandegraden håller sig mellan 75 och 90 % över en rond
 - inget tal svälter mer än N kort
@@ -166,17 +220,8 @@ snabb-och-slarvig — och testa **invarianter**, inte siffror:
 - nybörjaren möter aldrig fler än Y nya tal per 20
 - nivån konvergerar i stället för att oscillera
 
-Då hamnar pedagogiken under `ng test` i stället för i en känsla.
-
-**Den första frågan riggen inte kan svara på, men loggen kan:** korrelerar Para
-ihops tider med Svepets på samma tal? Gör de inte det är premissen att
-matchning duger som diagnostik fel, och en motor ovanpå det måttet vore byggd
-på sand. Det är det billigaste tänkbara testet av den dyraste idén.
-
-Loggens tre nollpunkter (`msSinceRoundStart`, `msSinceLastResolved`,
-`msSinceFirstTouch`) finns för att det inte går att avgöra på förhand vilken
-som säger något. `remaining` mäter hur stort uteslutningsrummet var — vid 1 är
-paret gratis — och är fältet en evidenströskel ska sättas på.
+Listan är densamma oavsett om mätningen sker på riktig eller påhittad data. Det
+var bara mekanismen som var övertung.
 
 ### Steg 5 — slå ihop värmekartorna
 
