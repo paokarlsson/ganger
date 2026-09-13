@@ -249,11 +249,33 @@ till ett prov. Konstanterna ska vara fria att justera — det är loopens
 Listan är densamma oavsett om mätningen sker på riktig eller påhittad data. Det
 var bara mekanismen som var övertung.
 
-### Steg 5 — slå ihop värmekartorna
+### Steg 5 — slå ihop värmekartorna ✔
 
-En karta på 55 celler med färg per kanal, i stället för Mästarens 10 × 10 med
-speglade halvor och Svepets halva rutnät. Kräver att färgskalan hålls per
-kanal — se öppen fråga 3; tiderna är inte jämförbara och får inte råka bli det.
+Gjort. Kartan är en, `heatmap/`, och kanalen är en växel i den.
+
+Rutnätet är triangulärt: raden är den mindre faktorn och kolumnen den större,
+så tabellens 55 tal står precis en gång var. Det ersätter både Mästarens
+10 × 10 med speglade halvor — en kvarleva från innan nycklarna kanoniserades —
+och Sveps halva karta.
+
+Färgen mäts alltid mot **den valda kanalens egen tröskel**. Ett svep är
+igenkänning och går systematiskt snabbare än ett skrivet svar, så en gemensam
+skala hade fått halva tabellen att se behärskad ut på fel grund. Att samma tal
+är grönt i ena kanalen och rött i den andra är inte ett fel i kartan utan hela
+poängen med den: det är skillnaden mellan att känna igen svaret och att kunna
+plocka fram det, alltså precis den rörelse hela systemet handlar om.
+
+Rutnätsbygget ligger i `heatmap-grid.ts` och inte i komponenten, av samma skäl
+som resten av reglerna ligger i egna moduler: det är en datatransformation och
+går att pröva utan en vy.
+
+Två följder som är värda att minnas:
+
+- Motorns läsare tar nu en kanal i stället för att finnas i två nästan lika
+  varianter: `statFor(a, b, channel)`, `masteredCount(channel)`,
+  `fastSecondsFor`, `slowSecondsFor`, `baselineSecondsFor`, `hasPracticeIn`.
+- Kartan går att öppna så snart *någon* kanal är övad, inte bara den som spelet
+  man står i mäter. Kartan säger själv till när den valda kanalen är tom.
 
 ### Steg 6 — ta bort nivåknapparna
 
@@ -301,8 +323,6 @@ Sådant som är fel men medvetet lämnat, så att det inte «rättas» utan besl
 - **Räckan fortsätter räknas i taket** av svårighetsskalan fast gruppen inte
   kan stiga mer, eftersom samma räknare driver hejaropet i toppraden. Låst med
   ett test i `training/auto-difficulty.spec.ts`.
-- **Mästarens rutnät är 10 × 10 med speglade halvor** efter att nycklarna
-  kanoniserats. Löses i steg 5.
 - **`DIFFICULTY` i `levels.ts` listar båda ordningarna** av varje tal. Sedan
   nycklarna kanoniserats påverkar det inte andelarna, eftersom både täljare och
   nämnare räknar dubbelt — men listan är dubbelt så lång som den behöver vara.

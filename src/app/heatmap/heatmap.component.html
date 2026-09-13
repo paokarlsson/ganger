@@ -1,0 +1,67 @@
+<div class="heatmap-card ui-card">
+  <div class="heatmap-title ui-title">Din värmekarta</div>
+
+  <!-- Kanalen är en växel och inte två kartor: samma 55 tal, olika mått.
+       Färgen följer alltid den valda kanalens egen tröskel. -->
+  <div class="channel-tabs" role="group" aria-label="Vilket mått kartan visar">
+    @for (option of tabs; track option.channel) {
+      <button type="button" class="ui-toggle" [class.is-active]="channel === option.channel"
+        [attr.aria-pressed]="channel === option.channel" (click)="selectChannel(option.channel)">
+        {{ option.label }}
+      </button>
+    }
+  </div>
+
+  <!-- En riktig tabell, så att varje tid hör ihop med sin rad och sin kolumn
+       även för den som inte ser rutnätet. -->
+  <table class="ui-heat">
+    <caption class="ui-visually-hidden">
+      Snittid per tal i sekunder. Varje tal står en gång: 7 × 8 och 8 × 7 är
+      samma tal, och raden är den mindre faktorn.
+    </caption>
+    <thead>
+      <tr>
+        <td></td>
+        @for (factor of factors; track factor) {
+          <th scope="col" class="ui-heat-cell ui-heat-cell--head">{{ factor }}</th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows; track row.label) {
+        <tr>
+          <th scope="row" class="ui-heat-cell ui-heat-cell--head">{{ row.label }}</th>
+          @for (cell of row.cells; track $index) {
+            @if (cell.mirrored) {
+              <td class="ui-heat-cell"></td>
+            } @else {
+              <td class="ui-heat-cell ui-heat-cell--data"
+                [class.ui-heat-cell--untested]="cell.untested"
+                [style.background]="cell.color" [title]="cell.title">{{ cell.text }}</td>
+            }
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  <div class="ui-heat-legend">
+    <span>Snabb ✓</span>
+    <div class="ui-heat-legend-bar"></div>
+    <span>Långsam</span>
+  </div>
+
+  <div class="heatmap-stats">
+    <div class="heatmap-mastered">Sitter: <span>{{ mastered }}</span> / {{ factCount }}</div>
+    <div class="heatmap-baseline">{{ tab.baselineLabel }}: <span class="value">{{ baselineDisplay }}</span></div>
+  </div>
+
+  @if (!hasPractice) {
+    <p class="heatmap-empty">
+      Inget mätt här ännu — spela en runda {{ channel === 'swipe' ? 'Svep' : 'Mästaren' }}.
+    </p>
+  }
+</div>
+
+<!-- Knapparna är varje spels egna. -->
+<ng-content />

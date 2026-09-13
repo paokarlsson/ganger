@@ -142,55 +142,20 @@
 
     @case ('heatmap') {
       <div class="heatmap-screen">
-        <div class="heatmap-card ui-card">
-          <div class="heatmap-title ui-title">Din värmekarta</div>
-          <!-- En riktig tabell, så att varje tid hör ihop med sin rad och sin
-               kolumn även för den som inte ser rutnätet. -->
-          <table class="ui-heat">
-            <caption class="ui-visually-hidden">Snittid per tal, i sekunder</caption>
-            <thead>
-              <tr>
-                <td></td>
-                @for (column of heatmapRows; track column.label) {
-                  <th scope="col" class="ui-heat-cell ui-heat-cell--head">{{ column.label }}</th>
-                }
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of heatmapRows; track row.label) {
-                <tr>
-                  <th scope="row" class="ui-heat-cell ui-heat-cell--head">{{ row.label }}</th>
-                  @for (cell of row.cells; track $index) {
-                    <td class="ui-heat-cell ui-heat-cell--data"
-                      [class.ui-heat-cell--untested]="cell.untested"
-                      [style.background]="cell.color" [title]="cell.title">{{ cell.text }}</td>
-                  }
-                </tr>
-              }
-            </tbody>
-          </table>
-          <div class="ui-heat-legend">
-            <span>Snabb ✓</span>
-            <div class="ui-heat-legend-bar"></div>
-            <span>Långsam</span>
+        <app-heatmap channel="typed">
+          <div class="heatmap-buttons">
+            <button type="button" class="ui-btn ui-btn--secondary" (click)="showMenu()">Tillbaka</button>
+            @if (canExport) {
+              <button type="button" class="ui-btn ui-btn--quiet" (click)="exportProgress()">
+                ⬇️ Exportera data
+              </button>
+            }
+            <button type="button" class="ui-btn ui-btn--danger" (click)="resetStats()">🗑️ Nollställ</button>
           </div>
-          <div class="heatmap-stats">
-            <div class="mastered-count">Automatiserade: <span>{{ masteredCount }}</span> / {{ factCount }}</div>
-            <div class="baseline-info">Din baslinje: <span class="value">{{ baselineDisplay }}</span></div>
-          </div>
-        </div>
-        <div class="heatmap-buttons">
-          <button type="button" class="ui-btn ui-btn--secondary" (click)="showMenu()">Tillbaka</button>
-          @if (canExport) {
-            <button type="button" class="ui-btn ui-btn--quiet" (click)="exportProgress()">
-              ⬇️ Exportera data
-            </button>
-          }
-          <button type="button" class="ui-btn ui-btn--danger" (click)="resetStats()">🗑️ Nollställ</button>
-        </div>
-        <!-- Kvittensen står i en egen rad med fast plats, så att knapparna
-             inte hoppar när den dyker upp. -->
-        <p class="export-notice" aria-live="polite">{{ exportNotice }}</p>
+          <!-- Kvittensen står i en egen rad med fast plats, så att knapparna
+               inte hoppar när den dyker upp. -->
+          <p class="export-notice" aria-live="polite">{{ exportNotice }}</p>
+        </app-heatmap>
       </div>
     }
   }

@@ -14,6 +14,11 @@ async function engineWith(stored: Record<string, unknown>): Promise<TrainingEngi
   return restarted();
 }
 
+/** Svepkanalen för ett tal. Kortform, den läses ofta här. */
+function swipeStatFor(engine: TrainingEngine, a: number, b: number) {
+  return engine.statFor(a, b, 'swipe');
+}
+
 /** Som att ladda om sidan: en ny motor som läser det som ligger i lagret. */
 async function restarted(): Promise<TrainingEngine> {
   const engine = new TrainingEngine();
@@ -32,7 +37,7 @@ describe('TrainingEngine', () => {
       // Värmekartan och behärskningsmåttet mäter skrivna svar; ett svep är
       // igenkänning och går systematiskt snabbare.
       expect(engine.statFor(7, 8)).toBeUndefined();
-      expect(engine.swipeStatFor(7, 8)!.times).toEqual([900]);
+      expect(swipeStatFor(engine, 7, 8)!.times).toEqual([900]);
       expect(engine.masteredCount()).toBe(0);
     });
 
@@ -41,7 +46,7 @@ describe('TrainingEngine', () => {
       engine.record(7, 8, true, 900);
 
       expect(engine.statFor(7, 8)!.times).toEqual([900]);
-      expect(engine.swipeStatFor(7, 8)).toBeUndefined();
+      expect(swipeStatFor(engine, 7, 8)).toBeUndefined();
       expect(engine.masteredCount()).toBe(1);
     });
   });
@@ -72,7 +77,7 @@ describe('TrainingEngine', () => {
       engine.record(6, 9, true, 1200, 'swipe');
       engine.flush();
 
-      expect((await restarted()).swipeStatFor(9, 6)!.times).toEqual([1200]);
+      expect(swipeStatFor(await restarted(), 9, 6)!.times).toEqual([1200]);
     });
   });
 
@@ -127,7 +132,7 @@ describe('TrainingEngine', () => {
         },
       });
 
-      expect(engine.swipeStatFor(2, 3)!.times).toEqual([700]);
+      expect(swipeStatFor(engine, 2, 3)!.times).toEqual([700]);
     });
 
     it('slår ihop de två ordningarna till ett tal', async () => {
@@ -331,17 +336,17 @@ describe('TrainingEngine', () => {
       const engine = await withBaseline();
       engine.record(10, 3, true, 900, 'swipe');
 
-      expect(engine.swipeStatFor(3, 10)!.times).toEqual([900]);
-      expect(engine.swipeStatFor(10, 3)!.times).toEqual([900]);
-      expect(engine.swipeStatFor(3, 9)).toBeUndefined();
+      expect(swipeStatFor(engine, 3, 10)!.times).toEqual([900]);
+      expect(swipeStatFor(engine, 10, 3)!.times).toEqual([900]);
+      expect(swipeStatFor(engine, 3, 9)).toBeUndefined();
     });
 
     it('låter skrivna svar vara i fred', async () => {
       const engine = await withBaseline();
       engine.record(7, 8, true, 4000);
 
-      expect(engine.swipeStatFor(7, 8)).toBeUndefined();
-      expect(engine.swipeMasteredCount()).toBe(0);
+      expect(swipeStatFor(engine, 7, 8)).toBeUndefined();
+      expect(engine.masteredCount('swipe')).toBe(0);
     });
 
     it('räknar till 55, och bara det som svepts snabbt nog', async () => {
@@ -350,7 +355,7 @@ describe('TrainingEngine', () => {
       engine.record(6, 6, true, 1100, 'swipe');
       engine.record(9, 9, true, 2500, 'swipe');
 
-      expect(engine.swipeMasteredCount()).toBe(2);
+      expect(engine.masteredCount('swipe')).toBe(2);
     });
 
     it('lägger alla 55 tal ovanför diagonalen och inget två gånger', async () => {
@@ -365,25 +370,25 @@ describe('TrainingEngine', () => {
       let found = 0;
       for (let row = 1; row <= 10; row++) {
         for (let col = row; col <= 10; col++) {
-          if (engine.swipeStatFor(row, col)) {
+          if (swipeStatFor(engine, row, col)) {
             found += 1;
           }
         }
       }
 
       expect(found).toBe(FACTS.length);
-      expect(engine.swipeMasteredCount()).toBe(FACTS.length);
+      expect(engine.masteredCount('swipe')).toBe(FACTS.length);
     });
 
     it('vet om spelaren svept något alls', async () => {
       const engine = await engineWith({});
-      expect(engine.hasSwipePractice).toBe(false);
+      expect(engine.hasPracticeIn('swipe')).toBe(false);
 
       engine.record(7, 8, true, 4000);
-      expect(engine.hasSwipePractice).toBe(false);
+      expect(engine.hasPracticeIn('swipe')).toBe(false);
 
       engine.record(7, 8, true, 900, 'swipe');
-      expect(engine.hasSwipePractice).toBe(true);
+      expect(engine.hasPracticeIn('swipe')).toBe(true);
     });
   });
 

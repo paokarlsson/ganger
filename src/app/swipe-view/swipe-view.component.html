@@ -44,7 +44,7 @@
                 }
 
                 <button type="button" class="start-btn ui-btn ui-btn--primary" (click)="start()">Kör! 🔥</button>
-                @if (hasSwipePractice) {
+                @if (hasPractice) {
                     <button type="button" class="heat-btn ui-btn ui-btn--secondary" (click)="openHeatmap()">
                         📊 Värmekarta
                     </button>
@@ -68,51 +68,9 @@
         </section>
     } @else if (screen === 'heatmap') {
         <section class="heatmap">
-            <div class="heatmap-card ui-card">
-                <div class="ui-title ui-title--sm heatmap-title">Dina svep</div>
-                <!-- En riktig tabell, så att varje tid hör ihop med sin rad och
-                     sin kolumn även för den som inte ser rutnätet. -->
-                <table class="ui-heat">
-                    <caption class="ui-visually-hidden">
-                        Snittid per tal i sekunder. Varje tal står en gång:
-                        7 × 8 och 8 × 7 är samma tal i Svep.
-                    </caption>
-                    <thead>
-                        <tr>
-                            <td></td>
-                            @for (column of heatRows; track column.label) {
-                                <th scope="col" class="ui-heat-cell ui-heat-cell--head">{{column.label}}</th>
-                            }
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (row of heatRows; track row.label) {
-                            <tr>
-                                <th scope="row" class="ui-heat-cell ui-heat-cell--head">{{row.label}}</th>
-                                @for (cell of row.cells; track $index) {
-                                    @if (cell.empty) {
-                                        <td class="ui-heat-cell"></td>
-                                    } @else {
-                                        <td class="ui-heat-cell ui-heat-cell--data"
-                                            [class.ui-heat-cell--untested]="cell.untested"
-                                            [style.background]="cell.color" [title]="cell.title">{{cell.text}}</td>
-                                    }
-                                }
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-                <div class="ui-heat-legend">
-                    <span>Snabb ✓</span>
-                    <div class="ui-heat-legend-bar"></div>
-                    <span>Långsam</span>
-                </div>
-                <div class="heatmap-stats">
-                    <div class="heatmap-mastered">Sitter: <span>{{swipeMastered}}</span> / {{factCount}}</div>
-                    <div class="heatmap-baseline">Din sveptakt: <span class="value">{{baselineDisplay}}</span></div>
-                </div>
-            </div>
-            <button type="button" class="ui-btn ui-btn--secondary" (click)="backToMenu()">Tillbaka</button>
+            <app-heatmap channel="swipe">
+                <button type="button" class="ui-btn ui-btn--secondary" (click)="backToMenu()">Tillbaka</button>
+            </app-heatmap>
         </section>
     } @else {
         <section class="main">
