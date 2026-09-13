@@ -161,8 +161,9 @@
                 <tr>
                   <th scope="row" class="ui-heat-cell ui-heat-cell--head">{{ row.label }}</th>
                   @for (cell of row.cells; track $index) {
-                    <td class="ui-heat-cell ui-heat-cell--data" [style.background]="cell.color"
-                      [title]="cell.title">{{ cell.text }}</td>
+                    <td class="ui-heat-cell ui-heat-cell--data"
+                      [class.ui-heat-cell--untested]="cell.untested"
+                      [style.background]="cell.color" [title]="cell.title">{{ cell.text }}</td>
                   }
                 </tr>
               }

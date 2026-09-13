@@ -36,8 +36,10 @@ interface BreakdownRow {
 
 interface HeatmapCell {
   text: string;
+  /** Tom för en ruta utan mätning — den färgas av `--untested` i stället. */
   color: string;
   title: string;
+  untested: boolean;
 }
 
 /** Hur länge facit står kvar innan nästa fråga kommer. */
@@ -550,8 +552,9 @@ export class MasterViewComponent implements OnDestroy {
         if (!stat || average === null) {
           cells.push({
             text: '—',
-            color: 'rgba(255,255,255,0.1)',
+            color: '',
             title: `${row} × ${col}: Ej testad`,
+            untested: true,
           });
           continue;
         }
@@ -559,6 +562,7 @@ export class MasterViewComponent implements OnDestroy {
           text: average.toFixed(1),
           color: this.timeColor(average),
           title: this.heatmapTitle(row, col, stat, average),
+          untested: false,
         });
       }
       rows.push({ label: row, cells });

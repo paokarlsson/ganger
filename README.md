@@ -49,43 +49,90 @@ board, and each heat map screen's own layout around the shared grid. The
 `ui-` prefix in a template is the signal that the look comes from the shared
 sheet. The dark palette was *Mästaren*'s to begin with, and the yellow of
 *Svep*'s card is kept as its own token, deliberately lighter than the theme's
-highlight.
+highlight — the card is an object on a table, not a heading, and so keeps its
+colour in both modes.
 
 `_tokens.scss` holds two palettes, a dark one and a light one, as SCSS mixins.
 Without a choice in the app the system decides, through
 `prefers-color-scheme`; `data-mode="light"` or `"dark"` on `<html>` outweighs
-it. Three tokens are what make one set of rules serve both:
+it.
 
-- `--tone-rgb` is *the opposite of the ground* — white against the dark
-  palette, ink against the light one. Everything that used to be written as
-  `rgba(255, 255, 255, x)` (borders, faint fills, the pattern on the start
-  screen) is computed from it, so a surface that lifted off a dark ground
-  lifts off a light one too. `--line-strong-alpha` goes with it, and is
-  higher in light mode: ink against a white card does not clear 3:1 until
-  0.55, where white against a dark ground is there at 0.45.
+The colours are written in `oklch()` rather than hex, and that is not
+cosmetic. The first number, L, is the lightness the eye actually sees, and it
+means the same across every hue — so putting the accents on one L is what
+makes them weigh the same on screen. Written in hex they did not: the old gold
+`#ffd700` sat at L 0.89 and the old red `#ea6253` at L 0.67, so the gold shouted
+over everything else whatever it was trying to say. The ladder is the whole
+rule, and a departure from it needs a reason:
+
+- **Grounds** at L 0.15 / 0.21 / 0.25 / 0.31 in dark mode, chroma near zero,
+  one hue the whole way. A ground should carry colour, not be colour. The old
+  grounds drifted 15° in hue between the floor and the cards and nearly
+  doubled in chroma on the way up, which is what made the navy read as a
+  colour of its own.
+- **Accents** at L 0.84 for the one that lifts, 0.80 for green and orange,
+  0.72 for red, which cannot go lighter without turning pink. In light mode
+  they all sit at L 0.505 — the lightest they can be and still clear 4.5:1
+  against `--bg-floor`.
+- **The button's ladder**: green 0.80, `--green-deep` 0.72, `--green-shadow`
+  0.60. An even step in L gives an even gradient; in hex the steps were
+  uneven.
+- **The one exception** is the accent that lifts. Blue and violet cannot be
+  both that light and that coloured — sRGB runs out — so for those hues the
+  lightness drops until chroma reaches 0.12, never below 0.72.
+
+Light mode is not dark mode mirrored. Its ground is warm (hue 85) rather than
+blue-grey: paper that leans yellow reads as paper, where the old `#f7f8fc`
+read as a disabled control. The ink stays on the dark palette's hue, and that
+warm-ground/cool-ink pairing is what carries the mode.
+
+Three tokens are what make one set of rules serve both modes:
+
+- `--tone` is *the opposite of the ground* — near-white against the dark
+  palette, ink against the light one. Borders, faint fills and the pattern on
+  the start screen are mixed out of it with `color-mix()`, so a surface that
+  lifted off a dark ground lifts off a light one too. `--line-strong-alpha`
+  goes with it, and is higher in light mode: ink against a white card does not
+  clear 3:1 until 58%, where the light tone against a dark ground is there at
+  45%.
 - `--on-highlight` and `--on-green` are the text on the two colours that are
   used as fills — the active toggle and the primary button. They used to read
   `--bg-floor`, which only holds while the floor is dark.
 - `--card-ink` is the text on *Svep*'s card, which is a light card in both
-  modes and so cannot inherit the app's text colour.
+  modes and so cannot inherit the app's text colour. The heat map's cells
+  borrow it for the same reason.
 
 Colours a token needs but no palette should have to state twice — the green
 and red tints, the highlight's tint and border — are derived from the accent
-with `color-mix()` in `:root`.
+with `color-mix()` in `:root`. Nothing outside `_tokens.scss` writes a colour
+of its own: the modal's scrim, the fire's glow in *Svep* and the untested
+squares in both heat maps all used to, and all three broke in one mode or the
+other — a 10% white square is invisible on a white card.
 
 Several token values are pinned by WCAG 2.2 AA rather than by taste, so changing
-them is not free: `--accent-red` is lighter than a plain red because #e74c3c sat
-at 4.46:1 against the background, just under the 4.5:1 needed for body text;
-`--line-strong` is as bright as it is because a control's border needs 3:1
+them is not free: `--accent-red` stops at L 0.72 because below that it falls
+under 4.5:1 against `--bg-card-raised`, the lightest ground;
+`--line-strong` is as strong as it is because a control's border needs 3:1
 against *both* neighbours, the surface outside and the control's own fill; and
 the primary button carries dark text in the dark palette because white on that
-`--accent-green` is 2.1:1 — which is exactly why the colour under the text is
-a token of its own, `--on-green`, and turns white where the light palette's
-green is dark enough to carry it. The light palette is not the dark one
-mirrored: its highlight, green and red are darker, because a colour that
-carries text against a dark ground does not carry it against a light one. Text on a red or green tint is light, never red or green — a colour
-against its own tint does not reach 4.5:1. Where colour carries meaning it is
-never alone: *Para ihop* marks tiles with ✓ and ✗, *Svep* stamps the card RÄTT
+`--accent-green` is 2:1 — which is exactly why the colour under the text is
+a token of its own, `--on-green`, and turns light where the light palette's
+green is dark enough to carry it. Text on a red or green tint is light, never
+red or green — a colour against its own tint does not reach 4.5:1.
+
+Both heat maps colour a time on one scale, and that scale sweeps hue in OKLCH
+at a fixed lightness. It used to sweep in HSL at a fixed 45% *HSL* lightness,
+which is not the same thing at all: 45% does not mean the same brightness to
+the eye at yellow as it does at red, so the amber end glared, the red end went
+dark, and the white number in the square sat at 2.2:1 against the amber where
+it needs 4.5:1. Held at one OKLCH lightness the ramp weighs the same at every
+step, and the squares carry `--card-ink` at 6.7:1 or better along its whole
+length. Green is not a point on that ramp but a verdict — fast enough — and so
+stands apart from it, in the function and in the legend alike. A square with no
+measurement is neither: it takes the ground's own fill and a muted dash.
+
+Where colour carries meaning it is never alone: *Para ihop* marks tiles with
+✓ and ✗, *Svep* stamps the card RÄTT
 or FEL and writes out the name of the fire's tier beside it, and *Mästaren*'s
 dot rows have an `aria-label` saying the same thing in words. *Svep*'s fire
 grows inside a box that is the same size at every tier, so that a card is never
@@ -131,9 +178,15 @@ injects the candidate palettes as one `<style>` element, mirroring the rule
 order `_tokens.scss` already uses. Light and dark mode themselves are *not*
 temporary — they live in `_tokens.scss` and stay when this folder is gone.
 
-Every candidate palette was checked against the same WCAG 2.2 AA thresholds the
-section above lists — body text 4.5:1 against every ground it sits on, control
-borders 3:1 against both neighbours, text on a fill 4.5:1 against the fill.
+All seven palettes are built on the same ladder of lightness and chroma the
+section above describes, and the only thing that separates them is their hues.
+That is what makes them comparable: switching theme moves the colour but not
+the weight, and no theme can accidentally end up easier to read than another.
+Each was checked against the same WCAG 2.2 AA thresholds — body text 4.5:1
+against every ground it sits on, control borders 3:1 against both neighbours,
+text on a fill 4.5:1 against the fill. The weakest contrast in each of them
+lands at 4.69:1 or better, and it is the same pair of tokens that is weakest
+everywhere, which is the sign that it is the rule and not luck doing the work.
 
 To remove it once a theme is settled on:
 

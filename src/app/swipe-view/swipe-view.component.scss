@@ -72,7 +72,9 @@
     height: 3em;
     transform: translateX(-50%);
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(255, 150, 30, 0.55) 0%, rgba(255, 150, 30, 0) 70%);
+    background: radial-gradient(circle,
+        color-mix(in oklab, var(--accent-orange) 55%, transparent) 0%,
+        transparent 70%);
     opacity: var(--flame-glow, 0);
     transition: opacity 300ms ease;
     pointer-events: none;
@@ -102,7 +104,7 @@
     transform: scale(var(--flame-scale, 1));
     transform-origin: bottom center;
     transition: transform 300ms ease;
-    filter: drop-shadow(0 0 6px rgba(255, 140, 0, 0.5));
+    filter: drop-shadow(0 0 6px color-mix(in oklab, var(--accent-orange) 50%, transparent));
 }
 
 .flame--up { animation: flame-pulse-up 500ms ease; }
@@ -144,7 +146,7 @@
 
 @keyframes flame-pulse-up {
     0% { transform: scale(var(--flame-scale, 1)); }
-    40% { transform: scale(calc(var(--flame-scale, 1) * 1.4)); filter: drop-shadow(0 0 12px rgba(255, 180, 0, 0.9)); }
+    40% { transform: scale(calc(var(--flame-scale, 1) * 1.4)); filter: drop-shadow(0 0 12px color-mix(in oklab, var(--accent-orange) 90%, transparent)); }
     100% { transform: scale(var(--flame-scale, 1)); }
 }
 

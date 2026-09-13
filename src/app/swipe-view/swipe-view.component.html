@@ -94,6 +94,7 @@
                                         <td class="ui-heat-cell"></td>
                                     } @else {
                                         <td class="ui-heat-cell ui-heat-cell--data"
+                                            [class.ui-heat-cell--untested]="cell.untested"
                                             [style.background]="cell.color" [title]="cell.title">{{cell.text}}</td>
                                     }
                                 }

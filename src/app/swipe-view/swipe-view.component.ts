@@ -47,10 +47,13 @@ interface Feedback {
 
 interface HeatCell {
   text: string;
+  /** Tom för en ruta utan mätning — den färgas av `--untested` i stället. */
   color: string;
   title: string;
   /** Nedre halvan av rutnätet: talet står redan på andra sidan diagonalen. */
   empty: boolean;
+  /** Talet finns i rutnätet men är inte svept ännu. */
+  untested: boolean;
 }
 
 @Component({
@@ -421,7 +424,7 @@ export class SwipeViewComponent implements OnDestroy {
       const cells: HeatCell[] = [];
       for (let col = MIN_FACTOR; col <= MAX_FACTOR; col++) {
         if (col < row) {
-          cells.push({ text: '', color: '', title: '', empty: true });
+          cells.push({ text: '', color: '', title: '', empty: true, untested: false });
           continue;
         }
         const stat = this.stats.swipeStatFor(row, col);
@@ -429,9 +432,10 @@ export class SwipeViewComponent implements OnDestroy {
         if (!stat || average === null) {
           cells.push({
             text: '—',
-            color: 'rgba(255,255,255,0.1)',
+            color: '',
             title: `${row} × ${col}: Ej svept`,
             empty: false,
+            untested: true,
           });
           continue;
         }
@@ -440,6 +444,7 @@ export class SwipeViewComponent implements OnDestroy {
           color: timeColor(average, fast, slow),
           title: this.heatTitle(row, col, stat, average),
           empty: false,
+          untested: false,
         });
       }
       rows.push({ label: row, cells });

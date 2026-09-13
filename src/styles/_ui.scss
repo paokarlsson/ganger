@@ -177,7 +177,7 @@
     align-items: center;
     justify-content: center;
     padding: var(--space-3);
-    background: rgba(0, 0, 0, 0.7);
+    background: var(--scrim);
 }
 
 .ui-modal {
@@ -214,8 +214,11 @@
     font-weight: 600;
 }
 
+/* De mätta rutorna är ljusa i båda lägena, så siffran i dem är bläck och inte
+   vit — samma skäl som Sveps kort har sitt --card-ink. Vitt låg på 2.2:1 mot
+   den gula änden av den gamla skalan. */
 .ui-heat-cell--data {
-    color: white;
+    color: var(--card-ink);
     font-weight: 600;
     font-size: 0.7rem;
     cursor: pointer;
@@ -225,6 +228,14 @@
 .ui-heat-cell--data:hover {
     transform: scale(1.2);
     z-index: 10;
+}
+
+/* En ruta utan mätning är inte en punkt på skalan utan ett tomrum, och ska
+   därför varken bära rampens bläck eller läsa som ett värde. Den tar
+   underlagets egen färg och strecket i den är dämpad text. */
+.ui-heat-cell--untested {
+    background: var(--fill-quiet);
+    color: var(--text-muted);
 }
 
 .ui-heat-legend {
@@ -241,12 +252,16 @@
     width: 150px;
     height: 12px;
     border-radius: 6px;
-    background: linear-gradient(90deg,
-        hsl(140, 80%, 35%) 0%,
-        hsl(140, 80%, 35%) 10%,
-        hsl(50, 75%, 45%) 25%,
-        hsl(25, 75%, 45%) 60%,
-        hsl(0, 75%, 45%) 100%);
+    /* Samma skala som time-color.ts räknar fram, och den svänger i oklch av
+       samma skäl: en toning som interpoleras i sRGB dyker ned i ljushet på
+       mitten, medan den här väger lika mycket hela vägen. Det gröna är ett
+       eget omdöme — snabbt nog — och står därför som en egen platta före
+       rampen, precis som i funktionen. */
+    background: linear-gradient(90deg in oklch,
+        oklch(0.72 0.155 152) 0%,
+        oklch(0.72 0.155 152) 10%,
+        oklch(0.72 0.145 85) 25%,
+        oklch(0.72 0.145 25) 100%);
 }
 
 /* Hela tabellen ska rymmas på en telefon utan att behöva dras i sidled. */

@@ -331,10 +331,13 @@
     font-family: var(--font-display);
 }
 
+/* Tiden ligger på samma skala som värmekartan och får därför samma bläck.
+   Ärvd text är ljus, och ljust mot rampen är 2.4:1. */
 .breakdown-time {
     font-family: var(--font-display);
     padding: 2px 10px;
     border-radius: var(--radius-sm);
+    color: var(--card-ink);
 }
 
 .breakdown-penalty {
