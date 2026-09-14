@@ -8,6 +8,7 @@
 import { DistractorKind, distractorPoolSize, pickDistractor } from '../facts/distractors';
 import { FACTS, Fact, factKey } from '../facts/fact-catalog';
 import { FactNeed, LEVEL_MAX, LEVEL_MIN, RECENT_MEMORY, selectFact } from '../facts/fact-selector';
+import { clamp } from '../shared/numbers';
 
 export { LEVEL_MAX, LEVEL_MIN } from '../facts/fact-selector';
 
@@ -294,5 +295,5 @@ export function startLevel(
 }
 
 export function clampLevel(level: number): number {
-  return Math.min(LEVEL_MAX, Math.max(LEVEL_MIN, level));
+  return clamp(level, LEVEL_MIN, LEVEL_MAX);
 }

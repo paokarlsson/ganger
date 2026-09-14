@@ -31,15 +31,6 @@ att *använda* dem, inte att riva dem.
 
 ## 1. Dubblering
 
-### 1.7 `clamp` i fyra former
-
-`SwipeViewComponent.clamp()` (privat), `clampLevel()` i swipe-difficulty, och
-handskrivna `Math.max(min, Math.min(v, max))` i `TrainingEngine.calibrate()`,
-`swipeBaselineSeconds` och `focusRank()`.
-
-**Åtgärd:** en `clamp(value, min, max)` i `shared/`. `clampLevel` får bli ett
-anrop till den.
-
 ### 1.8 Tre `Screen`-typer med samma namn
 
 `app.component.ts` (`'menu' | 'match' | 'swipe' | 'master'`),

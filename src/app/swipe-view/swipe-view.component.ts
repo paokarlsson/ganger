@@ -4,6 +4,7 @@ import { CdkDrag, CdkDragEnd, CdkDragMove } from '@angular/cdk/drag-drop';
 import { Fact } from '../facts/fact-catalog';
 import { HeatmapComponent } from '../heatmap/heatmap.component';
 import { PENALTY_TIME } from '../master-view/levels';
+import { clamp } from '../shared/numbers';
 import { TrainingEngine } from '../training/training-engine';
 import {
   CALIBRATION_CARDS,
@@ -236,7 +237,7 @@ export class SwipeViewComponent implements OnDestroy {
   dragMoved($event: CdkDragMove): void {
     // Rotationen ska följa hur långt kortet flyttats, inte var på skärmen
     // fingret råkar befinna sig.
-    this.progress = this.clamp($event.distance.x / this.threshold(), -1, 1);
+    this.progress = clamp($event.distance.x / this.threshold(), -1, 1);
 
     this.samples.push({ x: $event.distance.x, t: performance.now() });
     if (this.samples.length > 5) {
@@ -377,7 +378,7 @@ export class SwipeViewComponent implements OnDestroy {
 
   /** Tröskeln skalar med skärmen så att svepet känns lika på mobil och desktop. */
   private threshold(): number {
-    return this.clamp(window.innerWidth * 0.22, 60, 130);
+    return clamp(window.innerWidth * 0.22, 60, 130);
   }
 
   private isFling(): boolean {
@@ -394,10 +395,6 @@ export class SwipeViewComponent implements OnDestroy {
     if ('vibrate' in navigator) {
       navigator.vibrate(60);
     }
-  }
-
-  private clamp(value: number, min: number, max: number): number {
-    return Math.min(max, Math.max(min, value));
   }
 
   // --- Frågor ---------------------------------------------------------------

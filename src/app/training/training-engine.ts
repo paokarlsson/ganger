@@ -17,6 +17,7 @@ import {
   nextLevel,
   startLevel,
 } from '../swipe-view/swipe-difficulty';
+import { clamp } from '../shared/numbers';
 import { shuffle } from '../shared/random';
 import { mean, median } from '../shared/statistics';
 import { AnswerPace, AutoDifficultyState, nextAutoDifficulty } from './auto-difficulty';
@@ -173,10 +174,7 @@ export class TrainingEngine implements OnDestroy {
       return;
     }
     const withMargin = Math.round((middle / 1000) * 1.2 * 10) / 10;
-    this.progress.typedCalibration = Math.max(
-      MIN_CALIBRATED_TIME,
-      Math.min(withMargin, MAX_CALIBRATED_TIME),
-    );
+    this.progress.typedCalibration = clamp(withMargin, MIN_CALIBRATED_TIME, MAX_CALIBRATED_TIME);
     this.scheduleWrite();
     this.flush();
   }
@@ -349,7 +347,7 @@ export class TrainingEngine implements OnDestroy {
     if (middle === null) {
       return DEFAULT_SWIPE_BASELINE;
     }
-    return Math.max(MIN_SWIPE_BASELINE, Math.min(middle, MAX_SWIPE_BASELINE));
+    return clamp(middle, MIN_SWIPE_BASELINE, MAX_SWIPE_BASELINE);
   }
 
   /** Om sveptakten vilar på tillräckligt många mätningar för att tro på. */
