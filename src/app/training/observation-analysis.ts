@@ -19,7 +19,7 @@
  */
 import { FACTS } from '../facts/fact-catalog';
 import { Observation } from '../services/observation-log';
-import { ProgressDocument, progressKeyFor } from '../services/progress-store';
+import { ProgressDocument } from '../services/progress-store';
 
 /**
  * Hur många par som minst måste stå kvar på brädet för att ett löst par ska
@@ -357,9 +357,6 @@ export function readableKey(key: string): string {
   const match = /^mul:(\d+)x(\d+)$/.exec(key);
   return match ? `${match[1]} × ${match[2]}` : key;
 }
-
-/** Alla tal spelet känner till, som nycklar. För täckningsraden. */
-export const ALL_KEYS: readonly string[] = FACTS.map((f) => progressKeyFor(f.a, f.b));
 
 /** Rapporten som text. Läses av en människa, inte av spelet. */
 export function formatReport(report: ObservationReport): string {

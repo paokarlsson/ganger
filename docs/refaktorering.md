@@ -31,20 +31,6 @@ att *använda* dem, inte att riva dem.
 
 ## 1. Dubblering
 
-### 1.4 Samma lista över alla nycklar, definierad två gånger
-
-```ts
-// progress-store.ts:398
-export const ALL_PROGRESS_KEYS = FACTS.map((fact) => progressKeyFor(fact.a, fact.b));
-// observation-analysis.ts:362
-export const ALL_KEYS = FACTS.map((f) => progressKeyFor(f.a, f.b));
-```
-
-`ALL_KEYS` har dessutom ingen läsare alls — varken i appen eller i något test.
-
-**Åtgärd:** ta bort `ALL_KEYS`. Låt `observation-analysis.ts` importera
-`ALL_PROGRESS_KEYS` om den någon gång behöver den.
-
 ### 1.5 Median och medelvärde räknas ut inline
 
 `median()` finns på riktigt i `observation-analysis.ts:345`. Men
@@ -155,7 +141,6 @@ Varken appen eller något test läser dem:
 
 | Symbol | Fil |
 | --- | --- |
-| `ALL_KEYS` | `training/observation-analysis.ts` |
 | `TABLE_PRODUCTS` | `facts/fact-catalog.ts` |
 | `focusRank`, `windowWeight`, `SelectionContext` | `facts/fact-selector.ts` |
 | `clampLevel`, `LEVEL_UP_STEP`, `LEVEL_DOWN_STEP` | `swipe-view/swipe-difficulty.ts` |
