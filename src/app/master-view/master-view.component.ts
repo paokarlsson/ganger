@@ -5,7 +5,7 @@ import { ProgressExportService } from '../services/progress-export';
 import { timeColor } from '../services/time-color';
 import { shuffle } from '../shared/random';
 import { AutoDifficultyState, initialAutoDifficulty } from '../training/auto-difficulty';
-import { TrainingEngine } from '../training/training-engine';
+import { Thresholds, TrainingEngine } from '../training/training-engine';
 import {
   CALIBRATION_QUESTIONS,
   DIFFICULTY,
@@ -106,6 +106,11 @@ export class MasterViewComponent implements OnDestroy {
   protected auto: AutoDifficultyState = initialAutoDifficulty('easy');
   private gameAborted = false;
 
+  /** Mästaren mäter bara skrivna svar, så det är den kanalens tider som gäller. */
+  private get thresholds(): Thresholds {
+    return this.engine.thresholdsFor('typed');
+  }
+
   ngOnDestroy(): void {
     clearInterval(this.timerHandle);
     clearTimeout(this.advanceHandle);
@@ -135,12 +140,12 @@ export class MasterViewComponent implements OnDestroy {
   }
 
   get calibratedTimeDisplay(): string {
-    return this.engine.fastSeconds.toFixed(1) + 's';
+    return this.thresholds.fast.toFixed(1) + 's';
   }
 
   get baselineDisplay(): string {
-    const calibrated = this.engine.calibratedFastTime;
-    return calibrated === null ? '—' : `${calibrated.toFixed(1)}s`;
+    const { baseline } = this.thresholds;
+    return baseline === null ? '—' : `${baseline.toFixed(1)}s`;
   }
 
   selectLevel(level: Level): void {
@@ -153,7 +158,7 @@ export class MasterViewComponent implements OnDestroy {
 
   /** Utan en mätt snabbhetstid har spelet inget att jämföra svaren mot. */
   start(): void {
-    if (this.engine.calibratedFastTime === null) {
+    if (this.thresholds.baseline === null) {
       this.startCalibration();
     } else {
       this.startGame();
@@ -291,9 +296,10 @@ export class MasterViewComponent implements OnDestroy {
     if (isCorrect) {
       this.answerState = 'correct';
       this.feedbackKind = 'correct';
-      if (timeSec < this.engine.fastSeconds) {
+      const { fast } = this.thresholds;
+      if (timeSec < fast) {
         this.feedbackText = '⚡ Blixtsnabbt!';
-      } else if (timeSec < this.engine.fastSeconds * 1.5) {
+      } else if (timeSec < fast * 1.5) {
         this.feedbackText = '✓ Snyggt!';
       } else {
         this.feedbackText = '✓ Rätt!';
@@ -478,7 +484,8 @@ export class MasterViewComponent implements OnDestroy {
   /** Grönt upp till den kalibrerade tiden, sedan gult mot rött. Färgar
    *  resultatskärmens uppdelning; värmekartan färgar sig själv. */
   private timeColor(seconds: number): string {
-    return timeColor(seconds, this.engine.fastSeconds, this.engine.slowSeconds);
+    const { fast, slow } = this.thresholds;
+    return timeColor(seconds, fast, slow);
   }
 
   /** Fälten ligger bakom @if och finns först när vyn ritats om, så de slås

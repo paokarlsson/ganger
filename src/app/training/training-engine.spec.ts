@@ -171,9 +171,9 @@ describe('TrainingEngine', () => {
         'swipe-best-streak': '12',
       });
 
-      expect(engine.calibratedFastTime).toBe(1.8);
+      expect(engine.thresholdsFor('typed').baseline).toBe(1.8);
       expect(engine.swipeLevel).toBe(7);
-      expect(engine.swipeBaselineSeconds).toBe(1.2);
+      expect(engine.thresholdsFor('swipe').baseline).toBe(1.2);
       expect(engine.swipeBestStreak).toBe(12);
     });
 
@@ -218,7 +218,7 @@ describe('TrainingEngine', () => {
       expect(engine.masteredCount()).toBe(0);
       expect(engine.statFor(7, 8)).toBeUndefined();
       expect(engine.statFor(3, 4)).toBeUndefined();
-      expect(engine.calibratedFastTime).toBeNull();
+      expect(engine.thresholdsFor('typed').baseline).toBeNull();
       expect(engine.swipeLevel).toBeNull();
       expect((await restarted()).hasStoredProgress).toBe(false);
     });
@@ -257,7 +257,7 @@ describe('TrainingEngine', () => {
       const engine = await freshEngine();
 
       expect(engine.hasSwipeBaseline).toBe(false);
-      expect(engine.swipeBaselineSeconds).toBe(DEFAULT_SWIPE_BASELINE);
+      expect(engine.thresholdsFor('swipe').baseline).toBe(DEFAULT_SWIPE_BASELINE);
     });
 
     it('tar medianen av mätningarna, inte snittet', async () => {
@@ -268,7 +268,7 @@ describe('TrainingEngine', () => {
       }
 
       expect(engine.hasSwipeBaseline).toBe(true);
-      expect(engine.swipeBaselineSeconds).toBe(1.2);
+      expect(engine.thresholdsFor('swipe').baseline).toBe(1.2);
     });
 
     it('rullar fönstret så att takten följer med när spelaren blir snabbare', async () => {
@@ -280,7 +280,7 @@ describe('TrainingEngine', () => {
         engine.recordSwipeBaseline(1.0);
       }
 
-      expect(engine.swipeBaselineSeconds).toBe(1.0);
+      expect(engine.thresholdsFor('swipe').baseline).toBe(1.0);
     });
 
     it('klipper orimliga tider i båda ändar', async () => {
@@ -291,8 +291,8 @@ describe('TrainingEngine', () => {
         slow.recordSwipeBaseline(30);
       }
 
-      expect(fast.swipeBaselineSeconds).toBe(0.5);
-      expect(slow.swipeBaselineSeconds).toBe(3.0);
+      expect(fast.thresholdsFor('swipe').baseline).toBe(0.5);
+      expect(slow.thresholdsFor('swipe').baseline).toBe(3.0);
     });
 
     it('struntar i tider som inte är tider', async () => {
@@ -310,7 +310,7 @@ describe('TrainingEngine', () => {
         engine.recordSwipeBaseline(seconds);
       }
 
-      expect((await restarted()).swipeBaselineSeconds).toBe(1.2);
+      expect((await restarted()).thresholdsFor('swipe').baseline).toBe(1.2);
       expect(engine.hasStoredProgress).toBe(true);
 
       await engine.reset();
@@ -340,9 +340,9 @@ describe('TrainingEngine', () => {
       engine.calibrate([3000, 3000, 3000]);
 
       // De två tiderna är inte jämförbara, och får inte råka bli det.
-      expect(engine.swipeFastSeconds).toBeCloseTo(1.3, 10);
-      expect(engine.fastSeconds).toBe(3.6);
-      expect(engine.swipeSlowSeconds).toBeCloseTo(1.95, 10);
+      expect(engine.thresholdsFor('swipe').fast).toBeCloseTo(1.3, 10);
+      expect(engine.thresholdsFor('typed').fast).toBe(3.6);
+      expect(engine.thresholdsFor('swipe').slow).toBeCloseTo(1.95, 10);
     });
 
     it('hittar talet oavsett vilken väg det lagrats', async () => {
@@ -508,7 +508,7 @@ describe('TrainingEngine', () => {
       for (let i = 0; i < 3; i++) {
         engine.recordSwipeCalibration(statement(true), true, 0.9);
       }
-      expect(engine.swipeBaselineSeconds).toBeCloseTo(0.9, 10);
+      expect(engine.thresholdsFor('swipe').baseline).toBeCloseTo(0.9, 10);
     });
   });
 

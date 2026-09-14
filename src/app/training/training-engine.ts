@@ -37,6 +37,14 @@ import {
 /** Skrivet svar eller svep. Tiderna är inte jämförbara mellan de två. */
 export type Channel = 'typed' | 'swipe';
 
+/** En kanals tider i sekunder. Se `TrainingEngine.thresholdsFor()`. */
+export interface Thresholds {
+  fast: number;
+  slow: number;
+  /** `null` innan takten är mätt. */
+  baseline: number | null;
+}
+
 /** Hur länge skrivningar får samlas på hög. Varje skrivning serialiserar hela
  *  dokumentet, och en rond utan slut kan ge hundratals kort. */
 const STATS_WRITE_DELAY = 1000;
@@ -149,18 +157,46 @@ export class TrainingEngine implements OnDestroy {
     return FACTS.length;
   }
 
-  /** `null` innan spelaren kalibrerat sig. */
-  get calibratedFastTime(): number | null {
-    return this.progress.typedCalibration;
+  /**
+   * Kanalens tre tider, i sekunder.
+   *
+   * `fast` är gränsen för «automatiserat», `slow` färgskalans andra ände, och
+   * `baseline` den takt de två vilar på — `null` innan den är mätt. De är
+   * aldrig jämförbara mellan kanalerna: ett svep är igenkänning, ett skrivet
+   * svar är framplockning.
+   */
+  thresholdsFor(channel: Channel): Thresholds {
+    return channel === 'swipe' ? this.swipeThresholds() : this.typedThresholds();
   }
 
-  /** Tiden ett skrivet svar ska hålla sig under för att räknas som automatiserat. */
-  get fastSeconds(): number {
-    return this.progress.typedCalibration ?? DEFAULT_FAST_TIME;
+  /** Genvägen till skrivna svar — Mästaren mäter bara i den kanalen. */
+  private get fastSeconds(): number {
+    return this.typedThresholds().fast;
   }
 
-  get slowSeconds(): number {
-    return this.fastSeconds * TYPED_SLOW_MULTIPLIER;
+  private get slowSeconds(): number {
+    return this.typedThresholds().slow;
+  }
+
+  /** Kalibreringen sätter `fast`; utan den gäller grundtiden. */
+  private typedThresholds(): Thresholds {
+    const fast = this.progress.typedCalibration ?? DEFAULT_FAST_TIME;
+    return {
+      fast,
+      slow: fast * TYPED_SLOW_MULTIPLIER,
+      baseline: this.progress.typedCalibration,
+    };
+  }
+
+  /**
+   * `fast` är tröskeln för ett *sant* kort. Halva korten i en rond är falska
+   * och tar drygt en tredjedel längre, så en behärskad rutas snitt hamnar en
+   * bit över sveptakten — men fortfarande under tröskeln.
+   */
+  private swipeThresholds(): Thresholds {
+    const baseline = this.swipeBaselineSeconds;
+    const fast = baseline * FAST_FACTOR;
+    return { fast, slow: fast * SWIPE_SLOW_MULTIPLIER, baseline };
   }
 
   /** Median av mätningarna plus 20 % marginal, klippt till ett rimligt spann.
@@ -199,26 +235,29 @@ export class TrainingEngine implements OnDestroy {
   }
 
   /**
-   * Om spelaren gjort något alls i en kanal. Styr om det finns en värmekarta
-   * att visa, och om startsidan ska säga "0 tal sitter" eller hälsa.
+   * Fyra frågor om hur mycket spelet vet, från smalast till bredast:
+   *
+   * `hasPracticeIn(channel)` — övat i just den kanalen. Värmekartan frågar det
+   * om den kanal som visas, för att veta om rutnätet har något att färga.
+   * `hasPractice` — övat med skrivna svar. Framstegsmätaren räknar dem, så den
+   * som bara svept har inget att visa där ännu.
+   * `hasAnyPractice` — övat i någon kanal. Styr om värmekartan går att öppna
+   * alls; den visar båda, så det räcker att en av dem är övad.
+   * `hasStoredProgress` — något sparat överhuvudtaget, kalibreringen och
+   * svepets rekord inräknade. Det `reset()` rensar.
    */
   hasPracticeIn(channel: Channel): boolean {
     return Object.values(this.progress.facts).some((entry) => entry[channel].times.length > 0);
   }
 
-  /** Skrivna svar. Framstegsmätaren räknar dem — den som bara svept har inget
-   *  att visa där ännu. */
   get hasPractice(): boolean {
     return this.hasPracticeIn('typed');
   }
 
-  /** Om någon kanal har något att visa. Styr om värmekartan går att öppna:
-   *  den visar båda, så det räcker att en av dem är övad. */
   get hasAnyPractice(): boolean {
     return this.hasPracticeIn('typed') || this.hasPracticeIn('swipe');
   }
 
-  /** Om det finns något sparat om spelaren alls — det som `reset()` rensar. */
   get hasStoredProgress(): boolean {
     return hasContent(this.progress);
   }
@@ -236,7 +275,7 @@ export class TrainingEngine implements OnDestroy {
    * vore att kalla halva tabellen behärskad på fel grund.
    */
   masteredCount(channel: Channel = 'typed'): number {
-    const fast = this.fastSecondsFor(channel);
+    const { fast } = this.thresholdsFor(channel);
     let mastered = 0;
     for (const fact of FACTS) {
       const average = this.averageSeconds(this.statFor(fact.a, fact.b, channel));
@@ -245,25 +284,6 @@ export class TrainingEngine implements OnDestroy {
       }
     }
     return mastered;
-  }
-
-  /** Tröskeln för «automatiserat» i en kanal. Aldrig jämförbar mellan två. */
-  fastSecondsFor(channel: Channel): number {
-    return channel === 'swipe' ? this.swipeFastSeconds : this.fastSeconds;
-  }
-
-  /** Var «segt» börjar i en kanal. Färgskalans andra ände. */
-  slowSecondsFor(channel: Channel): number {
-    return channel === 'swipe' ? this.swipeSlowSeconds : this.slowSeconds;
-  }
-
-  /**
-   * Takten kanalens tröskel vilar på, som text. Skrivna svar mäts mot en
-   * kalibrering, svep mot sveptakten, och de två är olika saker — därför har
-   * de olika etikett i kartan.
-   */
-  baselineSecondsFor(channel: Channel): number | null {
-    return channel === 'swipe' ? this.swipeBaselineSeconds : this.calibratedFastTime;
   }
 
   /** Snittid i sekunder, eller `null` för ett tal som aldrig övats. */
@@ -301,24 +321,6 @@ export class TrainingEngine implements OnDestroy {
   }
 
   /**
-   * Vad ett svep ska hålla sig under för att räknas som automatiserat.
-   *
-   * Skild från `fastSeconds`, som gäller skrivna svar: ett svep är igenkänning
-   * och går systematiskt snabbare, och de två tiderna är inte jämförbara.
-   *
-   * Tröskeln är den för ett sant kort. Halva korten i en rond är falska och
-   * tar drygt en tredjedel längre, så en behärskad rutas snitt hamnar en bit
-   * över sveptakten — men fortfarande under den här tröskeln.
-   */
-  get swipeFastSeconds(): number {
-    return this.swipeBaselineSeconds * FAST_FACTOR;
-  }
-
-  get swipeSlowSeconds(): number {
-    return this.swipeFastSeconds * SWIPE_SLOW_MULTIPLIER;
-  }
-
-  /**
    * Spelarens läge på ett tal. Skrivna svar går före svep när båda finns,
    * eftersom de mäter framplockning och inte bara igenkänning.
    */
@@ -345,7 +347,7 @@ export class TrainingEngine implements OnDestroy {
    * svar bär en regel (×1, ×10). Mäts den på vilket kort som helst stiger den
    * med nivån, och då jagar tröskeln sin egen svans.
    */
-  get swipeBaselineSeconds(): number {
+  private get swipeBaselineSeconds(): number {
     const middle = this.hasSwipeBaseline ? median(this.progress.swipeBaseline) : null;
     if (middle === null) {
       return DEFAULT_SWIPE_BASELINE;
