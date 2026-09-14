@@ -31,15 +31,6 @@ att *använda* dem, inte att riva dem.
 
 ## 1. Dubblering
 
-### 1.10 Testhjälpare som bygger en hydrerad motor
-
-`training-engine.spec.ts` har `engineWith()` och `restarted()`,
-`heatmap-grid.spec.ts` har `engine()`. Alla tre gör `localStorage.clear()` →
-`new TrainingEngine()` → `await hydrate()`.
-
-**Åtgärd:** `src/app/testing/engine.ts`. Se även 2.1 — hjälparna borde gå via
-`useRepository()` i stället för via riktig `localStorage`.
-
 ### 1.11 `playWrong()` och `playSuccess()`
 
 `match-view.component.ts` — identiska kroppar så när som på vilket

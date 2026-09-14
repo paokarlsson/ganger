@@ -1,33 +1,19 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { FACTS, factFor } from '../facts/fact-catalog';
 import { DEFAULT_START_LEVEL, GeneratedStatement } from '../swipe-view/swipe-difficulty';
 import { DIFFICULTY, Pair } from '../master-view/levels';
+import { disposeEngines, engineWith, restarted } from '../testing/engine';
 import { initialAutoDifficulty } from './auto-difficulty';
 import { DEFAULT_SWIPE_BASELINE, TrainingEngine } from './training-engine';
-
-/** Lagringen är asynkron, så motorn är inte klar förrän den hydrerats. */
-async function engineWith(stored: Record<string, unknown>): Promise<TrainingEngine> {
-  localStorage.clear();
-  for (const [key, value] of Object.entries(stored)) {
-    localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
-  }
-  return restarted();
-}
 
 /** Svepkanalen för ett tal. Kortform, den läses ofta här. */
 function swipeStatFor(engine: TrainingEngine, a: number, b: number) {
   return engine.statFor(a, b, 'swipe');
 }
 
-/** Som att ladda om sidan: en ny motor som läser det som ligger i lagret. */
-async function restarted(): Promise<TrainingEngine> {
-  const engine = new TrainingEngine();
-  await engine.hydrate();
-  return engine;
-}
-
 describe('TrainingEngine', () => {
   beforeEach(() => localStorage.clear());
+  afterEach(disposeEngines);
 
   describe('kanaler', () => {
     it('håller svep utanför värmekartans tider', async () => {
