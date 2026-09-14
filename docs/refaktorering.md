@@ -31,21 +31,6 @@ att *använda* dem, inte att riva dem.
 
 ## 1. Dubblering
 
-### 1.6 Två konstanter som heter `SLOW_TIME_MULTIPLIER`
-
-`master-view/levels.ts` har 4, `swipe-view/swipe-difficulty.ts` har 1,5.
-`training-engine.ts` importerar båda och måste döpa om den ena vid importen:
-
-```ts
-import { SLOW_TIME_MULTIPLIER as SWIPE_SLOW_MULTIPLIER } from '../swipe-view/swipe-difficulty';
-```
-
-Att en import måste byta namn för att undvika en krock är signalen.
-
-**Åtgärd:** `TYPED_SLOW_MULTIPLIER` respektive `SWIPE_SLOW_MULTIPLIER` vid
-källan. Båda filerna motiverar redan sina värden mot varandra i kommentar; namnen
-bör göra samma sak.
-
 ### 1.7 `clamp` i fyra former
 
 `SwipeViewComponent.clamp()` (privat), `clampLevel()` i swipe-difficulty, och

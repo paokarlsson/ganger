@@ -60,7 +60,7 @@ export const FAST_FACTOR = 1.3;
  * återstår bara felsvaren som nedåtkraft, och då hamnar jämvikten vid en
  * tredjedel fel — på ett svep där ren gissning ger hälften rätt.
  */
-export const SLOW_TIME_MULTIPLIER = 1.5;
+export const SWIPE_SLOW_MULTIPLIER = 1.5;
 
 /**
  * Att förkasta ett falskt påstående kräver att man räknar ut produkten och
@@ -268,7 +268,7 @@ export function nextLevel(
   if (isFastAnswer(isTrueCard, correct, timeSec, baselineSeconds)) {
     return clampLevel(level + LEVEL_UP_STEP);
   }
-  if (!correct || timeSec > fastSeconds(baselineSeconds, isTrueCard) * SLOW_TIME_MULTIPLIER) {
+  if (!correct || timeSec > fastSeconds(baselineSeconds, isTrueCard) * SWIPE_SLOW_MULTIPLIER) {
     return clampLevel(level - LEVEL_DOWN_STEP);
   }
   return level;

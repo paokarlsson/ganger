@@ -6,12 +6,12 @@ import {
   DIFFICULTY,
   Difficulty,
   Pair,
-  SLOW_TIME_MULTIPLIER,
+  TYPED_SLOW_MULTIPLIER,
 } from '../master-view/levels';
 import {
   FAST_FACTOR,
   GeneratedStatement,
-  SLOW_TIME_MULTIPLIER as SWIPE_SLOW_MULTIPLIER,
+  SWIPE_SLOW_MULTIPLIER,
   baselineSample,
   isFastAnswer,
   nextLevel,
@@ -156,7 +156,7 @@ export class TrainingEngine implements OnDestroy {
   }
 
   get slowSeconds(): number {
-    return this.fastSeconds * SLOW_TIME_MULTIPLIER;
+    return this.fastSeconds * TYPED_SLOW_MULTIPLIER;
   }
 
   /** Median av mätningarna plus 20 % marginal, klippt till ett rimligt spann.
