@@ -192,9 +192,9 @@ under **Skrivet** is not a fault in the map; it is the distinction between
 recognising an answer and being able to retrieve it, which is the movement the
 whole design is about.
 
-Alongside it, under `ganger-observations`, sits a short ring buffer of raw
-events from *Para ihop* — what was paired, how long it took, how many pairs
-were still on the board. Nothing in the game reads it, and nothing is chosen
+Alongside it, under `ganger-observations`, sits a ring buffer of raw events
+from *Para ihop* — what was paired, how long it took, how many pairs were
+still on the board. Nothing in the game reads it, and nothing is chosen
 from it. It is measurement, not pedagogy, and it exists to answer a question
 that cannot be answered without data: *do the times in Para ihop say anything
 about the same facts in Svep?* If they do not, the premise that matching is
@@ -224,6 +224,18 @@ progress document. Drop the result in `tools/observations.json` and run
 `tools/observations-report.txt`. Neither file is committed — a child's response
 times do not belong in a public repo — and nothing in `src/app` imports the
 analysis, so it never reaches the bundle.
+
+The buffer holds 2000 events, and that number is read backwards from the
+report rather than picked for feeling roomy. A round is five pairs, and only
+the pairs solved with at least three still on the board count as evidence —
+three of every five. Getting each of the 55 facts to about five such pairs
+takes roughly 460 solved pairs, some ninety rounds, call it 600 events; random
+selection is uneven, so *most* facts reach that only with the cap set well
+above the average. The earlier cap of 200 did not hold a quarter of one
+measurement, which made it, and not the hand-driven export, the binding
+constraint on step 4. If the write is ever refused — a full quota is plausible
+at this size — the log halves what it stores and keeps the newest rather than
+silently storing nothing.
 
 *Para ihop* still picks its facts at random, even though the catalogue knows
 which ones are hard. That is deliberate: calibrating against the log needs an
