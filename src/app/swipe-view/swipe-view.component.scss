@@ -7,9 +7,6 @@
     display: block;
     height: 100vh;
     height: 100dvh; /* vh räknar med adressfältet utfällt på iOS Safari */
-    font-family: var(--font-body);
-    background: var(--surface);
-    color: var(--text-primary);
 }
 
 .container {

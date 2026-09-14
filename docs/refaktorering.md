@@ -31,21 +31,6 @@ att *använda* dem, inte att riva dem.
 
 ## 1. Dubblering
 
-### 1.9 Dubblerade stilar
-
-* `:host { font-family; background: var(--surface); color: var(--text-primary) }`
-  står ordagrant i master-, swipe- och match-viewens SCSS.
-* `.container`, `.start-btn` / `.heat-btn` / `.heatmap-btn`, `.result-card` och
-  `.menu-card` finns i både `master-view.component.scss` och
-  `swipe-view.component.scss` med snarlikt innehåll.
-
-**Åtgärd:** lägg spelytans grund som en regel i `src/styles/_base.scss`
-(`app-master-view, app-swipe-view, app-match-view { … }`) eller som en
-`%game-surface`-placeholder. Lyft `.result-card`-mönstret till `_ui.scss` som
-en variant av `.ui-card` — det är precis vad `_ui.scss` finns för, och
-filhuvudena i båda komponenterna säger redan att «kort och knappar kommer från
-stilmallen».
-
 ### 1.10 Testhjälpare som bygger en hydrerad motor
 
 `training-engine.spec.ts` har `engineWith()` och `restarted()`,
