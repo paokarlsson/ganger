@@ -226,6 +226,34 @@ påhittade händelser, men ingen riktig export har lästs ännu. Rapporten vägr
 tolka en korrelation som vilar på färre än åtta tal, så det behövs ett antal
 ronder innan den säger något.
 
+Det som stod i vägen var inte att exporten görs för hand utan att loggens tak
+låg på 200 händelser. En rond är fem par, och bara de tre som löstes med minst
+`MIN_REMAINING` kvar på brädet räknas som evidens; ska tabellens 55 tal nå
+omkring fem evidenspar var krävs runt 600 händelser, och urvalet är slumpmässigt
+och därmed ojämnt. Taket rymde alltså inte en fjärdedel av en enda mätning, och
+det som föll ur var de äldsta — de mest obiaserade. `MAX_OBSERVATIONS` är nu
+2000, med marginal för att *de flesta* tal ska hinna dit och för flera
+sittningar mellan exporterna.
+
+Priset ligger i skrivningen: hela loggen serialiseras om varje gång, och 2000
+händelser är omkring 460 kB mot tidigare 46. Därför skrivs den nu var femte
+sekund i stället för varje sekund — ungefär en skrivning per rond i stället för
+en per löst par — och nekas skrivningen halveras det som sparas i stället för
+att loggen tyst slutar sparas.
+
+En backend i stället för exportknappen har övervägts och valts bort tills
+vidare. Den automatiserar en handpåläggning som görs ett par gånger, medan den
+bindande gränsen var taket. Och den kostar mer än den ser ut att göra: appen
+körs från GitHub Pages, alltså som statiska filer utan server, och surfplattan
+laddar den därifrån. En insamlare vore inte «ett tillägg» utan en andra sak som
+måste vara uppe och nåbar när barnen spelar, plus en plats där ett barns
+svarstider ligger.
+
+Frågan är värd att ta upp igen på tre villkor, och inte annars: att insamlingen
+ska ske från flera enheter, att datan ska överleva *Nollställ*, eller att
+konstanterna ska trimmas på riktigt — vilket är samma premiss som vänder
+argumentet mot simuleringsriggen ovan.
+
 *Först därefter:* bygg blandningsregulatorn, och skriv loop-testerna i samma
 veva. Det är där ett simulerat spel faktiskt gör något som inte går att göra på
 annat sätt: en återkopplad regulator kan oscillera på ett sätt som är osynligt

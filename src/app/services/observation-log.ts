@@ -13,17 +13,39 @@
  * har redan fått en fördröjning för att det blev för dyrt; händelserna i samma
  * dokument hade gjort den skrivningen dyrare för varje rond.
  *
- * Ringbufferten är avsiktligt kort. Det aggregerade tillståndet är det som ska
- * leva; de råa händelserna är till för felsökning och för att kalibrera
- * konstanter, och då räcker de senaste.
+ * Ringbufferten är fortfarande en ringbuffert: det aggregerade tillståndet är
+ * det som ska leva, och de råa händelserna är till för felsökning och för att
+ * kalibrera konstanter. Men taket är satt av vad kalibreringen behöver läsa,
+ * inte av vad som råkar kännas lagom — se `MAX_OBSERVATIONS`.
  */
 import { Injectable } from '@angular/core';
 
 export const OBSERVATIONS_KEY = 'ganger-observations';
 export const OBSERVATIONS_SCHEMA_VERSION = 1;
 
-/** Hur många händelser som sparas. Äldre faller ur i andra änden. */
-export const MAX_OBSERVATIONS = 200;
+/**
+ * Hur många händelser som sparas. Äldre faller ur i andra änden.
+ *
+ * Taket är räknat baklänges från rapporten i `observation-analysis.ts`, inte
+ * satt på känsla. En rond i Para ihop är fem par, och bara de par som löstes
+ * med minst `MIN_REMAINING = 3` kvar på brädet räknas som evidens — tre av fem
+ * par per rond. Ska vart och ett av tabellens 55 tal nå omkring fem
+ * evidenspar krävs `55 × 5 / 0,6 ≈ 460` lösta par, alltså runt nittio ronder;
+ * med felparningar inräknat ungefär 600 händelser. Urvalet är slumpmässigt och
+ * därmed ojämnt, så det taket måste tas med marginal för att *de flesta* tal
+ * ska hinna dit och inte bara medeltalet.
+ *
+ * 2000 är den marginalen: drygt tre gånger det minsta användbara stickprovet,
+ * och plats för flera sittningar innan någon kommer ihåg att exportera.
+ *
+ * Det tidigare taket, 200, rymde inte ens en fjärdedel av en enda mätning. Det
+ * var den bindande gränsen för steg 4 i docs/plan.md — inte att exporten görs
+ * för hand.
+ *
+ * Priset är skrivningen: 2000 händelser är omkring 460 kB att serialisera, mot
+ * 46 kB förut. Det är därför `WRITE_DELAY` höjdes i samma veva.
+ */
+export const MAX_OBSERVATIONS = 2000;
 
 /** Vilket spel händelsen kommer ur. Svep och Mästaren skriver ännu inte hit. */
 export type ObservationSource = 'match';
@@ -93,14 +115,42 @@ interface ObservationDocument {
   observations: Observation[];
 }
 
-/** Hur länge händelser får samlas på hög innan de skrivs ned. */
-const WRITE_DELAY = 1000;
+/**
+ * Hur länge händelser får samlas på hög innan de skrivs ned.
+ *
+ * Hela loggen serialiseras om vid varje skrivning, så kostnaden följer taket.
+ * Vid en sekund blev det i praktiken en skrivning per löst par; vid fem blir
+ * det ungefär en per rond, vilket är vad en surfplatta ska behöva göra med ett
+ * halvt megabyte JSON.
+ *
+ * Det som riskeras är de senaste sekundernas händelser om fliken dödas rakt
+ * av. `pagehide` och `visibilitychange` fångar de vanliga vägarna ut, och det
+ * här är felsökningsdata — några par är ett pris värt att betala för att
+ * spelet inte ska hacka mitt i en rond.
+ */
+const WRITE_DELAY = 5000;
+
+/**
+ * Hur få händelser det får bli innan lagringen ges upp helt.
+ *
+ * Nekas skrivningen trappas det som sparas ned i stället för att loggen tyst
+ * slutar bli sparad — men under hundra händelser är det lagrade för tunt för
+ * att bära en mätning, och då är det ärligare att låta loggen leva i minnet
+ * sessionen ut än att skriva ett halvt megabyte som ändå inte svarar på något.
+ */
+const MIN_STORAGE_LIMIT = 100;
 
 @Injectable({ providedIn: 'root' })
 export class ObservationLog {
   private observations: Observation[] = [];
   private writeTimer?: ReturnType<typeof setTimeout>;
   private dirty = false;
+  /**
+   * Hur många händelser som får plats i lagret. Börjar på taket och trappas
+   * ned av `flush()` när skrivningen nekas. Minnet behåller alltid allt —
+   * det här är bara vad som ryms på disk.
+   */
+  private storageLimit = MAX_OBSERVATIONS;
 
   constructor() {
     if (typeof addEventListener === 'function') {
@@ -139,15 +189,20 @@ export class ObservationLog {
       return;
     }
     this.dirty = false;
-    const document: ObservationDocument = {
-      schemaVersion: OBSERVATIONS_SCHEMA_VERSION,
-      observations: this.observations,
-    };
-    try {
-      localStorage.setItem(OBSERVATIONS_KEY, JSON.stringify(document));
-    } catch {
-      // Loggen får leva kvar i minnet under sessionen. Se progress-store.ts.
+
+    // Nekad skrivning är nästan alltid full kvot, och med ett tak på 2000 är
+    // det ett rimligt utfall och inte ett undantag. Att bara svälja felet vore
+    // att låta loggen sluta sparas utan att säga något — den halveras hellre
+    // och sparar de nyaste, eftersom en kortare logg är en mätning och ingen
+    // logg alls inte är det.
+    while (this.storageLimit > 0) {
+      if (this.write(this.observations.slice(-this.storageLimit))) {
+        return;
+      }
+      const halved = Math.floor(this.storageLimit / 2);
+      this.storageLimit = halved >= MIN_STORAGE_LIMIT ? halved : 0;
     }
+    // Loggen får leva kvar i minnet under sessionen. Se progress-store.ts.
   }
 
   clear(): void {
@@ -155,10 +210,25 @@ export class ObservationLog {
     this.writeTimer = undefined;
     this.dirty = false;
     this.observations = [];
+    // Kvoten kan mycket väl ha frigjorts av just den här rensningen.
+    this.storageLimit = MAX_OBSERVATIONS;
     try {
       localStorage.removeItem(OBSERVATIONS_KEY);
     } catch {
       // Se flush().
+    }
+  }
+
+  private write(observations: Observation[]): boolean {
+    const document: ObservationDocument = {
+      schemaVersion: OBSERVATIONS_SCHEMA_VERSION,
+      observations,
+    };
+    try {
+      localStorage.setItem(OBSERVATIONS_KEY, JSON.stringify(document));
+      return true;
+    } catch {
+      return false;
     }
   }
 
