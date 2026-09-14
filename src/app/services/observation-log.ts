@@ -18,7 +18,9 @@
  * kalibrera konstanter. Men taket är satt av vad kalibreringen behöver läsa,
  * inte av vad som råkar kännas lagom — se `MAX_OBSERVATIONS`.
  */
-import { Injectable } from '@angular/core';
+import { Injectable, OnDestroy } from '@angular/core';
+import { DebouncedWriter } from './debounced-writer';
+import { readJson, remove, writeJson } from './local-store';
 
 export const OBSERVATIONS_KEY = 'ganger-observations';
 export const OBSERVATIONS_SCHEMA_VERSION = 1;
@@ -48,7 +50,7 @@ export const OBSERVATIONS_SCHEMA_VERSION = 1;
 export const MAX_OBSERVATIONS = 2000;
 
 /** Vilket spel händelsen kommer ur. Svep och Mästaren skriver ännu inte hit. */
-export type ObservationSource = 'match';
+type ObservationSource = 'match';
 
 /**
  * Ett par som löstes i Para ihop.
@@ -59,7 +61,7 @@ export type ObservationSource = 'match';
  * är billigare än att gissa fel.
  */
 export interface MatchPairObservation {
-  source: 'match';
+  source: ObservationSource;
   kind: 'pair';
   /** `mul:7x8`, samma nyckel som framstegsdokumentet använder. */
   key: string;
@@ -94,7 +96,7 @@ export interface MatchPairObservation {
  * kort av: paras 7 × 8 konsekvent med 54 är det ett mönster, inte brus.
  */
 export interface MatchMispairObservation {
-  source: 'match';
+  source: ObservationSource;
   kind: 'mispair';
   /** Talet i frågespalten. */
   key: string;
@@ -141,26 +143,19 @@ const WRITE_DELAY = 5000;
 const MIN_STORAGE_LIMIT = 100;
 
 @Injectable({ providedIn: 'root' })
-export class ObservationLog {
+export class ObservationLog implements OnDestroy {
   private observations: Observation[] = [];
-  private writeTimer?: ReturnType<typeof setTimeout>;
-  private dirty = false;
   /**
    * Hur många händelser som får plats i lagret. Börjar på taket och trappas
-   * ned av `flush()` när skrivningen nekas. Minnet behåller alltid allt —
+   * ned av `persist()` när skrivningen nekas. Minnet behåller alltid allt —
    * det här är bara vad som ryms på disk.
    */
   private storageLimit = MAX_OBSERVATIONS;
 
-  constructor() {
-    if (typeof addEventListener === 'function') {
-      addEventListener('pagehide', () => this.flush());
-      addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') {
-          this.flush();
-        }
-      });
-    }
+  private readonly writer = new DebouncedWriter(WRITE_DELAY, () => this.persist());
+
+  ngOnDestroy(): void {
+    this.writer.dispose();
   }
 
   /** Läser in loggen. Anropas en gång vid uppstart, se `app.config.ts`. */
@@ -173,8 +168,7 @@ export class ObservationLog {
     if (this.observations.length > MAX_OBSERVATIONS) {
       this.observations.splice(0, this.observations.length - MAX_OBSERVATIONS);
     }
-    this.dirty = true;
-    this.writeTimer ??= setTimeout(() => this.flush(), WRITE_DELAY);
+    this.writer.schedule();
   }
 
   /** Äldst först. */
@@ -183,18 +177,17 @@ export class ObservationLog {
   }
 
   flush(): void {
-    clearTimeout(this.writeTimer);
-    this.writeTimer = undefined;
-    if (!this.dirty) {
-      return;
-    }
-    this.dirty = false;
+    this.writer.flush();
+  }
 
-    // Nekad skrivning är nästan alltid full kvot, och med ett tak på 2000 är
-    // det ett rimligt utfall och inte ett undantag. Att bara svälja felet vore
-    // att låta loggen sluta sparas utan att säga något — den halveras hellre
-    // och sparar de nyaste, eftersom en kortare logg är en mätning och ingen
-    // logg alls inte är det.
+  /**
+   * Nekad skrivning är nästan alltid full kvot, och med ett tak på 2000 är det
+   * ett rimligt utfall och inte ett undantag. Att bara svälja felet vore att
+   * låta loggen sluta sparas utan att säga något — den halveras hellre och
+   * sparar de nyaste, eftersom en kortare logg är en mätning och ingen logg
+   * alls inte är det.
+   */
+  private persist(): void {
     while (this.storageLimit > 0) {
       if (this.write(this.observations.slice(-this.storageLimit))) {
         return;
@@ -202,21 +195,15 @@ export class ObservationLog {
       const halved = Math.floor(this.storageLimit / 2);
       this.storageLimit = halved >= MIN_STORAGE_LIMIT ? halved : 0;
     }
-    // Loggen får leva kvar i minnet under sessionen. Se progress-store.ts.
+    // Loggen får leva kvar i minnet under sessionen. Se local-store.ts.
   }
 
   clear(): void {
-    clearTimeout(this.writeTimer);
-    this.writeTimer = undefined;
-    this.dirty = false;
+    this.writer.cancel();
     this.observations = [];
     // Kvoten kan mycket väl ha frigjorts av just den här rensningen.
     this.storageLimit = MAX_OBSERVATIONS;
-    try {
-      localStorage.removeItem(OBSERVATIONS_KEY);
-    } catch {
-      // Se flush().
-    }
+    remove(OBSERVATIONS_KEY);
   }
 
   private write(observations: Observation[]): boolean {
@@ -224,45 +211,25 @@ export class ObservationLog {
       schemaVersion: OBSERVATIONS_SCHEMA_VERSION,
       observations,
     };
-    try {
-      localStorage.setItem(OBSERVATIONS_KEY, JSON.stringify(document));
-      return true;
-    } catch {
-      return false;
-    }
+    return writeJson(OBSERVATIONS_KEY, document);
   }
 
   private read(): Observation[] {
-    let raw: string | null;
-    try {
-      raw = localStorage.getItem(OBSERVATIONS_KEY);
-    } catch {
+    const parsed = readJson(OBSERVATIONS_KEY);
+    if (typeof parsed !== 'object' || parsed === null) {
       return [];
     }
-    if (raw === null) {
+    const observations = (parsed as { observations?: unknown }).observations;
+    if (!Array.isArray(observations)) {
       return [];
     }
-    try {
-      const parsed: unknown = JSON.parse(raw);
-      if (typeof parsed !== 'object' || parsed === null) {
-        return [];
-      }
-      const observations = (parsed as { observations?: unknown }).observations;
-      if (!Array.isArray(observations)) {
-        return [];
-      }
-      // Loggen är felsökningsdata. Att en post ser konstig ut är inte värt att
-      // krascha uppstarten för, men den ska inte heller tas för en händelse.
-      return observations
-        .filter((item): item is Observation => isObservation(item))
-        .slice(-MAX_OBSERVATIONS);
-    } catch {
-      return [];
-    }
+    // Loggen är felsökningsdata. Att en post ser konstig ut är inte värt att
+    // krascha uppstarten för, men den ska inte heller tas för en händelse.
+    return observations.filter(isObservation).slice(-MAX_OBSERVATIONS);
   }
 }
 
-function isObservation(value: unknown): boolean {
+function isObservation(value: unknown): value is Observation {
   if (typeof value !== 'object' || value === null) {
     return false;
   }

@@ -19,7 +19,8 @@
  */
 import { FACTS } from '../facts/fact-catalog';
 import { Observation } from '../services/observation-log';
-import { ProgressDocument, progressKeyFor } from '../services/progress-store';
+import { ProgressDocument } from '../services/progress-store';
+import { median } from '../shared/statistics';
 
 /**
  * Hur många par som minst måste stå kvar på brädet för att ett löst par ska
@@ -341,25 +342,11 @@ function pearson(xs: readonly number[], ys: readonly number[]): number | null {
   return covariance / Math.sqrt(varianceX * varianceY);
 }
 
-export function median(values: readonly number[]): number | null {
-  if (values.length === 0) {
-    return null;
-  }
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? (sorted[middle - 1] + sorted[middle]) / 2
-    : sorted[middle];
-}
-
 /** Nyckeln som text, för rapporten: `mul:7x8` → `7 × 8`. */
 export function readableKey(key: string): string {
   const match = /^mul:(\d+)x(\d+)$/.exec(key);
   return match ? `${match[1]} × ${match[2]}` : key;
 }
-
-/** Alla tal spelet känner till, som nycklar. För täckningsraden. */
-export const ALL_KEYS: readonly string[] = FACTS.map((f) => progressKeyFor(f.a, f.b));
 
 /** Rapporten som text. Läses av en människa, inte av spelet. */
 export function formatReport(report: ObservationReport): string {

@@ -3,6 +3,7 @@ import { HeatmapComponent } from '../heatmap/heatmap.component';
 import { ObservationLog } from '../services/observation-log';
 import { ProgressExportService } from '../services/progress-export';
 import { timeColor } from '../services/time-color';
+import { shuffle } from '../shared/random';
 import { AutoDifficultyState, initialAutoDifficulty } from '../training/auto-difficulty';
 import { TrainingEngine } from '../training/training-engine';
 import {
@@ -15,7 +16,9 @@ import {
   Pair,
 } from './levels';
 
-type Screen = 'menu' | 'calibration' | 'game' | 'result' | 'heatmap';
+/** Skärmarna inom Mästaren. Att slå ihop den med Sveps vore frestande men
+ *  skulle ge en typ som tillåter 'calibration' där. */
+type MasterScreen = 'menu' | 'calibration' | 'game' | 'result' | 'heatmap';
 
 interface Answer {
   a: number;
@@ -57,7 +60,7 @@ export class MasterViewComponent implements OnDestroy {
   readonly calibrationQuestions = CALIBRATION_QUESTIONS;
   readonly penaltyTime = PENALTY_TIME;
 
-  screen: Screen = 'menu';
+  screen: MasterScreen = 'menu';
   selectedLevel: Level = 'auto';
   selectedQuestionCount = 10;
 
@@ -98,8 +101,9 @@ export class MasterViewComponent implements OnDestroy {
   private calibrationHandle?: ReturnType<typeof setTimeout>;
   private calibrationTimes: number[] = [];
   /** Auto-lägets läge i skalan, och räknarna som flyttar det. Ett värde i
-   *  stället för tre fält — se `training/auto-difficulty.ts`. */
-  private auto: AutoDifficultyState = initialAutoDifficulty('easy');
+   *  stället för tre fält — se `training/auto-difficulty.ts`. Mallen läser
+   *  räckan härifrån; `streakVisible` äger tröskeln för när den syns. */
+  protected auto: AutoDifficultyState = initialAutoDifficulty('easy');
   private gameAborted = false;
 
   ngOnDestroy(): void {
@@ -128,10 +132,6 @@ export class MasterViewComponent implements OnDestroy {
 
   get streakVisible(): boolean {
     return this.auto.consecutiveFast >= STREAK_VISIBLE_FROM;
-  }
-
-  get consecutiveFastDisplay(): number {
-    return this.auto.consecutiveFast;
   }
 
   get calibratedTimeDisplay(): string {
@@ -434,7 +434,7 @@ export class MasterViewComponent implements OnDestroy {
       // den första kan bestämmas på förhand. Den dras jämnt ur gruppen och
       // inte efter träningsvärde — ronden ska inte öppna med det svåraste
       // spelaren har.
-      return [this.shuffle(DIFFICULTY[this.auto.difficulty])[0]];
+      return [shuffle(DIFFICULTY[this.auto.difficulty])[0]];
     }
 
     this.auto = initialAutoDifficulty('medium');
@@ -453,7 +453,7 @@ export class MasterViewComponent implements OnDestroy {
     // fylls då på med en ny blandning i stället för att ta slut i förtid.
     const round: Pair[] = [];
     while (round.length < this.selectedQuestionCount) {
-      round.push(...this.shuffle(pool));
+      round.push(...shuffle(pool));
     }
     return round.slice(0, this.selectedQuestionCount);
   }
@@ -473,16 +473,6 @@ export class MasterViewComponent implements OnDestroy {
       correct: last.correct,
       timeSec: last.timeMs / 1000,
     });
-  }
-
-  /** Fisher-Yates på en kopia, så anroparens lista lämnas orörd. */
-  private shuffle<T>(items: readonly T[]): T[] {
-    const out = [...items];
-    for (let i = out.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [out[i], out[j]] = [out[j], out[i]];
-    }
-    return out;
   }
 
   /** Grönt upp till den kalibrerade tiden, sedan gult mot rött. Färgar

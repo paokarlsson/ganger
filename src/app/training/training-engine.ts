@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, OnDestroy } from '@angular/core';
 import { FACTS, Fact } from '../facts/fact-catalog';
 import { FactPerformance, needWeight } from '../facts/fact-selector';
 import {
@@ -6,18 +6,22 @@ import {
   DIFFICULTY,
   Difficulty,
   Pair,
-  SLOW_TIME_MULTIPLIER,
+  TYPED_SLOW_MULTIPLIER,
 } from '../master-view/levels';
 import {
   FAST_FACTOR,
   GeneratedStatement,
-  SLOW_TIME_MULTIPLIER as SWIPE_SLOW_MULTIPLIER,
+  SWIPE_SLOW_MULTIPLIER,
   baselineSample,
   isFastAnswer,
   nextLevel,
   startLevel,
 } from '../swipe-view/swipe-difficulty';
+import { clamp } from '../shared/numbers';
+import { shuffle } from '../shared/random';
+import { mean, median } from '../shared/statistics';
 import { AnswerPace, AutoDifficultyState, nextAutoDifficulty } from './auto-difficulty';
+import { DebouncedWriter } from '../services/debounced-writer';
 import {
   ChannelStat,
   LocalStorageProgressRepository,
@@ -29,8 +33,6 @@ import {
   hasContent,
   progressKeyFor,
 } from '../services/progress-store';
-
-export type { ChannelStat } from '../services/progress-store';
 
 /** Skrivet svar eller svep. Tiderna är inte jämförbara mellan de två. */
 export type Channel = 'typed' | 'swipe';
@@ -99,7 +101,7 @@ export const DEFAULT_SWIPE_BASELINE = 1.5;
  * Motorn är det som kopplar ihop dem med vad spelaren faktiskt gjort.
  */
 @Injectable({ providedIn: 'root' })
-export class TrainingEngine {
+export class TrainingEngine implements OnDestroy {
   /**
    * Sömmen mot lagringen. Byts den mot en implementation som talar med en
    * backend behöver ingenting annat i appen ändras.
@@ -107,20 +109,18 @@ export class TrainingEngine {
   private repository: ProgressRepository = new LocalStorageProgressRepository();
 
   private progress: ProgressDocument = emptyDocument();
-  private writeTimer?: ReturnType<typeof setTimeout>;
-  private dirty = false;
 
-  constructor() {
-    // Ett besvarat kort får inte gå förlorat för att fliken läggs undan innan
-    // nästa skrivning hunnit.
-    if (typeof addEventListener === 'function') {
-      addEventListener('pagehide', () => this.flush());
-      addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') {
-          this.flush();
-        }
-      });
-    }
+  /** Ett besvarat kort får inte gå förlorat för att fliken läggs undan innan
+   *  nästa skrivning hunnit — det sköter skrivaren. */
+  private readonly writer = new DebouncedWriter(STATS_WRITE_DELAY, () => {
+    // En lagring som säger nej får inte stoppa ronden: dokumentet lever kvar i
+    // minnet sessionen ut. Samma hållning som `local-store.ts` har mot en full
+    // kvot, fast här mot en lagring som kastar.
+    void this.repository.save(this.progress).catch(() => undefined);
+  });
+
+  ngOnDestroy(): void {
+    this.writer.dispose();
   }
 
   /**
@@ -131,20 +131,17 @@ export class TrainingEngine {
     this.progress = await this.repository.load();
   }
 
-  /** Pekar om lagringen. Finns för testerna och för den dag lagret byts ut. */
+  /** Pekar om lagringen. Testerna kör mot en lagring i minnet, se
+   *  `testing/progress-repository.ts`; den dag lagret byts ut mot en backend är
+   *  det här bytet sker. */
   useRepository(repository: ProgressRepository): void {
     this.repository = repository;
   }
 
-  /** Skriver ned det som väntar. Anropas när en rond tar slut och när sidan
-   *  läggs undan; däremellan sköter fördröjningen det. */
+  /** Skriver ned det som väntar. Anropas när en rond tar slut; däremellan
+   *  sköter fördröjningen och sidbyteslyssnarna det. */
   flush(): void {
-    clearTimeout(this.writeTimer);
-    this.writeTimer = undefined;
-    if (this.dirty) {
-      this.dirty = false;
-      void this.repository.save(this.progress);
-    }
+    this.writer.flush();
   }
 
   /** Antalet tal spelet känner till — det `masteredCount()` räknar mot. */
@@ -163,7 +160,7 @@ export class TrainingEngine {
   }
 
   get slowSeconds(): number {
-    return this.fastSeconds * SLOW_TIME_MULTIPLIER;
+    return this.fastSeconds * TYPED_SLOW_MULTIPLIER;
   }
 
   /** Median av mätningarna plus 20 % marginal, klippt till ett rimligt spann.
@@ -172,13 +169,15 @@ export class TrainingEngine {
    *  mäta spelarens toppfart och att mäta en fart hen kan hålla. Se
    *  docs/plan.md. */
   calibrate(timesMs: number[]): void {
-    const sorted = [...timesMs].sort((a, b) => a - b);
-    const median = sorted[Math.floor(sorted.length / 2)] / 1000;
-    const withMargin = Math.round(median * 1.2 * 10) / 10;
-    this.progress.typedCalibration = Math.max(
-      MIN_CALIBRATED_TIME,
-      Math.min(withMargin, MAX_CALIBRATED_TIME),
-    );
+    const middle = median(timesMs);
+    if (middle === null) {
+      // Ingen mätning att gå på. Grundtiden är vad den som hoppar över
+      // kalibreringen får, och det är rätt svar även här.
+      this.useDefaultCalibration();
+      return;
+    }
+    const withMargin = Math.round((middle / 1000) * 1.2 * 10) / 10;
+    this.progress.typedCalibration = clamp(withMargin, MIN_CALIBRATED_TIME, MAX_CALIBRATED_TIME);
     this.scheduleWrite();
     this.flush();
   }
@@ -269,10 +268,8 @@ export class TrainingEngine {
 
   /** Snittid i sekunder, eller `null` för ett tal som aldrig övats. */
   averageSeconds(stat: ChannelStat | undefined): number | null {
-    if (!stat || stat.times.length === 0) {
-      return null;
-    }
-    return stat.times.reduce((sum, t) => sum + t, 0) / stat.times.length / 1000;
+    const average = stat ? mean(stat.times) : null;
+    return average === null ? null : average / 1000;
   }
 
   /**
@@ -335,7 +332,7 @@ export class TrainingEngine {
       return undefined;
     }
     return {
-      averageSeconds: source.times.reduce((sum, t) => sum + t, 0) / source.times.length / 1000,
+      averageSeconds: this.averageSeconds(source),
       accuracy: source.total > 0 ? source.correct / source.total : null,
     };
   }
@@ -349,12 +346,11 @@ export class TrainingEngine {
    * med nivån, och då jagar tröskeln sin egen svans.
    */
   get swipeBaselineSeconds(): number {
-    if (!this.hasSwipeBaseline) {
+    const middle = this.hasSwipeBaseline ? median(this.progress.swipeBaseline) : null;
+    if (middle === null) {
       return DEFAULT_SWIPE_BASELINE;
     }
-    const sorted = [...this.progress.swipeBaseline].sort((a, b) => a - b);
-    const median = sorted[Math.floor(sorted.length / 2)];
-    return Math.max(MIN_SWIPE_BASELINE, Math.min(median, MAX_SWIPE_BASELINE));
+    return clamp(middle, MIN_SWIPE_BASELINE, MAX_SWIPE_BASELINE);
   }
 
   /** Om sveptakten vilar på tillräckligt många mätningar för att tro på. */
@@ -400,9 +396,7 @@ export class TrainingEngine {
   }
 
   async reset(): Promise<void> {
-    clearTimeout(this.writeTimer);
-    this.writeTimer = undefined;
-    this.dirty = false;
+    this.writer.cancel();
     this.progress = emptyDocument();
     await this.repository.clear();
   }
@@ -474,12 +468,16 @@ export class TrainingEngine {
    * så att ordningen inte blir förutsägbar, och aldrig samma tal två gånger i
    * rad.
    */
-  nextAutoQuestion(difficulty: Difficulty, previous: Pair | undefined): Pair {
+  nextAutoQuestion(
+    difficulty: Difficulty,
+    previous: Pair | undefined,
+    rng: () => number = Math.random,
+  ): Pair {
     const pool = this.questionsForDifficulty(difficulty);
     const filtered = previous
       ? pool.filter((q) => !(q[0] === previous[0] && q[1] === previous[1]))
       : pool;
-    const candidates = shuffle(filtered.slice(0, AUTO_CANDIDATES));
+    const candidates = shuffle(filtered.slice(0, AUTO_CANDIDATES), rng);
     return candidates[0] ?? filtered[0] ?? pool[0];
   }
 
@@ -531,17 +529,6 @@ export class TrainingEngine {
   }
 
   private scheduleWrite(): void {
-    this.dirty = true;
-    this.writeTimer ??= setTimeout(() => this.flush(), STATS_WRITE_DELAY);
+    this.writer.schedule();
   }
-}
-
-/** Fisher-Yates på en kopia, så anroparens lista lämnas orörd. */
-function shuffle<T>(items: readonly T[]): T[] {
-  const out = [...items];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
 }

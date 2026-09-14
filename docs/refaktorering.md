@@ -8,8 +8,9 @@ bör göras och varför* — det ändrar ingen kod självt.
 på vägen dit. En post som utförs stryks härifrån; en som visar sig vara fel
 stryks också, med en rad om varför.
 
-Storleken just nu: **10 230 rader** över 57 filer i `src/`, varav 864 rader
-(8 %) är den temporära temaväljaren och 2 000 rader är tester.
+Storleken just nu: **10 523 rader** över 60 `.ts`-, `.html`- och `.scss`-filer
+i `src/`, varav 864 rader (8 %) är den temporära temaväljaren och 2 808 rader
+är tester.
 
 ---
 
@@ -31,225 +32,21 @@ att *använda* dem, inte att riva dem.
 
 ## 1. Dubblering
 
-### 1.1 `shuffle()` finns i tre exemplar
+Utförd. Kvar av den ligger i `shared/` (shuffle, clamp, median och snitt),
+`services/local-store.ts`, `services/debounced-writer.ts` och
+`testing/engine.ts`.
 
-| Fil | Rad |
-| --- | --- |
-| `src/app/training/training-engine.ts` | 540 |
-| `src/app/master-view/master-view.component.ts` | 479 |
-| `src/app/match-view/match-view.component.ts` | 242 |
-
-Identisk Fisher-Yates, två av dem med identisk kommentar («Fisher-Yates på en
-kopia, så anroparens lista lämnas orörd»).
-
-**Åtgärd:** en `shuffle<T>(items, rng = Math.random)` i en ny modul
-`src/app/shared/random.ts`. Ta `rng` som parameter medan du ändå är där — resten
-av pedagogiken (`selectFact`, `pickDistractor`, `nextStatement`) gör redan det,
-och det är vad som gör dem testbara. `nextAutoQuestion()` i motorn är i dag den
-enda urvalsfunktionen som inte går att köra deterministiskt.
-
-### 1.2 localStorage-hanteringen finns i tre exemplar
-
-`LocalStorageProgressRepository.read/readRaw` (progress-store.ts:189, 197),
-`ObservationLog.read/write` (observation-log.ts:222, 235) och
-`ProgressExportService.read` (progress-export.ts:72) gör alla samma sak: läs
-nyckel, svälj undantaget, `JSON.parse`, svälj undantaget igen. Fyra tomma
-`catch`-block bär kommentaren `// Se save().` eller `// Se flush().`, vilket är
-själva kvittot på att koden borde ligga på ett ställe.
-
-**Åtgärd:** `src/app/services/local-store.ts` med
-`readJson(key): unknown`, `writeJson(key, value): boolean` och `remove(key)`.
-Ett ställe som får ha de tomma catch-blocken, och en enda kommentar som
-förklarar varför de finns (privat läge, avstängd sajtdata).
-
-Notera att `ObservationLog.flush()` behöver `writeJson`s `boolean` — den
-trappar ned `storageLimit` på nekad skrivning, och den logiken ska stanna där
-den är.
-
-### 1.3 Fördröjd skrivning + flush-vid-sidbyte finns i två exemplar
-
-`TrainingEngine` (rad 110–125, 141–150, 534–536) och `ObservationLog`
-(rad 146–165, 176–178, 185–218) har samma tre fält (`writeTimer`, `dirty`,
-konstant fördröjning), samma konstruktor med `pagehide` +
-`visibilitychange`, och samma `flush()`-form. Bara fördröjningen skiljer
-(1 000 ms mot 5 000 ms) och den skillnaden är motiverad i båda filerna.
-
-**Åtgärd:** en liten `DebouncedWriter` som tar `delayMs` och en
-`write: () => void`, och som själv kopplar upp sidbytes-lyssnarna.
-
-**Bieffekt värd att fixa i samma veva:** lyssnarna registreras i
-konstruktorn och tas aldrig bort. `training-engine.spec.ts` bygger en ny
-`TrainingEngine` per test (`restarted()`), så testkörningen läcker ett
-lyssnarpar per motor, vart och ett med en referens till motorn och dess
-dokument. `DebouncedWriter` bör ha en `dispose()`.
-
-### 1.4 Samma lista över alla nycklar, definierad två gånger
-
-```ts
-// progress-store.ts:398
-export const ALL_PROGRESS_KEYS = FACTS.map((fact) => progressKeyFor(fact.a, fact.b));
-// observation-analysis.ts:362
-export const ALL_KEYS = FACTS.map((f) => progressKeyFor(f.a, f.b));
-```
-
-`ALL_KEYS` har dessutom ingen läsare alls — varken i appen eller i något test.
-
-**Åtgärd:** ta bort `ALL_KEYS`. Låt `observation-analysis.ts` importera
-`ALL_PROGRESS_KEYS` om den någon gång behöver den.
-
-### 1.5 Median och medelvärde räknas ut inline
-
-`median()` finns på riktigt i `observation-analysis.ts:345`. Men
-`TrainingEngine.calibrate()` (rad 175) och `TrainingEngine.swipeBaselineSeconds`
-(rad 355) sorterar och plockar mitten var för sig — och med en annan konvention:
-de tar alltid det undre mitten-värdet, medan `observation-analysis` medelvärdar
-de två mittersta vid jämnt antal.
-
-Samma sak med snittet: `averageSeconds()` (rad 275) och `performanceFor()`
-(rad 338) räknar ut exakt samma uttryck med olika källa.
-
-**Åtgärd:** flytta `median()` till `src/app/shared/statistics.ts`, låt alla tre
-använda den, och **avgör medvetet** vilken konvention som gäller. Skillnaden är
-liten men den är i dag oavsiktlig, och `swipeBaseline` har ett fönster på 8 —
-alltid jämnt när det är fullt.
-
-### 1.6 Två konstanter som heter `SLOW_TIME_MULTIPLIER`
-
-`master-view/levels.ts` har 4, `swipe-view/swipe-difficulty.ts` har 1,5.
-`training-engine.ts` importerar båda och måste döpa om den ena vid importen:
-
-```ts
-import { SLOW_TIME_MULTIPLIER as SWIPE_SLOW_MULTIPLIER } from '../swipe-view/swipe-difficulty';
-```
-
-Att en import måste byta namn för att undvika en krock är signalen.
-
-**Åtgärd:** `TYPED_SLOW_MULTIPLIER` respektive `SWIPE_SLOW_MULTIPLIER` vid
-källan. Båda filerna motiverar redan sina värden mot varandra i kommentar; namnen
-bör göra samma sak.
-
-### 1.7 `clamp` i fyra former
-
-`SwipeViewComponent.clamp()` (privat), `clampLevel()` i swipe-difficulty, och
-handskrivna `Math.max(min, Math.min(v, max))` i `TrainingEngine.calibrate()`,
-`swipeBaselineSeconds` och `focusRank()`.
-
-**Åtgärd:** en `clamp(value, min, max)` i `shared/`. `clampLevel` får bli ett
-anrop till den.
-
-### 1.8 Tre `Screen`-typer med samma namn
-
-`app.component.ts` (`'menu' | 'match' | 'swipe' | 'master'`),
-`master-view.component.ts` (`'menu' | 'calibration' | 'game' | 'result' | 'heatmap'`)
-och `swipe-view.component.ts` (`'menu' | 'game' | 'result' | 'heatmap'`).
-
-Tre olika saker med ett namn. Den första är vilket *spel* som visas, de andra
-två vilken *skärm inom spelet*.
-
-**Åtgärd:** döp om till `Game` (app) respektive `MasterScreen` / `SwipeScreen`.
-Att slå ihop de två sista är frestande men ger en typ som tillåter
-`'calibration'` i Svep — gör det inte.
-
-### 1.9 Dubblerade stilar
-
-* `:host { font-family; background: var(--surface); color: var(--text-primary) }`
-  står ordagrant i master-, swipe- och match-viewens SCSS.
-* `.container`, `.start-btn` / `.heat-btn` / `.heatmap-btn`, `.result-card` och
-  `.menu-card` finns i både `master-view.component.scss` och
-  `swipe-view.component.scss` med snarlikt innehåll.
-
-**Åtgärd:** lägg spelytans grund som en regel i `src/styles/_base.scss`
-(`app-master-view, app-swipe-view, app-match-view { … }`) eller som en
-`%game-surface`-placeholder. Lyft `.result-card`-mönstret till `_ui.scss` som
-en variant av `.ui-card` — det är precis vad `_ui.scss` finns för, och
-filhuvudena i båda komponenterna säger redan att «kort och knappar kommer från
-stilmallen».
-
-### 1.10 Testhjälpare som bygger en hydrerad motor
-
-`training-engine.spec.ts` har `engineWith()` och `restarted()`,
-`heatmap-grid.spec.ts` har `engine()`. Alla tre gör `localStorage.clear()` →
-`new TrainingEngine()` → `await hydrate()`.
-
-**Åtgärd:** `src/app/testing/engine.ts`. Se även 2.1 — hjälparna borde gå via
-`useRepository()` i stället för via riktig `localStorage`.
-
-### 1.11 `playWrong()` och `playSuccess()`
-
-`match-view.component.ts` — identiska kroppar så när som på vilket
-ljudelement som rörs.
-
-**Åtgärd:** `private playEffect(audio: HTMLAudioElement)`. Se även 4.3.
+Numreringen nedan står kvar som den var — hänvisningarna i planen och i
+koden pekar på de numren.
 
 ---
 
 ## 2. Död och överflödig kod
 
-### 2.1 `TrainingEngine.useRepository()` (rad 135)
-
-```ts
-/** Pekar om lagringen. Finns för testerna och för den dag lagret byts ut. */
-```
-
-Den anropas inte av något test och inte av appen. Testerna skriver i stället
-rå JSON till `localStorage` och läser tillbaka den — vilket gör dem beroende
-av lagringsformatet i tester som handlar om pedagogik.
-
-**Åtgärd:** använd sömmen. En `InMemoryProgressRepository` i `testing/` gör
-`training-engine.spec.ts` och `heatmap-grid.spec.ts` oberoende av jsdom:s
-`localStorage`, och är förresten det enda sättet att i dag pröva att motorn
-klarar en lagring som kastar. Om beslutet blir att inte använda den: ta bort
-metoden och kommentaren som lovar något annat.
-
-### 2.2 Exporter utan konsument
-
-Varken appen eller något test läser dem:
-
-| Symbol | Fil |
-| --- | --- |
-| `ALL_KEYS` | `training/observation-analysis.ts` |
-| `TABLE_PRODUCTS` | `facts/fact-catalog.ts` |
-| `focusRank`, `windowWeight`, `SelectionContext` | `facts/fact-selector.ts` |
-| `clampLevel`, `LEVEL_UP_STEP`, `LEVEL_DOWN_STEP` | `swipe-view/swipe-difficulty.ts` |
-| `NEAR_NUMBER_WEIGHT`, `PLAUSIBLE_WEIGHT` | `facts/distractors.ts` |
-| `emptyChannel` | `services/progress-store.ts` |
-| `ObservationSource` | `services/observation-log.ts` |
-
-**Åtgärd:** var och en är antingen (a) intern och ska tappa sitt `export`,
-eller (b) värd ett eget test. `focusRank` och `windowWeight` hör till (b) — de
-är de två funktioner som avgör vilka tal en nivå släpper fram, och de saknar
-direkt täckning. `TABLE_PRODUCTS` hör till (a): `isTableProduct()` är det
-avsedda gränssnittet.
-
-Medan du är i `fact-catalog.ts`: `TABLE_PRODUCTS` byggs med
-`FACTS.flatMap((fact) => [fact.answer])` där `map` räcker.
-
-### 2.3 Genomgångsexporter och genomgångsgetters
-
-* `swipe-difficulty.ts:12` re-exporterar `LEVEL_MAX` och `LEVEL_MIN` från
-  `fact-selector.ts`. `swipe-view.component.ts` importerar dem den vägen och
-  ser därför inte var de bor.
-* `training-engine.ts:33` re-exporterar `ChannelStat` från `progress-store.ts`,
-  och `heatmap-grid.ts` importerar typen *genom motorn*. Pilen pekar fel:
-  rutnätet beror på `HeatSource`, inte på `TrainingEngine`.
-* `MasterViewComponent.consecutiveFastDisplay` (rad 133) returnerar
-  `this.auto.consecutiveFast` och står direkt bredvid `streakVisible` som
-  läser samma fält. Mallen kan läsa en av dem.
-* `SwipeViewComponent.start()` och `restart()` har identiska kroppar.
-  Behåll båda namnen om mallen vinner på det, men låt den ena anropa den andra.
-* `MatchViewComponent.resetLeftAndRight()` är publik men anropas bara inifrån.
-
-### 2.4 `isObservation` (observation-log.ts:265)
-
-Deklarerad som `(value: unknown): boolean` och sedan tvingad till ett
-typpredikat vid anropsplatsen:
-
-```ts
-.filter((item): item is Observation => isObservation(item))
-```
-
-**Åtgärd:** `function isObservation(value: unknown): value is Observation`.
-Då blir `.filter(isObservation)` nog.
+Utförd. Sömmen mot lagringen används nu av testerna, som får sin lagring ur
+`testing/progress-repository.ts` i stället för ur `localStorage`; de exporter
+ingen läste är interna, genomgångarna borta och `focusRank`/`windowWeight`
+täckta av egna tester.
 
 ---
 
@@ -493,7 +290,6 @@ Utspridda, men värda att ta när man ändå är i filen:
   `MIN_MASTERY_SAMPLES`, vars egen deklaration (rad 66) säger samma sak.
 * `master-view.component.ts` / `swipe-view.component.ts` — sektionsbannerna,
   se 4.1.
-* De fyra `// Se save().` / `// Se flush().` — försvinner med 1.2.
 
 ---
 
@@ -526,6 +322,11 @@ ESLint, och CI kör bara `npm test`.
 Punkt 1–2 bör tas **först av allt i den här planen**: varje annan ändring nedan
 blir annars en blandning av innehåll och formatering i samma diff.
 
+Avsnitt 1 gick före ändå. Filerna det lade till (`shared/`,
+`services/local-store.ts`, `services/debounced-writer.ts`, `testing/engine.ts`)
+är skrivna med två stegs indrag och enkla citattecken, alltså som resten av
+`.ts`-koden, så formateringscommiten bör inte röra dem.
+
 ### 6.2 README har svällt
 
 22 570 tecken, och beskriver numera både vad spelet är, hur lagren hänger ihop,
@@ -545,18 +346,17 @@ tillstånd där nästa steg blir mindre.
 | # | Steg | Storlek | Beroende |
 | --- | --- | --- | --- |
 | 1 | Prettier + ESLint + formateringscommit (6.1) | halvdag | — |
-| 2 | Död kod och genomgångsexporter (2.1–2.4) | liten | 1 |
-| 3 | `shared/`: shuffle, clamp, median, statistik (1.1, 1.5, 1.7) | liten | 1 |
-| 4 | `local-store.ts` + `DebouncedWriter` (1.2, 1.3) | medel | 3 |
 | 5 | Namnbyten (3.1–3.6) | medel | 1 |
 | 6 | Kommentarskonsolidering (5.1–5.4) + språkval (3.7) | medel | 5 |
 | 7 | `GameAudio` + match-viewens konstruktor (4.3) | medel | 5 |
-| 8 | Resultat- och frågebygge ut ur `MasterViewComponent` (4.1) | stor | 3 |
-| 9 | SCSS-konsolidering (1.9) | medel | 1 |
+| 8 | Resultat- och frågebygge ut ur `MasterViewComponent` (4.1) | stor | — |
 | 10 | `npm run report` (4.4) | liten | — |
 | 11 | Signaler (4.5) | stor, eget arbete | 8 |
 
-Steg 1 och 2 är rena vinster utan risk. Steg 11 är den enda posten som ändrar
+Steg 2, 3, 4 och 9 är utförda — steg 2 var avsnitt 2, de andra tre avsnitt 1.
+Numren står kvar tomma så att de kvarvarandes beroenden fortsätter peka rätt.
+
+Steg 1 är en ren vinst utan risk. Steg 11 är den enda posten som ändrar
 hur appen fungerar under ytan och bör ha egna tester före och efter.
 
 Temaväljaren (4.6) ligger utanför ordningen — den väntar på ett beslut, inte på

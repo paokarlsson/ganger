@@ -8,8 +8,7 @@
 import { DistractorKind, distractorPoolSize, pickDistractor } from '../facts/distractors';
 import { FACTS, Fact, factKey } from '../facts/fact-catalog';
 import { FactNeed, LEVEL_MAX, LEVEL_MIN, RECENT_MEMORY, selectFact } from '../facts/fact-selector';
-
-export { LEVEL_MAX, LEVEL_MIN } from '../facts/fact-selector';
+import { clamp } from '../shared/numbers';
 
 /** Ett genererat påstående, redo att visas på kortet. */
 export interface GeneratedStatement {
@@ -60,7 +59,7 @@ export const FAST_FACTOR = 1.3;
  * återstår bara felsvaren som nedåtkraft, och då hamnar jämvikten vid en
  * tredjedel fel — på ett svep där ren gissning ger hälften rätt.
  */
-export const SLOW_TIME_MULTIPLIER = 1.5;
+export const SWIPE_SLOW_MULTIPLIER = 1.5;
 
 /**
  * Att förkasta ett falskt påstående kräver att man räknar ut produkten och
@@ -126,8 +125,8 @@ export function nextStreak(streak: number, correct: boolean, fast: boolean): num
  *  som ska hitta spelarens nivå fort. Tanken är att uppsteget ska bero på
  *  räckan och falla tillbaka hit när fönstret är slut. Se docs/plan.md,
  *  öppen fråga 6. */
-export const LEVEL_UP_STEP = 1;
-export const LEVEL_DOWN_STEP = 2;
+const LEVEL_UP_STEP = 1;
+const LEVEL_DOWN_STEP = 2;
 
 /** Startnivå för en spelare vi inte vet något om.
  *
@@ -268,7 +267,7 @@ export function nextLevel(
   if (isFastAnswer(isTrueCard, correct, timeSec, baselineSeconds)) {
     return clampLevel(level + LEVEL_UP_STEP);
   }
-  if (!correct || timeSec > fastSeconds(baselineSeconds, isTrueCard) * SLOW_TIME_MULTIPLIER) {
+  if (!correct || timeSec > fastSeconds(baselineSeconds, isTrueCard) * SWIPE_SLOW_MULTIPLIER) {
     return clampLevel(level - LEVEL_DOWN_STEP);
   }
   return level;
@@ -293,6 +292,6 @@ export function startLevel(
   return clampLevel(Math.round(LEVEL_MIN + share * (LEVEL_MAX - LEVEL_MIN)));
 }
 
-export function clampLevel(level: number): number {
-  return Math.min(LEVEL_MAX, Math.max(LEVEL_MIN, level));
+function clampLevel(level: number): number {
+  return clamp(level, LEVEL_MIN, LEVEL_MAX);
 }

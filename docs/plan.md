@@ -325,7 +325,7 @@ koden. Det här är listan steg 4 ska beta av.
 | `RECENT_MEMORY` | `facts/fact-selector.ts` | Hur länge ett tal hålls borta efter att ha varit uppe |
 | `needWeight`-trappan | `facts/fact-selector.ts` | 0,15 för behärskat, taket 3, gränsen 0,9 rätt |
 | `DEFAULT_FAST_TIME` | `master-view/levels.ts` | Snabbtröskeln innan spelaren kalibrerats |
-| `SLOW_TIME_MULTIPLIER` | `master-view/levels.ts` | Var «segt» börjar för skrivna svar |
+| `TYPED_SLOW_MULTIPLIER` | `master-view/levels.ts` | Var «segt» börjar för skrivna svar |
 | `PENALTY_TIME` | `master-view/levels.ts` | Vad ett fel kostar i värmekartans tid |
 | `UPGRADE_THRESHOLD` / `DOWNGRADE_THRESHOLD` | `master-view/levels.ts` | Hur trögt auto-läget rör sig |
 | `AT_HOME_SHARE` | `training/training-engine.ts` | När en grupp räknas som avklarad |
@@ -333,7 +333,7 @@ koden. Det här är listan steg 4 ska beta av.
 | `AUTO_CANDIDATES` | `training/training-engine.ts` | Hur brett auto-läget slumpar |
 | kalibreringens 1,2 | `training/training-engine.ts` | Marginalen ovanpå medianen |
 | `DEFAULT_SWIPE_BASELINE` | `training/training-engine.ts` | Sveptakt innan den mätts |
-| `FAST_FACTOR`, `SLOW_TIME_MULTIPLIER` | `swipe-view/swipe-difficulty.ts` | Svepets två trösklar |
+| `FAST_FACTOR`, `SWIPE_SLOW_MULTIPLIER` | `swipe-view/swipe-difficulty.ts` | Svepets två trösklar |
 | `FALSE_CARD_TIME_FACTOR` | `swipe-view/swipe-difficulty.ts` | Hur mycket längre ett falskt kort får ta |
 | `CALIBRATION_CARDS` | `swipe-view/swipe-difficulty.ts` | Hur lång uppvärmningen är |
 | `DEFAULT_START_LEVEL` | `swipe-view/swipe-difficulty.ts` | Var en okänd spelare börjar |

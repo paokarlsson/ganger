@@ -4,8 +4,10 @@ import {
   LEVEL_MAX,
   LEVEL_MIN,
   RECENT_MEMORY,
+  focusRank,
   needWeight,
   selectFact,
+  windowWeight,
 } from './fact-selector';
 
 /** En deterministisk "slump" så att en körning går att upprepa. */
@@ -26,6 +28,51 @@ function draw(level: number, count: number, seed = 1, need?: (fact: Fact) => num
   }
   return drawn;
 }
+
+describe('focusRank', () => {
+  it('spänner från tabellens lätta ände till hela dess bredd', () => {
+    // Nivå 1 siktar på de allra lättaste talen, nivå 10 på de svåraste.
+    expect(focusRank(LEVEL_MIN)).toBe(4);
+    expect(focusRank(LEVEL_MAX)).toBe(FACTS.length);
+  });
+
+  it('stiger med varje nivå', () => {
+    for (let level = LEVEL_MIN; level < LEVEL_MAX; level++) {
+      expect(focusRank(level + 1), `nivå ${level}`).toBeGreaterThan(focusRank(level));
+    }
+  });
+
+  it('klipper nivåer utanför skalan i stället för att sikta utanför tabellen', () => {
+    expect(focusRank(0)).toBe(focusRank(LEVEL_MIN));
+    expect(focusRank(42)).toBe(focusRank(LEVEL_MAX));
+  });
+});
+
+describe('windowWeight', () => {
+  const level = 5;
+  const focus = focusRank(level);
+
+  it('väger tyngst vid nivåns fokus och lättare med avståndet', () => {
+    expect(windowWeight(focus, level)).toBeGreaterThan(windowWeight(focus + 5, level));
+    expect(windowWeight(focus + 5, level)).toBeGreaterThan(windowWeight(focus + 15, level));
+  });
+
+  it('väger lika åt båda håll från fokus', () => {
+    // Fönstret är en klocka, inte en tröskel: ett för lätt tal är lika nära
+    // som ett lika mycket för svårt.
+    expect(windowWeight(focus - 7, level)).toBeCloseTo(windowWeight(focus + 7, level), 10);
+  });
+
+  it('håller varje tal möjligt på varje nivå', () => {
+    // Golvet är en princip: kommer ett behärskat tal aldrig upp igen märks
+    // det aldrig att det rostat.
+    for (let each = LEVEL_MIN; each <= LEVEL_MAX; each++) {
+      for (const fact of FACTS) {
+        expect(windowWeight(fact.rank, each), `rank ${fact.rank}, nivå ${each}`).toBeGreaterThan(0);
+      }
+    }
+  });
+});
 
 describe('selectFact', () => {
   it('stannar inom tabellen på varje nivå', () => {

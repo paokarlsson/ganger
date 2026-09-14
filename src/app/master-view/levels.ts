@@ -55,11 +55,15 @@ export const CALIBRATION_QUESTIONS: Pair[] = [[1,1],[1,2],[2,1],[1,10],[10,1]];
  *  börjar. Se docs/plan.md. */
 export const DEFAULT_FAST_TIME = 2.0;
 
-/** Långsamt = så här många gånger den snabba tiden.
+/** Långsamt = så här många gånger den snabba tiden, för ett skrivet svar.
+ *
+ *  Namnet bär kanalen, för Svep har en egen (`SWIPE_SLOW_MULTIPLIER`) och de
+ *  två stod förut under samma namn i var sin fil — vilket tvingade den enda
+ *  som använder båda att döpa om den ena vid importen.
  *
  *  ANTAGANDE: satt på känsla, och betydligt vidare än Svepets 1,5 eftersom ett
  *  skrivet svar rymmer både framplockning och skrivande. */
-export const SLOW_TIME_MULTIPLIER = 4;
+export const TYPED_SLOW_MULTIPLIER = 4;
 
 /** Sekunder som läggs på tiden vid fel svar.
  *

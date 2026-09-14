@@ -6,8 +6,9 @@
  * pedagogiken — reglerna i en modul, vyn bara visar dem.
  */
 import { MAX_FACTOR, MIN_FACTOR } from '../facts/fact-catalog';
+import { ChannelStat } from '../services/progress-store';
 import { timeColor } from '../services/time-color';
-import { Channel, ChannelStat } from '../training/training-engine';
+import { Channel } from '../training/training-engine';
 
 export interface HeatCell {
   text: string;

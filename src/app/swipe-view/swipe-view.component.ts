@@ -2,8 +2,10 @@ import { Component, HostListener, OnDestroy, ViewChild, ChangeDetectionStrategy,
 import { MatCardModule } from '@angular/material/card';
 import { CdkDrag, CdkDragEnd, CdkDragMove } from '@angular/cdk/drag-drop';
 import { Fact } from '../facts/fact-catalog';
+import { LEVEL_MAX, LEVEL_MIN } from '../facts/fact-selector';
 import { HeatmapComponent } from '../heatmap/heatmap.component';
 import { PENALTY_TIME } from '../master-view/levels';
+import { clamp } from '../shared/numbers';
 import { TrainingEngine } from '../training/training-engine';
 import {
   CALIBRATION_CARDS,
@@ -13,8 +15,6 @@ import {
   GeneratedStatement,
   HEAT_TIERS,
   HeatTier,
-  LEVEL_MAX,
-  LEVEL_MIN,
   QUESTION_COUNTS,
   RoundMemory,
   createRoundMemory,
@@ -34,7 +34,8 @@ const FLING_SPEED = 0.6;
 /** Hur länge brasan pulsar efter att nivån ändrats. */
 const LEVEL_FLASH_MS = 500;
 
-type Screen = 'menu' | 'game' | 'result' | 'heatmap';
+/** Skärmarna inom Svep. Se `MasterScreen` — Mästaren har en skärm till. */
+type SwipeScreen = 'menu' | 'game' | 'result' | 'heatmap';
 
 interface Feedback {
   correct: boolean;
@@ -57,7 +58,7 @@ export class SwipeViewComponent implements OnDestroy {
   readonly endless = ENDLESS;
   readonly levelMax = LEVEL_MAX;
 
-  screen: Screen = 'menu';
+  screen: SwipeScreen = 'menu';
   selectedQuestionCount = DEFAULT_QUESTION_COUNT;
 
   level = DEFAULT_START_LEVEL;
@@ -190,10 +191,10 @@ export class SwipeViewComponent implements OnDestroy {
     this.restartRound();
   }
 
-  /** "Spela igen" på slutskärmen — samma inställningar, ny rond. */
+  /** "Spela igen" på slutskärmen — samma inställningar, ny rond. Mallen vinner
+   *  på att slutknappen heter något annat än startknappen. */
   restart(): void {
-    this.screen = 'game';
-    this.restartRound();
+    this.start();
   }
 
   backToMenu(): void {
@@ -236,7 +237,7 @@ export class SwipeViewComponent implements OnDestroy {
   dragMoved($event: CdkDragMove): void {
     // Rotationen ska följa hur långt kortet flyttats, inte var på skärmen
     // fingret råkar befinna sig.
-    this.progress = this.clamp($event.distance.x / this.threshold(), -1, 1);
+    this.progress = clamp($event.distance.x / this.threshold(), -1, 1);
 
     this.samples.push({ x: $event.distance.x, t: performance.now() });
     if (this.samples.length > 5) {
@@ -377,7 +378,7 @@ export class SwipeViewComponent implements OnDestroy {
 
   /** Tröskeln skalar med skärmen så att svepet känns lika på mobil och desktop. */
   private threshold(): number {
-    return this.clamp(window.innerWidth * 0.22, 60, 130);
+    return clamp(window.innerWidth * 0.22, 60, 130);
   }
 
   private isFling(): boolean {
@@ -394,10 +395,6 @@ export class SwipeViewComponent implements OnDestroy {
     if ('vibrate' in navigator) {
       navigator.vibrate(60);
     }
-  }
-
-  private clamp(value: number, min: number, max: number): number {
-    return Math.min(max, Math.max(min, value));
   }
 
   // --- Frågor ---------------------------------------------------------------

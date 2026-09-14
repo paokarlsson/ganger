@@ -252,14 +252,18 @@ All of it is cleared by the **Nollställ** button on the heat map screen, and by
 | --- | --- |
 | `src/styles.scss` | Entry point; pulls in the three parts below |
 | `src/styles/_tokens.scss` | Colours, fonts, radii and spacing as CSS variables |
-| `src/styles/_base.scss` | Reset, and the one reduced-motion rule for the app |
+| `src/styles/_base.scss` | Reset, the shared game surface, and the one reduced-motion rule |
 | `src/styles/_ui.scss` | The shared `ui-` classes the four surfaces build from |
 | `src/app/app.component.*` | Shell: the start menu and the choice of game |
 | `src/app/match-view/` | The *Para ihop* game |
 | `src/app/swipe-view/` | The *Svep* game |
 | `src/app/master-view/` | The *Mästaren* game, with its levels in `levels.ts` |
 | `src/app/services/progress-store.ts` | The stored document, its schema version and its migrations |
+| `src/app/services/local-store.ts` | The only file that touches `localStorage` directly |
+| `src/app/services/debounced-writer.ts` | Delayed writes, flushed when the tab goes away |
 | `src/app/services/observation-log.ts` | Raw training events; written, not yet read |
+| `src/app/shared/` | `shuffle`, `clamp`, `median` and `mean`, shared by everything above |
+| `src/app/testing/` | Helpers for the specs only; never imported by the app |
 | `src/app/training/training-engine.ts` | What the game believes about the player, and what it does with that |
 | `src/app/training/auto-difficulty.ts` | How *Mästaren*'s auto mode moves between difficulty groups |
 | `src/app/heatmap/` | The one heat map, shared by both games |

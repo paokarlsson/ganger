@@ -1,37 +1,23 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { FACTS, factFor } from '../facts/fact-catalog';
 import { DEFAULT_START_LEVEL, GeneratedStatement } from '../swipe-view/swipe-difficulty';
 import { DIFFICULTY, Pair } from '../master-view/levels';
+import { disposeEngines, engineOn, engineWith, freshEngine, restarted } from '../testing/engine';
+import { InMemoryProgressRepository, RefusingProgressRepository } from '../testing/progress-repository';
 import { initialAutoDifficulty } from './auto-difficulty';
 import { DEFAULT_SWIPE_BASELINE, TrainingEngine } from './training-engine';
-
-/** Lagringen är asynkron, så motorn är inte klar förrän den hydrerats. */
-async function engineWith(stored: Record<string, unknown>): Promise<TrainingEngine> {
-  localStorage.clear();
-  for (const [key, value] of Object.entries(stored)) {
-    localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
-  }
-  return restarted();
-}
 
 /** Svepkanalen för ett tal. Kortform, den läses ofta här. */
 function swipeStatFor(engine: TrainingEngine, a: number, b: number) {
   return engine.statFor(a, b, 'swipe');
 }
 
-/** Som att ladda om sidan: en ny motor som läser det som ligger i lagret. */
-async function restarted(): Promise<TrainingEngine> {
-  const engine = new TrainingEngine();
-  await engine.hydrate();
-  return engine;
-}
-
 describe('TrainingEngine', () => {
-  beforeEach(() => localStorage.clear());
+  afterEach(disposeEngines);
 
   describe('kanaler', () => {
     it('håller svep utanför värmekartans tider', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       engine.record(7, 8, true, 900, 'swipe');
 
       // Värmekartan och behärskningsmåttet mäter skrivna svar; ett svep är
@@ -42,7 +28,7 @@ describe('TrainingEngine', () => {
     });
 
     it('skriver skrivna svar som förut', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       engine.record(7, 8, true, 900);
 
       expect(engine.statFor(7, 8)!.times).toEqual([900]);
@@ -53,7 +39,7 @@ describe('TrainingEngine', () => {
 
   describe('kanoniska nycklar', () => {
     it('lagrar 7 × 8 och 8 × 7 som ett enda tal', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       engine.record(7, 8, true, 1000);
       engine.record(8, 7, true, 2000);
 
@@ -63,7 +49,7 @@ describe('TrainingEngine', () => {
     });
 
     it('räknar ett behärskat tal en gång, inte en gång per ordning', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       engine.calibrate([2000, 2000, 2000]);
       engine.record(7, 8, true, 500);
       engine.record(8, 7, true, 500);
@@ -73,7 +59,7 @@ describe('TrainingEngine', () => {
     });
 
     it('överlever en omstart', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       engine.record(6, 9, true, 1200, 'swipe');
       engine.flush();
 
@@ -81,9 +67,35 @@ describe('TrainingEngine', () => {
     });
   });
 
+  describe('lagringen', () => {
+    it('samlar skrivningar på hög och lägger ned dem när ronden tar slut', async () => {
+      const store = new InMemoryProgressRepository();
+      const engine = await engineOn(store);
+
+      engine.record(7, 8, true, 900);
+      // Fördröjningen är hela poängen: ett kort ska inte kosta en skrivning.
+      expect(store.saves).toBe(0);
+
+      engine.flush();
+      expect(store.saves).toBe(1);
+      expect((await restarted()).statFor(7, 8)!.times).toEqual([900]);
+    });
+
+    it('spelar vidare fast lagringen nekar varje skrivning', async () => {
+      const engine = await engineOn(new RefusingProgressRepository());
+      engine.record(7, 8, true, 900);
+      engine.flush();
+
+      // Ett nekat lager är inget stopp: framstegen får leva i minnet sessionen
+      // ut, precis som när localStorage är fullt.
+      expect(engine.statFor(7, 8)!.times).toEqual([900]);
+      expect(engine.hasStoredProgress).toBe(true);
+    });
+  });
+
   describe('performanceFor', () => {
     it('slår ihop 7 × 8 och 8 × 7', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       engine.record(7, 8, true, 1000);
       engine.record(8, 7, false, 5000);
 
@@ -94,14 +106,14 @@ describe('TrainingEngine', () => {
     });
 
     it('faller tillbaka på svep när skrivna svar saknas', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       engine.record(3, 4, true, 800, 'swipe');
 
       expect(engine.performanceFor(3, 4)!.averageSeconds).toBe(0.8);
     });
 
     it('låter skrivna svar gå före svep', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       engine.record(3, 4, true, 2000);
       engine.record(3, 4, true, 400, 'swipe');
 
@@ -109,7 +121,7 @@ describe('TrainingEngine', () => {
     });
 
     it('ger undefined för ett tal som aldrig övats', async () => {
-      expect((await engineWith({})).performanceFor(9, 9)).toBeUndefined();
+      expect((await freshEngine()).performanceFor(9, 9)).toBeUndefined();
     });
   });
 
@@ -192,7 +204,7 @@ describe('TrainingEngine', () => {
 
   describe('nollställning', () => {
     it('rensar allt spelet minns om spelaren', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       engine.record(7, 8, true, 900);
       engine.record(3, 4, true, 700, 'swipe');
       engine.calibrate([1800, 2000, 2200]);
@@ -212,6 +224,7 @@ describe('TrainingEngine', () => {
     });
 
     it('rensar också en version 1 som aldrig hunnit migreras', async () => {
+      // Om lagringsformatet, alltså om den riktiga vägen genom localStorage.
       const engine = await engineWith({});
       localStorage.setItem('mult-heatmap', JSON.stringify({ '2_3': { times: [1500] } }));
 
@@ -224,7 +237,7 @@ describe('TrainingEngine', () => {
     it('räknar svep som sparat men inte som skriven övning', async () => {
       // Framstegsmätaren mäter skrivna svar. Den som bara svept ska mötas av
       // välkomsttexten, inte av "0 tal sitter" — men ska ändå kunna nollställas.
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       engine.record(3, 4, true, 700, 'swipe');
 
       expect(engine.hasPractice).toBe(false);
@@ -232,7 +245,7 @@ describe('TrainingEngine', () => {
     });
 
     it('ser en sparad svepnivå som något att rensa', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       engine.swipeLevel = 6;
 
       expect(engine.hasStoredProgress).toBe(true);
@@ -241,7 +254,7 @@ describe('TrainingEngine', () => {
 
   describe('sveptakt', () => {
     it('faller tillbaka på grundtakten innan den mätts', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
 
       expect(engine.hasSwipeBaseline).toBe(false);
       expect(engine.swipeBaselineSeconds).toBe(DEFAULT_SWIPE_BASELINE);
@@ -249,7 +262,7 @@ describe('TrainingEngine', () => {
 
     it('tar medianen av mätningarna, inte snittet', async () => {
       // Ett tappat kort ska inte kunna dra takten med sig.
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       for (const seconds of [1.0, 1.1, 1.2, 1.3, 9.0]) {
         engine.recordSwipeBaseline(seconds);
       }
@@ -259,7 +272,7 @@ describe('TrainingEngine', () => {
     });
 
     it('rullar fönstret så att takten följer med när spelaren blir snabbare', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       for (let i = 0; i < 8; i++) {
         engine.recordSwipeBaseline(2.0);
       }
@@ -271,8 +284,8 @@ describe('TrainingEngine', () => {
     });
 
     it('klipper orimliga tider i båda ändar', async () => {
-      const fast = await engineWith({});
-      const slow = await engineWith({});
+      const fast = await freshEngine();
+      const slow = await freshEngine();
       for (let i = 0; i < 3; i++) {
         fast.recordSwipeBaseline(0.05);
         slow.recordSwipeBaseline(30);
@@ -283,7 +296,7 @@ describe('TrainingEngine', () => {
     });
 
     it('struntar i tider som inte är tider', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       engine.recordSwipeBaseline(Number.NaN);
       engine.recordSwipeBaseline(0);
       engine.recordSwipeBaseline(-2);
@@ -292,7 +305,7 @@ describe('TrainingEngine', () => {
     });
 
     it('överlever en omstart och nollställs med resten', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       for (const seconds of [1.0, 1.2, 1.4]) {
         engine.recordSwipeBaseline(seconds);
       }
@@ -315,7 +328,7 @@ describe('TrainingEngine', () => {
   describe('svepkanalens mått', () => {
     /** Sveptakt 1,0 s ger en snabbtröskel på 1,3 s. */
     async function withBaseline(): Promise<TrainingEngine> {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       for (let i = 0; i < 5; i++) {
         engine.recordSwipeBaseline(1);
       }
@@ -381,7 +394,7 @@ describe('TrainingEngine', () => {
     });
 
     it('vet om spelaren svept något alls', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       expect(engine.hasPracticeIn('swipe')).toBe(false);
 
       engine.record(7, 8, true, 4000);
@@ -394,7 +407,7 @@ describe('TrainingEngine', () => {
 
   describe('swipeBestStreak', () => {
     it('börjar på noll och sparas över en omstart', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       expect(engine.swipeBestStreak).toBe(0);
 
       engine.swipeBestStreak = 12;
@@ -402,7 +415,7 @@ describe('TrainingEngine', () => {
     });
 
     it('är något att rensa, och nollställs med resten', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       engine.swipeBestStreak = 7;
 
       expect(engine.hasStoredProgress).toBe(true);
@@ -414,7 +427,7 @@ describe('TrainingEngine', () => {
 
   describe('swipeLevel', () => {
     it('sparar och läser tillbaka nivån', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       expect(engine.swipeLevel).toBeNull();
 
       engine.swipeLevel = 8;
@@ -423,7 +436,7 @@ describe('TrainingEngine', () => {
     });
 
     it('nollställs med resten', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       engine.swipeLevel = 8;
       await engine.reset();
 
@@ -439,7 +452,7 @@ describe('TrainingEngine', () => {
     }
 
     it('drar ned vikten för ett tal som sitter och håller den uppe för ett obeprövat', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       engine.calibrate([2000, 2000, 2000]);
       for (let i = 0; i < 3; i++) {
         engine.record(7, 8, true, 500);
@@ -452,7 +465,7 @@ describe('TrainingEngine', () => {
     });
 
     it('börjar Svep där kunskapen är', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       expect(engine.swipeStartLevel()).toBe(DEFAULT_START_LEVEL);
 
       engine.swipeLevel = 9;
@@ -460,7 +473,7 @@ describe('TrainingEngine', () => {
     });
 
     it('mäter ett svep mot spelarens egen takt', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       for (let i = 0; i < 5; i++) {
         engine.recordSwipeBaseline(1);
       }
@@ -474,7 +487,7 @@ describe('TrainingEngine', () => {
     });
 
     it('flyttar nivån ett steg upp och två ned', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       for (let i = 0; i < 5; i++) {
         engine.recordSwipeBaseline(1);
       }
@@ -484,7 +497,7 @@ describe('TrainingEngine', () => {
     });
 
     it('låter bara rätt svepta kalibreringskort sätta takten', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       for (let i = 0; i < 3; i++) {
         engine.recordSwipeCalibration(statement(true), false, 0.9);
       }
@@ -510,7 +523,7 @@ describe('TrainingEngine', () => {
     }
 
     it('börjar i den lägsta grupp spelaren inte redan är hemma i', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       engine.calibrate([2000, 2000, 2000]);
       expect(engine.startDifficulty()).toBe('easy');
 
@@ -522,7 +535,7 @@ describe('TrainingEngine', () => {
     });
 
     it('kräver mer än ett enda snabbt svar för att kalla ett tal automatiserat', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       engine.calibrate([2000, 2000, 2000]);
       for (const [a, b] of DIFFICULTY.easy) {
         engine.record(a, b, true, 300);
@@ -532,7 +545,7 @@ describe('TrainingEngine', () => {
     });
 
     it('rankar ett tal efter hur träningsvärt det är', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       engine.calibrate([2000, 2000, 2000]);
       engine.record(7, 8, false, 9000);
       engine.record(6, 9, true, 500);
@@ -542,7 +555,7 @@ describe('TrainingEngine', () => {
     });
 
     it('ställer aldrig samma tal två gånger i rad', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       const previous = DIFFICULTY.medium[0];
 
       for (let i = 0; i < 30; i++) {
@@ -552,7 +565,7 @@ describe('TrainingEngine', () => {
     });
 
     it('håller sig inom gruppen', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       const inside = new Set(DIFFICULTY.hard.map(([a, b]) => `${a}x${b}`));
 
       for (let i = 0; i < 30; i++) {
@@ -562,7 +575,7 @@ describe('TrainingEngine', () => {
     });
 
     it('flyttar gruppen med hur det går', async () => {
-      const engine = await engineWith({});
+      const engine = await freshEngine();
       engine.calibrate([2000, 2000, 2000]);
 
       let state = initialAutoDifficulty('easy');

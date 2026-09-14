@@ -11,6 +11,7 @@
  * göra asynkron i efterhand utan att varje anropare skrivs om.
  */
 import { FACTS, factKey } from '../facts/fact-catalog';
+import { readJson, readString, remove, writeJson } from './local-store';
 
 /**
  * Formen på det som ligger i lagret. Höjs när dokumentet ändrar form, och
@@ -78,7 +79,7 @@ export interface ProgressRepository {
   clear(): Promise<void>;
 }
 
-export function emptyChannel(): ChannelStat {
+function emptyChannel(): ChannelStat {
   return { times: [], correct: 0, total: 0 };
 }
 
@@ -116,13 +117,13 @@ export function hasContent(document: ProgressDocument): boolean {
 /**
  * Framstegen i webbläsaren de övats i.
  *
- * localStorage kan kasta i privat läge och när sajtdata är avstängt. Spelet
- * ska gå att spela ändå, bara utan att statistiken följer med — därför sväljs
- * varje fel här och ingenstans annars.
+ * Att lagret kan vara otillgängligt eller fullt hanteras av `local-store.ts`;
+ * det här är bara dokumentets väg in och ut. Nekas en skrivning får framstegen
+ * leva kvar i minnet sessionen ut.
  */
 export class LocalStorageProgressRepository implements ProgressRepository {
   async load(): Promise<ProgressDocument> {
-    const stored = this.read(PROGRESS_KEY);
+    const stored = readJson(PROGRESS_KEY);
     if (stored !== null) {
       return normalize(stored);
     }
@@ -139,29 +140,23 @@ export class LocalStorageProgressRepository implements ProgressRepository {
   }
 
   async save(document: ProgressDocument): Promise<void> {
-    try {
-      localStorage.setItem(PROGRESS_KEY, JSON.stringify(document));
-    } catch {
-      // Framstegen får leva kvar i minnet under sessionen.
-    }
+    writeJson(PROGRESS_KEY, document);
   }
 
   async clear(): Promise<void> {
-    try {
-      localStorage.removeItem(PROGRESS_KEY);
-    } catch {
-      // Se save().
-    }
+    remove(PROGRESS_KEY);
     this.removeLegacy();
   }
 
   /** `null` när det inte finns någon version 1 att läsa. */
   private migrateLegacy(): ProgressDocument | null {
-    const stats = this.read(LEGACY_KEYS.stats);
-    const calibration = this.readRaw(LEGACY_KEYS.calibration);
-    const baseline = this.read(LEGACY_KEYS.swipeBaseline);
-    const level = this.readRaw(LEGACY_KEYS.swipeLevel);
-    const streak = this.readRaw(LEGACY_KEYS.swipeBestStreak);
+    // Tre av de gamla nycklarna höll ett blankt tal och inte JSON, och läses
+    // därför som råsträng — `parseNumber()` tar hand om dem längre ned.
+    const stats = readJson(LEGACY_KEYS.stats);
+    const calibration = readString(LEGACY_KEYS.calibration);
+    const baseline = readJson(LEGACY_KEYS.swipeBaseline);
+    const level = readString(LEGACY_KEYS.swipeLevel);
+    const streak = readString(LEGACY_KEYS.swipeBestStreak);
 
     if (
       stats === null &&
@@ -178,31 +173,7 @@ export class LocalStorageProgressRepository implements ProgressRepository {
 
   private removeLegacy(): void {
     for (const key of Object.values(LEGACY_KEYS)) {
-      try {
-        localStorage.removeItem(key);
-      } catch {
-        // Se save().
-      }
-    }
-  }
-
-  private readRaw(key: string): string | null {
-    try {
-      return localStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  }
-
-  private read(key: string): unknown {
-    const raw = this.readRaw(key);
-    if (raw === null) {
-      return null;
-    }
-    try {
-      return JSON.parse(raw) as unknown;
-    } catch {
-      return null;
+      remove(key);
     }
   }
 }

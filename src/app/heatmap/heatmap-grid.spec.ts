@@ -1,14 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { FACTS } from '../facts/fact-catalog';
-import { TrainingEngine } from '../training/training-engine';
+import { disposeEngines, freshEngine } from '../testing/engine';
 import { buildHeatRows } from './heatmap-grid';
-
-async function engine(): Promise<TrainingEngine> {
-  localStorage.clear();
-  const trained = new TrainingEngine();
-  await trained.hydrate();
-  return trained;
-}
 
 /** Alla rutor i rutnätet, radvis. */
 function cells(rows: ReturnType<typeof buildHeatRows>) {
@@ -16,10 +9,10 @@ function cells(rows: ReturnType<typeof buildHeatRows>) {
 }
 
 describe('buildHeatRows', () => {
-  beforeEach(() => localStorage.clear());
+  afterEach(disposeEngines);
 
   it('ger tabellens 55 tal, var och ett en gång', async () => {
-    const rows = buildHeatRows(await engine(), 'typed');
+    const rows = buildHeatRows(await freshEngine(), 'typed');
     const shown = cells(rows).filter((cell) => !cell.mirrored);
 
     expect(shown.length).toBe(FACTS.length);
@@ -29,21 +22,21 @@ describe('buildHeatRows', () => {
   it('lägger talen ovanför diagonalen och speglar resten', async () => {
     // Raden är den mindre faktorn. Rutan för 8 × 7 finns alltså inte — den
     // står som 7 × 8 på andra sidan.
-    const rows = buildHeatRows(await engine(), 'typed');
+    const rows = buildHeatRows(await freshEngine(), 'typed');
 
     expect(rows[6].cells[7].mirrored).toBe(false); // rad 7, kolumn 8
     expect(rows[7].cells[6].mirrored).toBe(true); // rad 8, kolumn 7
   });
 
   it('är 10 × 10 rutor stort, med hela tabellen som rubriker', async () => {
-    const rows = buildHeatRows(await engine(), 'typed');
+    const rows = buildHeatRows(await freshEngine(), 'typed');
 
     expect(rows.map((row) => row.label)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     expect(rows.every((row) => row.cells.length === 10)).toBe(true);
   });
 
   it('märker ett otränat tal som otestat i stället för som långsamt', async () => {
-    const rows = buildHeatRows(await engine(), 'typed');
+    const rows = buildHeatRows(await freshEngine(), 'typed');
     const cell = rows[6].cells[7];
 
     // En ruta utan mätning är inte en punkt på skalan utan ett tomrum.
@@ -53,7 +46,7 @@ describe('buildHeatRows', () => {
   });
 
   it('visar snittiden för ett övat tal', async () => {
-    const trained = await engine();
+    const trained = await freshEngine();
     trained.record(7, 8, true, 1500);
     trained.record(7, 8, true, 2500);
 
@@ -67,7 +60,7 @@ describe('buildHeatRows', () => {
   });
 
   it('hittar talet oavsett vilken väg det övades', async () => {
-    const trained = await engine();
+    const trained = await freshEngine();
     trained.record(8, 7, true, 1500);
 
     expect(buildHeatRows(trained, 'typed')[6].cells[7].untested).toBe(false);
@@ -75,7 +68,7 @@ describe('buildHeatRows', () => {
 
   describe('kanalerna', () => {
     it('visar olika mätningar för samma tal', async () => {
-      const trained = await engine();
+      const trained = await freshEngine();
       trained.record(7, 8, true, 3000);
       trained.record(7, 8, true, 900, 'swipe');
 
@@ -84,7 +77,7 @@ describe('buildHeatRows', () => {
     });
 
     it('lämnar den kanal som inte övats otestad', async () => {
-      const trained = await engine();
+      const trained = await freshEngine();
       trained.record(7, 8, true, 3000);
 
       expect(buildHeatRows(trained, 'swipe')[6].cells[7].untested).toBe(true);
@@ -96,7 +89,7 @@ describe('buildHeatRows', () => {
       // Det här är hela skälet till att kanalen är en växel och inte en
       // gemensam skala. 1,2 s är segt att skriva men snabbt att svepa, och
       // ska se ut som två olika saker.
-      const trained = await engine();
+      const trained = await freshEngine();
       trained.calibrate([800, 800, 800]);
       for (let i = 0; i < 5; i++) {
         trained.recordSwipeBaseline(1.0);

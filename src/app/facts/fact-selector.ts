@@ -6,6 +6,7 @@
  * någonsin noll av de två första — hela tabellen ska vara nåbar på varje nivå,
  * annars går det inte att upptäcka att ett "behärskat" tal tappats bort.
  */
+import { clamp } from '../shared/numbers';
 import { FACTS, Fact } from './fact-catalog';
 
 /** Nivåskalan brasan rör sig på. */
@@ -47,7 +48,7 @@ export interface FactPerformance {
 /** Hämtar spelarens vikt för ett tal. Utelämnas i tester och för en ny spelare. */
 export type FactNeed = (fact: Fact) => number;
 
-export interface SelectionContext {
+interface SelectionContext {
   level: number;
   /** Senast ställda tal, nyast först eller sist spelar ingen roll. */
   recent: readonly Fact[];
@@ -56,7 +57,7 @@ export interface SelectionContext {
 
 /** Nivåns fokuspunkt på rankskalan. */
 export function focusRank(level: number): number {
-  const clamped = Math.min(LEVEL_MAX, Math.max(LEVEL_MIN, level));
+  const clamped = clamp(level, LEVEL_MIN, LEVEL_MAX);
   const t = (clamped - LEVEL_MIN) / (LEVEL_MAX - LEVEL_MIN);
   return FOCUS_AT_MIN_LEVEL + (FOCUS_AT_MAX_LEVEL - FOCUS_AT_MIN_LEVEL) * t;
 }

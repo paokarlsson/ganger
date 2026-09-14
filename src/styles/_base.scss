@@ -20,6 +20,18 @@ h1, h2, h3, p, figure {
     margin: 0;
 }
 
+/* Spelytans grund. De tre spelen satte förut de här tre raderna var för sig i
+   sitt eget :host, ordagrant. Resten av deras :host — mått, placering, egna
+   variabler — är fortfarande komponentens eget, och tar över här om den vill:
+   en komponentstil väger tyngre än elementväljaren nedan. */
+app-master-view,
+app-swipe-view,
+app-match-view {
+    font-family: var(--font-body);
+    background: var(--surface);
+    color: var(--text-primary);
+}
+
 /* En enda regel för hela appen, i stället för tre olika i tre komponenter.
    Övergångarna blir omedelbara i stället för att stängas av helt, så att
    :hover och :active fortfarande syns. */
