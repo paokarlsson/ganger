@@ -18,7 +18,8 @@
  * kalibrera konstanter. Men taket är satt av vad kalibreringen behöver läsa,
  * inte av vad som råkar kännas lagom — se `MAX_OBSERVATIONS`.
  */
-import { Injectable } from '@angular/core';
+import { Injectable, OnDestroy } from '@angular/core';
+import { DebouncedWriter } from './debounced-writer';
 import { readJson, remove, writeJson } from './local-store';
 
 export const OBSERVATIONS_KEY = 'ganger-observations';
@@ -142,26 +143,19 @@ const WRITE_DELAY = 5000;
 const MIN_STORAGE_LIMIT = 100;
 
 @Injectable({ providedIn: 'root' })
-export class ObservationLog {
+export class ObservationLog implements OnDestroy {
   private observations: Observation[] = [];
-  private writeTimer?: ReturnType<typeof setTimeout>;
-  private dirty = false;
   /**
    * Hur många händelser som får plats i lagret. Börjar på taket och trappas
-   * ned av `flush()` när skrivningen nekas. Minnet behåller alltid allt —
+   * ned av `persist()` när skrivningen nekas. Minnet behåller alltid allt —
    * det här är bara vad som ryms på disk.
    */
   private storageLimit = MAX_OBSERVATIONS;
 
-  constructor() {
-    if (typeof addEventListener === 'function') {
-      addEventListener('pagehide', () => this.flush());
-      addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') {
-          this.flush();
-        }
-      });
-    }
+  private readonly writer = new DebouncedWriter(WRITE_DELAY, () => this.persist());
+
+  ngOnDestroy(): void {
+    this.writer.dispose();
   }
 
   /** Läser in loggen. Anropas en gång vid uppstart, se `app.config.ts`. */
@@ -174,8 +168,7 @@ export class ObservationLog {
     if (this.observations.length > MAX_OBSERVATIONS) {
       this.observations.splice(0, this.observations.length - MAX_OBSERVATIONS);
     }
-    this.dirty = true;
-    this.writeTimer ??= setTimeout(() => this.flush(), WRITE_DELAY);
+    this.writer.schedule();
   }
 
   /** Äldst först. */
@@ -184,18 +177,17 @@ export class ObservationLog {
   }
 
   flush(): void {
-    clearTimeout(this.writeTimer);
-    this.writeTimer = undefined;
-    if (!this.dirty) {
-      return;
-    }
-    this.dirty = false;
+    this.writer.flush();
+  }
 
-    // Nekad skrivning är nästan alltid full kvot, och med ett tak på 2000 är
-    // det ett rimligt utfall och inte ett undantag. Att bara svälja felet vore
-    // att låta loggen sluta sparas utan att säga något — den halveras hellre
-    // och sparar de nyaste, eftersom en kortare logg är en mätning och ingen
-    // logg alls inte är det.
+  /**
+   * Nekad skrivning är nästan alltid full kvot, och med ett tak på 2000 är det
+   * ett rimligt utfall och inte ett undantag. Att bara svälja felet vore att
+   * låta loggen sluta sparas utan att säga något — den halveras hellre och
+   * sparar de nyaste, eftersom en kortare logg är en mätning och ingen logg
+   * alls inte är det.
+   */
+  private persist(): void {
     while (this.storageLimit > 0) {
       if (this.write(this.observations.slice(-this.storageLimit))) {
         return;
@@ -203,13 +195,11 @@ export class ObservationLog {
       const halved = Math.floor(this.storageLimit / 2);
       this.storageLimit = halved >= MIN_STORAGE_LIMIT ? halved : 0;
     }
-    // Loggen får leva kvar i minnet under sessionen. Se progress-store.ts.
+    // Loggen får leva kvar i minnet under sessionen. Se local-store.ts.
   }
 
   clear(): void {
-    clearTimeout(this.writeTimer);
-    this.writeTimer = undefined;
-    this.dirty = false;
+    this.writer.cancel();
     this.observations = [];
     // Kvoten kan mycket väl ha frigjorts av just den här rensningen.
     this.storageLimit = MAX_OBSERVATIONS;

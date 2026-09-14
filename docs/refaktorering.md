@@ -31,23 +31,6 @@ att *använda* dem, inte att riva dem.
 
 ## 1. Dubblering
 
-### 1.3 Fördröjd skrivning + flush-vid-sidbyte finns i två exemplar
-
-`TrainingEngine` (rad 110–125, 141–150, 534–536) och `ObservationLog`
-(rad 146–165, 176–178, 185–218) har samma tre fält (`writeTimer`, `dirty`,
-konstant fördröjning), samma konstruktor med `pagehide` +
-`visibilitychange`, och samma `flush()`-form. Bara fördröjningen skiljer
-(1 000 ms mot 5 000 ms) och den skillnaden är motiverad i båda filerna.
-
-**Åtgärd:** en liten `DebouncedWriter` som tar `delayMs` och en
-`write: () => void`, och som själv kopplar upp sidbytes-lyssnarna.
-
-**Bieffekt värd att fixa i samma veva:** lyssnarna registreras i
-konstruktorn och tas aldrig bort. `training-engine.spec.ts` bygger en ny
-`TrainingEngine` per test (`restarted()`), så testkörningen läcker ett
-lyssnarpar per motor, vart och ett med en referens till motorn och dess
-dokument. `DebouncedWriter` bör ha en `dispose()`.
-
 ### 1.4 Samma lista över alla nycklar, definierad två gånger
 
 ```ts

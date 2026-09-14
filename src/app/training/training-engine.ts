@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, OnDestroy } from '@angular/core';
 import { FACTS, Fact } from '../facts/fact-catalog';
 import { FactPerformance, needWeight } from '../facts/fact-selector';
 import {
@@ -19,6 +19,7 @@ import {
 } from '../swipe-view/swipe-difficulty';
 import { shuffle } from '../shared/random';
 import { AnswerPace, AutoDifficultyState, nextAutoDifficulty } from './auto-difficulty';
+import { DebouncedWriter } from '../services/debounced-writer';
 import {
   ChannelStat,
   LocalStorageProgressRepository,
@@ -100,7 +101,7 @@ export const DEFAULT_SWIPE_BASELINE = 1.5;
  * Motorn är det som kopplar ihop dem med vad spelaren faktiskt gjort.
  */
 @Injectable({ providedIn: 'root' })
-export class TrainingEngine {
+export class TrainingEngine implements OnDestroy {
   /**
    * Sömmen mot lagringen. Byts den mot en implementation som talar med en
    * backend behöver ingenting annat i appen ändras.
@@ -108,20 +109,15 @@ export class TrainingEngine {
   private repository: ProgressRepository = new LocalStorageProgressRepository();
 
   private progress: ProgressDocument = emptyDocument();
-  private writeTimer?: ReturnType<typeof setTimeout>;
-  private dirty = false;
 
-  constructor() {
-    // Ett besvarat kort får inte gå förlorat för att fliken läggs undan innan
-    // nästa skrivning hunnit.
-    if (typeof addEventListener === 'function') {
-      addEventListener('pagehide', () => this.flush());
-      addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') {
-          this.flush();
-        }
-      });
-    }
+  /** Ett besvarat kort får inte gå förlorat för att fliken läggs undan innan
+   *  nästa skrivning hunnit — det sköter skrivaren. */
+  private readonly writer = new DebouncedWriter(STATS_WRITE_DELAY, () => {
+    void this.repository.save(this.progress);
+  });
+
+  ngOnDestroy(): void {
+    this.writer.dispose();
   }
 
   /**
@@ -137,15 +133,10 @@ export class TrainingEngine {
     this.repository = repository;
   }
 
-  /** Skriver ned det som väntar. Anropas när en rond tar slut och när sidan
-   *  läggs undan; däremellan sköter fördröjningen det. */
+  /** Skriver ned det som väntar. Anropas när en rond tar slut; däremellan
+   *  sköter fördröjningen och sidbyteslyssnarna det. */
   flush(): void {
-    clearTimeout(this.writeTimer);
-    this.writeTimer = undefined;
-    if (this.dirty) {
-      this.dirty = false;
-      void this.repository.save(this.progress);
-    }
+    this.writer.flush();
   }
 
   /** Antalet tal spelet känner till — det `masteredCount()` räknar mot. */
@@ -401,9 +392,7 @@ export class TrainingEngine {
   }
 
   async reset(): Promise<void> {
-    clearTimeout(this.writeTimer);
-    this.writeTimer = undefined;
-    this.dirty = false;
+    this.writer.cancel();
     this.progress = emptyDocument();
     await this.repository.clear();
   }
@@ -536,7 +525,6 @@ export class TrainingEngine {
   }
 
   private scheduleWrite(): void {
-    this.dirty = true;
-    this.writeTimer ??= setTimeout(() => this.flush(), STATS_WRITE_DELAY);
+    this.writer.schedule();
   }
 }
