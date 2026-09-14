@@ -8,8 +8,8 @@ bör göras och varför* — det ändrar ingen kod självt.
 på vägen dit. En post som utförs stryks härifrån; en som visar sig vara fel
 stryks också, med en rad om varför.
 
-Storleken just nu: **10 370 rader** över 59 `.ts`-, `.html`- och `.scss`-filer
-i `src/`, varav 864 rader (8 %) är den temporära temaväljaren och 2 735 rader
+Storleken just nu: **10 523 rader** över 60 `.ts`-, `.html`- och `.scss`-filer
+i `src/`, varav 864 rader (8 %) är den temporära temaväljaren och 2 808 rader
 är tester.
 
 ---
@@ -43,17 +43,10 @@ koden pekar på de numren.
 
 ## 2. Död och överflödig kod
 
-### 2.4 `isObservation` (observation-log.ts:265)
-
-Deklarerad som `(value: unknown): boolean` och sedan tvingad till ett
-typpredikat vid anropsplatsen:
-
-```ts
-.filter((item): item is Observation => isObservation(item))
-```
-
-**Åtgärd:** `function isObservation(value: unknown): value is Observation`.
-Då blir `.filter(isObservation)` nog.
+Utförd. Sömmen mot lagringen används nu av testerna, som får sin lagring ur
+`testing/progress-repository.ts` i stället för ur `localStorage`; de exporter
+ingen läste är interna, genomgångarna borta och `focusRank`/`windowWeight`
+täckta av egna tester.
 
 ---
 
@@ -353,7 +346,6 @@ tillstånd där nästa steg blir mindre.
 | # | Steg | Storlek | Beroende |
 | --- | --- | --- | --- |
 | 1 | Prettier + ESLint + formateringscommit (6.1) | halvdag | — |
-| 2 | Död kod och genomgångsexporter (2.1–2.4) | liten | 1 |
 | 5 | Namnbyten (3.1–3.6) | medel | 1 |
 | 6 | Kommentarskonsolidering (5.1–5.4) + språkval (3.7) | medel | 5 |
 | 7 | `GameAudio` + match-viewens konstruktor (4.3) | medel | 5 |
@@ -361,10 +353,10 @@ tillstånd där nästa steg blir mindre.
 | 10 | `npm run report` (4.4) | liten | — |
 | 11 | Signaler (4.5) | stor, eget arbete | 8 |
 
-Steg 3, 4 och 9 är utförda — de var avsnitt 1, och numren står kvar tomma så
-att de kvarvarandes beroenden fortsätter peka rätt.
+Steg 2, 3, 4 och 9 är utförda — steg 2 var avsnitt 2, de andra tre avsnitt 1.
+Numren står kvar tomma så att de kvarvarandes beroenden fortsätter peka rätt.
 
-Steg 1 och 2 är rena vinster utan risk. Steg 11 är den enda posten som ändrar
+Steg 1 är en ren vinst utan risk. Steg 11 är den enda posten som ändrar
 hur appen fungerar under ytan och bör ha egna tester före och efter.
 
 Temaväljaren (4.6) ligger utanför ordningen — den väntar på ett beslut, inte på

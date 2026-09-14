@@ -225,13 +225,11 @@ export class ObservationLog implements OnDestroy {
     }
     // Loggen är felsökningsdata. Att en post ser konstig ut är inte värt att
     // krascha uppstarten för, men den ska inte heller tas för en händelse.
-    return observations
-      .filter((item): item is Observation => isObservation(item))
-      .slice(-MAX_OBSERVATIONS);
+    return observations.filter(isObservation).slice(-MAX_OBSERVATIONS);
   }
 }
 
-function isObservation(value: unknown): boolean {
+function isObservation(value: unknown): value is Observation {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
