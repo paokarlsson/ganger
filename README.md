@@ -220,8 +220,9 @@ the log is data nobody can read. The button puts both keys on the clipboard, or
 downloads them as a file where the clipboard is refused; both are needed,
 because the correlation above compares against swipe times, which live in the
 progress document. Drop the result in `tools/observations.json` and run
-`npm test`: `observation-analysis.ts` writes a report to
-`tools/observations-report.txt`. Neither file is committed — a child's response
+`npm run report`: `observation-analysis.ts` writes a report to
+`tools/observations-report.txt`. It is a separate script and not part of
+`npm test`, so CI runs tests rather than a report generator. Neither file is committed — a child's response
 times do not belong in a public repo — and nothing in `src/app` imports the
 analysis, so it never reaches the bundle.
 

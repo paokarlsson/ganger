@@ -193,7 +193,7 @@ värd mer än fyra syntetiska arketyper.
    kräver svepens tider, som ligger i framstegsdokumentet.
 2. Klistra in i `tools/observations.json` (ignorerad av git — ett barns
    svarstider hör inte hemma i ett publikt repo).
-3. `npm test`. Rapporten hamnar i `tools/observations-report.txt`.
+3. `npm run report`. Rapporten hamnar i `tools/observations-report.txt`.
 
 Ingenting av det är del av spelet: inget i `src/app` importerar analysen, så
 den följer inte med i bygget.
