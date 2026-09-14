@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
 import { FACTS } from '../facts/fact-catalog';
 import { ObservationLog } from '../services/observation-log';
 import { progressKeyFor } from '../services/progress-store';
+import { shuffle } from '../shared/random';
 
 /** Number of pairs shown in one round. */
 const ROUND_SIZE = 5;
@@ -83,7 +84,7 @@ export class MatchViewComponent implements OnDestroy {
     this.doneQuestions = new Set<Question>();
     this.attempts = new Map<Question, number>();
     this.resetLeftAndRight();
-    this.leftList = this.shuffle(this.round);
+    this.leftList = shuffle(this.round);
     this.rightList = this.shuffleDeranged(this.round, this.leftList);
     this.roundStartedAt = this.now();
     this.lastResolvedAt = this.roundStartedAt;
@@ -219,7 +220,7 @@ export class MatchViewComponent implements OnDestroy {
     const round: Question[] = [];
     const products = new Set<number>();
 
-    for (const fact of this.shuffle(FACTS)) {
+    for (const fact of shuffle(FACTS)) {
       if (products.has(fact.answer)) {
         continue;
       }
@@ -239,19 +240,10 @@ export class MatchViewComponent implements OnDestroy {
     return round;
   }
 
-  private shuffle<T>(items: readonly T[]): T[] {
-    const array = [...items];
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-  }
-
   /** Lays out the answers so none of them sits on the same row as its question. */
   private shuffleDeranged(questions: Question[], other: Question[]): Question[] {
     for (let attempt = 0; attempt < 20; attempt++) {
-      const shuffled = this.shuffle(questions);
+      const shuffled = shuffle(questions);
       if (shuffled.every((q, i) => q !== other[i])) {
         return shuffled;
       }

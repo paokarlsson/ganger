@@ -31,23 +31,6 @@ att *använda* dem, inte att riva dem.
 
 ## 1. Dubblering
 
-### 1.1 `shuffle()` finns i tre exemplar
-
-| Fil | Rad |
-| --- | --- |
-| `src/app/training/training-engine.ts` | 540 |
-| `src/app/master-view/master-view.component.ts` | 479 |
-| `src/app/match-view/match-view.component.ts` | 242 |
-
-Identisk Fisher-Yates, två av dem med identisk kommentar («Fisher-Yates på en
-kopia, så anroparens lista lämnas orörd»).
-
-**Åtgärd:** en `shuffle<T>(items, rng = Math.random)` i en ny modul
-`src/app/shared/random.ts`. Ta `rng` som parameter medan du ändå är där — resten
-av pedagogiken (`selectFact`, `pickDistractor`, `nextStatement`) gör redan det,
-och det är vad som gör dem testbara. `nextAutoQuestion()` i motorn är i dag den
-enda urvalsfunktionen som inte går att köra deterministiskt.
-
 ### 1.2 localStorage-hanteringen finns i tre exemplar
 
 `LocalStorageProgressRepository.read/readRaw` (progress-store.ts:189, 197),

@@ -17,6 +17,7 @@ import {
   nextLevel,
   startLevel,
 } from '../swipe-view/swipe-difficulty';
+import { shuffle } from '../shared/random';
 import { AnswerPace, AutoDifficultyState, nextAutoDifficulty } from './auto-difficulty';
 import {
   ChannelStat,
@@ -474,12 +475,16 @@ export class TrainingEngine {
    * så att ordningen inte blir förutsägbar, och aldrig samma tal två gånger i
    * rad.
    */
-  nextAutoQuestion(difficulty: Difficulty, previous: Pair | undefined): Pair {
+  nextAutoQuestion(
+    difficulty: Difficulty,
+    previous: Pair | undefined,
+    rng: () => number = Math.random,
+  ): Pair {
     const pool = this.questionsForDifficulty(difficulty);
     const filtered = previous
       ? pool.filter((q) => !(q[0] === previous[0] && q[1] === previous[1]))
       : pool;
-    const candidates = shuffle(filtered.slice(0, AUTO_CANDIDATES));
+    const candidates = shuffle(filtered.slice(0, AUTO_CANDIDATES), rng);
     return candidates[0] ?? filtered[0] ?? pool[0];
   }
 
@@ -534,14 +539,4 @@ export class TrainingEngine {
     this.dirty = true;
     this.writeTimer ??= setTimeout(() => this.flush(), STATS_WRITE_DELAY);
   }
-}
-
-/** Fisher-Yates på en kopia, så anroparens lista lämnas orörd. */
-function shuffle<T>(items: readonly T[]): T[] {
-  const out = [...items];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
 }
