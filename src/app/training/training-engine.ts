@@ -18,6 +18,7 @@ import {
   startLevel,
 } from '../swipe-view/swipe-difficulty';
 import { shuffle } from '../shared/random';
+import { mean, median } from '../shared/statistics';
 import { AnswerPace, AutoDifficultyState, nextAutoDifficulty } from './auto-difficulty';
 import { DebouncedWriter } from '../services/debounced-writer';
 import {
@@ -164,9 +165,14 @@ export class TrainingEngine implements OnDestroy {
    *  mäta spelarens toppfart och att mäta en fart hen kan hålla. Se
    *  docs/plan.md. */
   calibrate(timesMs: number[]): void {
-    const sorted = [...timesMs].sort((a, b) => a - b);
-    const median = sorted[Math.floor(sorted.length / 2)] / 1000;
-    const withMargin = Math.round(median * 1.2 * 10) / 10;
+    const middle = median(timesMs);
+    if (middle === null) {
+      // Ingen mätning att gå på. Grundtiden är vad den som hoppar över
+      // kalibreringen får, och det är rätt svar även här.
+      this.useDefaultCalibration();
+      return;
+    }
+    const withMargin = Math.round((middle / 1000) * 1.2 * 10) / 10;
     this.progress.typedCalibration = Math.max(
       MIN_CALIBRATED_TIME,
       Math.min(withMargin, MAX_CALIBRATED_TIME),
@@ -261,10 +267,8 @@ export class TrainingEngine implements OnDestroy {
 
   /** Snittid i sekunder, eller `null` för ett tal som aldrig övats. */
   averageSeconds(stat: ChannelStat | undefined): number | null {
-    if (!stat || stat.times.length === 0) {
-      return null;
-    }
-    return stat.times.reduce((sum, t) => sum + t, 0) / stat.times.length / 1000;
+    const average = stat ? mean(stat.times) : null;
+    return average === null ? null : average / 1000;
   }
 
   /**
@@ -327,7 +331,7 @@ export class TrainingEngine implements OnDestroy {
       return undefined;
     }
     return {
-      averageSeconds: source.times.reduce((sum, t) => sum + t, 0) / source.times.length / 1000,
+      averageSeconds: this.averageSeconds(source),
       accuracy: source.total > 0 ? source.correct / source.total : null,
     };
   }
@@ -341,12 +345,11 @@ export class TrainingEngine implements OnDestroy {
    * med nivån, och då jagar tröskeln sin egen svans.
    */
   get swipeBaselineSeconds(): number {
-    if (!this.hasSwipeBaseline) {
+    const middle = this.hasSwipeBaseline ? median(this.progress.swipeBaseline) : null;
+    if (middle === null) {
       return DEFAULT_SWIPE_BASELINE;
     }
-    const sorted = [...this.progress.swipeBaseline].sort((a, b) => a - b);
-    const median = sorted[Math.floor(sorted.length / 2)];
-    return Math.max(MIN_SWIPE_BASELINE, Math.min(median, MAX_SWIPE_BASELINE));
+    return Math.max(MIN_SWIPE_BASELINE, Math.min(middle, MAX_SWIPE_BASELINE));
   }
 
   /** Om sveptakten vilar på tillräckligt många mätningar för att tro på. */

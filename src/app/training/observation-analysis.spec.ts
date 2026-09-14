@@ -5,7 +5,6 @@ import {
   MIN_FACTS_FOR_CORRELATION,
   analyseObservations,
   formatReport,
-  median,
   rank,
   readableKey,
   spearman,
@@ -53,17 +52,6 @@ function withSwipes(times: Record<string, number[]>): ProgressDocument {
   }
   return document;
 }
-
-describe('median', () => {
-  it('tar mitten för udda antal och snittet av de två mittersta för jämnt', () => {
-    expect(median([3, 1, 2])).toBe(2);
-    expect(median([4, 1, 2, 3])).toBe(2.5);
-  });
-
-  it('ger null för tomt', () => {
-    expect(median([])).toBeNull();
-  });
-});
 
 describe('rank', () => {
   it('rangordnar från ett', () => {

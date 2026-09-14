@@ -31,22 +31,6 @@ att *använda* dem, inte att riva dem.
 
 ## 1. Dubblering
 
-### 1.5 Median och medelvärde räknas ut inline
-
-`median()` finns på riktigt i `observation-analysis.ts:345`. Men
-`TrainingEngine.calibrate()` (rad 175) och `TrainingEngine.swipeBaselineSeconds`
-(rad 355) sorterar och plockar mitten var för sig — och med en annan konvention:
-de tar alltid det undre mitten-värdet, medan `observation-analysis` medelvärdar
-de två mittersta vid jämnt antal.
-
-Samma sak med snittet: `averageSeconds()` (rad 275) och `performanceFor()`
-(rad 338) räknar ut exakt samma uttryck med olika källa.
-
-**Åtgärd:** flytta `median()` till `src/app/shared/statistics.ts`, låt alla tre
-använda den, och **avgör medvetet** vilken konvention som gäller. Skillnaden är
-liten men den är i dag oavsiktlig, och `swipeBaseline` har ett fönster på 8 —
-alltid jämnt när det är fullt.
-
 ### 1.6 Två konstanter som heter `SLOW_TIME_MULTIPLIER`
 
 `master-view/levels.ts` har 4, `swipe-view/swipe-difficulty.ts` har 1,5.

@@ -20,6 +20,7 @@
 import { FACTS } from '../facts/fact-catalog';
 import { Observation } from '../services/observation-log';
 import { ProgressDocument } from '../services/progress-store';
+import { median } from '../shared/statistics';
 
 /**
  * Hur många par som minst måste stå kvar på brädet för att ett löst par ska
@@ -339,17 +340,6 @@ function pearson(xs: readonly number[], ys: readonly number[]): number | null {
     return null;
   }
   return covariance / Math.sqrt(varianceX * varianceY);
-}
-
-export function median(values: readonly number[]): number | null {
-  if (values.length === 0) {
-    return null;
-  }
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? (sorted[middle - 1] + sorted[middle]) / 2
-    : sorted[middle];
 }
 
 /** Nyckeln som text, för rapporten: `mul:7x8` → `7 × 8`. */
