@@ -35,7 +35,8 @@ const FLING_SPEED = 0.6;
 /** Hur länge brasan pulsar efter att nivån ändrats. */
 const LEVEL_FLASH_MS = 500;
 
-type Screen = 'menu' | 'game' | 'result' | 'heatmap';
+/** Skärmarna inom Svep. Se `MasterScreen` — Mästaren har en skärm till. */
+type SwipeScreen = 'menu' | 'game' | 'result' | 'heatmap';
 
 interface Feedback {
   correct: boolean;
@@ -58,7 +59,7 @@ export class SwipeViewComponent implements OnDestroy {
   readonly endless = ENDLESS;
   readonly levelMax = LEVEL_MAX;
 
-  screen: Screen = 'menu';
+  screen: SwipeScreen = 'menu';
   selectedQuestionCount = DEFAULT_QUESTION_COUNT;
 
   level = DEFAULT_START_LEVEL;

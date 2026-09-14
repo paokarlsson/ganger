@@ -8,8 +8,10 @@ import { ThemePickerComponent } from './theme-picker/theme-picker.component';
 import { ObservationLog } from './services/observation-log';
 import { TrainingEngine } from './training/training-engine';
 
-/** Spelen som går att välja mellan, plus menyn de väljs från. */
-export type Screen = 'menu' | 'match' | 'swipe' | 'master';
+/** Spelen som går att välja mellan, plus menyn de väljs från. Skild från
+ *  spelens egna `MasterScreen` och `SwipeScreen`, som är skärmar *inom* ett
+ *  spel — de tre hette förut `Screen` allihop. */
+export type Game = 'menu' | 'match' | 'swipe' | 'master';
 
 @Component({
   selector: 'app-root',
@@ -19,7 +21,7 @@ export type Screen = 'menu' | 'match' | 'swipe' | 'master';
   styleUrl: './app.component.scss',
 })
 export class AppComponent {
-  screen: Screen = 'menu';
+  game: Game = 'menu';
 
   /** Hur många av tabellens tal som sitter. Räknas mot `factCount`, som är 55
    *  och inte 100: 7 × 8 och 8 × 7 är samma kunskap och en enda rad i lagret. */
@@ -41,14 +43,14 @@ export class AppComponent {
     return this.factCount === 0 ? 0 : (this.masteredCount / this.factCount) * 100;
   }
 
-  play(screen: Screen): void {
-    this.screen = screen;
+  play(game: Game): void {
+    this.game = game;
   }
 
   showMenu(): void {
     // Spelen är egna komponenter, så de rivs här och startar om från början
     // nästa gång de väljs.
-    this.screen = 'menu';
+    this.game = 'menu';
     this.readProgress();
   }
 

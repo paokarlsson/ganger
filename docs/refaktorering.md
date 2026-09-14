@@ -31,19 +31,6 @@ att *använda* dem, inte att riva dem.
 
 ## 1. Dubblering
 
-### 1.8 Tre `Screen`-typer med samma namn
-
-`app.component.ts` (`'menu' | 'match' | 'swipe' | 'master'`),
-`master-view.component.ts` (`'menu' | 'calibration' | 'game' | 'result' | 'heatmap'`)
-och `swipe-view.component.ts` (`'menu' | 'game' | 'result' | 'heatmap'`).
-
-Tre olika saker med ett namn. Den första är vilket *spel* som visas, de andra
-två vilken *skärm inom spelet*.
-
-**Åtgärd:** döp om till `Game` (app) respektive `MasterScreen` / `SwipeScreen`.
-Att slå ihop de två sista är frestande men ger en typ som tillåter
-`'calibration'` i Svep — gör det inte.
-
 ### 1.9 Dubblerade stilar
 
 * `:host { font-family; background: var(--surface); color: var(--text-primary) }`

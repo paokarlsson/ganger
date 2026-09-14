@@ -16,7 +16,9 @@ import {
   Pair,
 } from './levels';
 
-type Screen = 'menu' | 'calibration' | 'game' | 'result' | 'heatmap';
+/** Skärmarna inom Mästaren. Att slå ihop den med Sveps vore frestande men
+ *  skulle ge en typ som tillåter 'calibration' där. */
+type MasterScreen = 'menu' | 'calibration' | 'game' | 'result' | 'heatmap';
 
 interface Answer {
   a: number;
@@ -58,7 +60,7 @@ export class MasterViewComponent implements OnDestroy {
   readonly calibrationQuestions = CALIBRATION_QUESTIONS;
   readonly penaltyTime = PENALTY_TIME;
 
-  screen: Screen = 'menu';
+  screen: MasterScreen = 'menu';
   selectedLevel: Level = 'auto';
   selectedQuestionCount = 10;
 
