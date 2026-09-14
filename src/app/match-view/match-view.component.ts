@@ -160,12 +160,12 @@ export class MatchViewComponent implements OnDestroy {
       this.lastResolvedAt = this.now();
       this.firstTouchAt = null;
       this.resetLeftAndRight();
-      this.playSuccess();
+      this.playEffect(this.rightAudio);
     } else {
       this.recordMispair(this.left, this.right);
       this.attempts.set(this.left, (this.attempts.get(this.left) ?? 0) + 1);
       this.attempts.set(this.right, (this.attempts.get(this.right) ?? 0) + 1);
-      this.playWrong();
+      this.playEffect(this.wrongAudio);
     }
   }
 
@@ -258,18 +258,10 @@ export class MatchViewComponent implements OnDestroy {
     return typeof performance === 'undefined' ? Date.now() : performance.now();
   }
 
-  private playWrong() {
-    this.wrongAudio.currentTime = 0;
-    this.wrongAudio
-      .play()
-      .catch((error) => console.error('Error playing effect:', error));
-  }
-
-  private playSuccess() {
-    this.rightAudio.currentTime = 0;
-    this.rightAudio
-      .play()
-      .catch((error) => console.error('Error playing effect:', error));
+  /** Spelar om från början, så att två par i snabb följd hörs som två. */
+  private playEffect(audio: HTMLAudioElement): void {
+    audio.currentTime = 0;
+    audio.play().catch((error) => console.error('Error playing effect:', error));
   }
 }
 

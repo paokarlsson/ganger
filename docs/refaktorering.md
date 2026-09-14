@@ -8,8 +8,9 @@ bör göras och varför* — det ändrar ingen kod självt.
 på vägen dit. En post som utförs stryks härifrån; en som visar sig vara fel
 stryks också, med en rad om varför.
 
-Storleken just nu: **10 230 rader** över 57 filer i `src/`, varav 864 rader
-(8 %) är den temporära temaväljaren och 2 000 rader är tester.
+Storleken just nu: **10 370 rader** över 59 `.ts`-, `.html`- och `.scss`-filer
+i `src/`, varav 864 rader (8 %) är den temporära temaväljaren och 2 735 rader
+är tester.
 
 ---
 
@@ -31,12 +32,12 @@ att *använda* dem, inte att riva dem.
 
 ## 1. Dubblering
 
-### 1.11 `playWrong()` och `playSuccess()`
+Utförd. Kvar av den ligger i `shared/` (shuffle, clamp, median och snitt),
+`services/local-store.ts`, `services/debounced-writer.ts` och
+`testing/engine.ts`.
 
-`match-view.component.ts` — identiska kroppar så när som på vilket
-ljudelement som rörs.
-
-**Åtgärd:** `private playEffect(audio: HTMLAudioElement)`. Se även 4.3.
+Numreringen nedan står kvar som den var — hänvisningarna i planen och i
+koden pekar på de numren.
 
 ---
 
@@ -381,6 +382,11 @@ ESLint, och CI kör bara `npm test`.
 Punkt 1–2 bör tas **först av allt i den här planen**: varje annan ändring nedan
 blir annars en blandning av innehåll och formatering i samma diff.
 
+Avsnitt 1 gick före ändå. Filerna det lade till (`shared/`,
+`services/local-store.ts`, `services/debounced-writer.ts`, `testing/engine.ts`)
+är skrivna med två stegs indrag och enkla citattecken, alltså som resten av
+`.ts`-koden, så formateringscommiten bör inte röra dem.
+
 ### 6.2 README har svällt
 
 22 570 tecken, och beskriver numera både vad spelet är, hur lagren hänger ihop,
@@ -401,15 +407,15 @@ tillstånd där nästa steg blir mindre.
 | --- | --- | --- | --- |
 | 1 | Prettier + ESLint + formateringscommit (6.1) | halvdag | — |
 | 2 | Död kod och genomgångsexporter (2.1–2.4) | liten | 1 |
-| 3 | `shared/`: shuffle, clamp, median, statistik (1.1, 1.5, 1.7) | liten | 1 |
-| 4 | `local-store.ts` + `DebouncedWriter` (1.2, 1.3) | medel | 3 |
 | 5 | Namnbyten (3.1–3.6) | medel | 1 |
 | 6 | Kommentarskonsolidering (5.1–5.4) + språkval (3.7) | medel | 5 |
 | 7 | `GameAudio` + match-viewens konstruktor (4.3) | medel | 5 |
-| 8 | Resultat- och frågebygge ut ur `MasterViewComponent` (4.1) | stor | 3 |
-| 9 | SCSS-konsolidering (1.9) | medel | 1 |
+| 8 | Resultat- och frågebygge ut ur `MasterViewComponent` (4.1) | stor | — |
 | 10 | `npm run report` (4.4) | liten | — |
 | 11 | Signaler (4.5) | stor, eget arbete | 8 |
+
+Steg 3, 4 och 9 är utförda — de var avsnitt 1, och numren står kvar tomma så
+att de kvarvarandes beroenden fortsätter peka rätt.
 
 Steg 1 och 2 är rena vinster utan risk. Steg 11 är den enda posten som ändrar
 hur appen fungerar under ytan och bör ha egna tester före och efter.
