@@ -43,21 +43,6 @@ koden pekar på de numren.
 
 ## 2. Död och överflödig kod
 
-### 2.3 Genomgångsexporter och genomgångsgetters
-
-* `swipe-difficulty.ts:12` re-exporterar `LEVEL_MAX` och `LEVEL_MIN` från
-  `fact-selector.ts`. `swipe-view.component.ts` importerar dem den vägen och
-  ser därför inte var de bor.
-* `training-engine.ts:33` re-exporterar `ChannelStat` från `progress-store.ts`,
-  och `heatmap-grid.ts` importerar typen *genom motorn*. Pilen pekar fel:
-  rutnätet beror på `HeatSource`, inte på `TrainingEngine`.
-* `MasterViewComponent.consecutiveFastDisplay` (rad 133) returnerar
-  `this.auto.consecutiveFast` och står direkt bredvid `streakVisible` som
-  läser samma fält. Mallen kan läsa en av dem.
-* `SwipeViewComponent.start()` och `restart()` har identiska kroppar.
-  Behåll båda namnen om mallen vinner på det, men låt den ena anropa den andra.
-* `MatchViewComponent.resetLeftAndRight()` är publik men anropas bara inifrån.
-
 ### 2.4 `isObservation` (observation-log.ts:265)
 
 Deklarerad som `(value: unknown): boolean` och sedan tvingad till ett

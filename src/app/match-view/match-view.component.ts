@@ -132,7 +132,7 @@ export class MatchViewComponent implements OnDestroy {
     this.evaluatePair();
   }
 
-  resetLeftAndRight() {
+  private resetLeftAndRight() {
     this.left = null;
     this.right = null;
   }

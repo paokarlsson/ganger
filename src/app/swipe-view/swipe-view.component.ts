@@ -2,6 +2,7 @@ import { Component, HostListener, OnDestroy, ViewChild, ChangeDetectionStrategy,
 import { MatCardModule } from '@angular/material/card';
 import { CdkDrag, CdkDragEnd, CdkDragMove } from '@angular/cdk/drag-drop';
 import { Fact } from '../facts/fact-catalog';
+import { LEVEL_MAX, LEVEL_MIN } from '../facts/fact-selector';
 import { HeatmapComponent } from '../heatmap/heatmap.component';
 import { PENALTY_TIME } from '../master-view/levels';
 import { clamp } from '../shared/numbers';
@@ -14,8 +15,6 @@ import {
   GeneratedStatement,
   HEAT_TIERS,
   HeatTier,
-  LEVEL_MAX,
-  LEVEL_MIN,
   QUESTION_COUNTS,
   RoundMemory,
   createRoundMemory,
@@ -192,10 +191,10 @@ export class SwipeViewComponent implements OnDestroy {
     this.restartRound();
   }
 
-  /** "Spela igen" på slutskärmen — samma inställningar, ny rond. */
+  /** "Spela igen" på slutskärmen — samma inställningar, ny rond. Mallen vinner
+   *  på att slutknappen heter något annat än startknappen. */
   restart(): void {
-    this.screen = 'game';
-    this.restartRound();
+    this.start();
   }
 
   backToMenu(): void {

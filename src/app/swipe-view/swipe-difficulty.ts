@@ -10,8 +10,6 @@ import { FACTS, Fact, factKey } from '../facts/fact-catalog';
 import { FactNeed, LEVEL_MAX, LEVEL_MIN, RECENT_MEMORY, selectFact } from '../facts/fact-selector';
 import { clamp } from '../shared/numbers';
 
-export { LEVEL_MAX, LEVEL_MIN } from '../facts/fact-selector';
-
 /** Ett genererat påstående, redo att visas på kortet. */
 export interface GeneratedStatement {
   fact: Fact;

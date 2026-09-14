@@ -81,7 +81,7 @@
         <div class="feedback" [class.correct-feedback]="feedbackKind === 'correct'"
           [class.wrong-feedback]="feedbackKind === 'wrong'">{{ feedbackText }}</div>
         <div class="streak-indicator" [class.visible]="streakVisible">
-          🔥 {{ consecutiveFastDisplay }} snabba i rad!
+          🔥 {{ auto.consecutiveFast }} snabba i rad!
         </div>
         <button type="button" class="abort-btn ui-btn ui-btn--quiet" (click)="openAbortModal()">Avbryt</button>
       </div>

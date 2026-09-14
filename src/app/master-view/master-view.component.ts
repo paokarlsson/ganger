@@ -101,8 +101,9 @@ export class MasterViewComponent implements OnDestroy {
   private calibrationHandle?: ReturnType<typeof setTimeout>;
   private calibrationTimes: number[] = [];
   /** Auto-lägets läge i skalan, och räknarna som flyttar det. Ett värde i
-   *  stället för tre fält — se `training/auto-difficulty.ts`. */
-  private auto: AutoDifficultyState = initialAutoDifficulty('easy');
+   *  stället för tre fält — se `training/auto-difficulty.ts`. Mallen läser
+   *  räckan härifrån; `streakVisible` äger tröskeln för när den syns. */
+  protected auto: AutoDifficultyState = initialAutoDifficulty('easy');
   private gameAborted = false;
 
   ngOnDestroy(): void {
@@ -131,10 +132,6 @@ export class MasterViewComponent implements OnDestroy {
 
   get streakVisible(): boolean {
     return this.auto.consecutiveFast >= STREAK_VISIBLE_FROM;
-  }
-
-  get consecutiveFastDisplay(): number {
-    return this.auto.consecutiveFast;
   }
 
   get calibratedTimeDisplay(): string {

@@ -34,8 +34,6 @@ import {
   progressKeyFor,
 } from '../services/progress-store';
 
-export type { ChannelStat } from '../services/progress-store';
-
 /** Skrivet svar eller svep. Tiderna är inte jämförbara mellan de två. */
 export type Channel = 'typed' | 'swipe';
 
