@@ -43,22 +43,6 @@ koden pekar på de numren.
 
 ## 2. Död och överflödig kod
 
-### 2.1 `TrainingEngine.useRepository()` (rad 135)
-
-```ts
-/** Pekar om lagringen. Finns för testerna och för den dag lagret byts ut. */
-```
-
-Den anropas inte av något test och inte av appen. Testerna skriver i stället
-rå JSON till `localStorage` och läser tillbaka den — vilket gör dem beroende
-av lagringsformatet i tester som handlar om pedagogik.
-
-**Åtgärd:** använd sömmen. En `InMemoryProgressRepository` i `testing/` gör
-`training-engine.spec.ts` och `heatmap-grid.spec.ts` oberoende av jsdom:s
-`localStorage`, och är förresten det enda sättet att i dag pröva att motorn
-klarar en lagring som kastar. Om beslutet blir att inte använda den: ta bort
-metoden och kommentaren som lovar något annat.
-
 ### 2.2 Exporter utan konsument
 
 Varken appen eller något test läser dem:

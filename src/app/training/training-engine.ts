@@ -115,7 +115,10 @@ export class TrainingEngine implements OnDestroy {
   /** Ett besvarat kort får inte gå förlorat för att fliken läggs undan innan
    *  nästa skrivning hunnit — det sköter skrivaren. */
   private readonly writer = new DebouncedWriter(STATS_WRITE_DELAY, () => {
-    void this.repository.save(this.progress);
+    // En lagring som säger nej får inte stoppa ronden: dokumentet lever kvar i
+    // minnet sessionen ut. Samma hållning som `local-store.ts` har mot en full
+    // kvot, fast här mot en lagring som kastar.
+    void this.repository.save(this.progress).catch(() => undefined);
   });
 
   ngOnDestroy(): void {
@@ -130,7 +133,9 @@ export class TrainingEngine implements OnDestroy {
     this.progress = await this.repository.load();
   }
 
-  /** Pekar om lagringen. Finns för testerna och för den dag lagret byts ut. */
+  /** Pekar om lagringen. Testerna kör mot en lagring i minnet, se
+   *  `testing/progress-repository.ts`; den dag lagret byts ut mot en backend är
+   *  det här bytet sker. */
   useRepository(repository: ProgressRepository): void {
     this.repository = repository;
   }
