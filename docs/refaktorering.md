@@ -31,24 +31,6 @@ att *använda* dem, inte att riva dem.
 
 ## 1. Dubblering
 
-### 1.2 localStorage-hanteringen finns i tre exemplar
-
-`LocalStorageProgressRepository.read/readRaw` (progress-store.ts:189, 197),
-`ObservationLog.read/write` (observation-log.ts:222, 235) och
-`ProgressExportService.read` (progress-export.ts:72) gör alla samma sak: läs
-nyckel, svälj undantaget, `JSON.parse`, svälj undantaget igen. Fyra tomma
-`catch`-block bär kommentaren `// Se save().` eller `// Se flush().`, vilket är
-själva kvittot på att koden borde ligga på ett ställe.
-
-**Åtgärd:** `src/app/services/local-store.ts` med
-`readJson(key): unknown`, `writeJson(key, value): boolean` och `remove(key)`.
-Ett ställe som får ha de tomma catch-blocken, och en enda kommentar som
-förklarar varför de finns (privat läge, avstängd sajtdata).
-
-Notera att `ObservationLog.flush()` behöver `writeJson`s `boolean` — den
-trappar ned `storageLimit` på nekad skrivning, och den logiken ska stanna där
-den är.
-
 ### 1.3 Fördröjd skrivning + flush-vid-sidbyte finns i två exemplar
 
 `TrainingEngine` (rad 110–125, 141–150, 534–536) och `ObservationLog`
@@ -476,7 +458,6 @@ Utspridda, men värda att ta när man ändå är i filen:
   `MIN_MASTERY_SAMPLES`, vars egen deklaration (rad 66) säger samma sak.
 * `master-view.component.ts` / `swipe-view.component.ts` — sektionsbannerna,
   se 4.1.
-* De fyra `// Se save().` / `// Se flush().` — försvinner med 1.2.
 
 ---
 

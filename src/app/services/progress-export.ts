@@ -10,6 +10,7 @@
  * bara loggen kan inte besvara den frågan.
  */
 import { Injectable } from '@angular/core';
+import { readJson } from './local-store';
 import { OBSERVATIONS_KEY } from './observation-log';
 import { PROGRESS_KEY } from './progress-store';
 
@@ -27,15 +28,15 @@ export interface ProgressExport {
 export class ProgressExportService {
   /** Om det finns något att exportera alls. */
   get hasSomethingToExport(): boolean {
-    return this.read(PROGRESS_KEY) !== null || this.read(OBSERVATIONS_KEY) !== null;
+    return readJson(PROGRESS_KEY) !== null || readJson(OBSERVATIONS_KEY) !== null;
   }
 
   build(): ProgressExport {
     return {
       exportVersion: EXPORT_VERSION,
       exportedAt: new Date().toISOString(),
-      progress: this.read(PROGRESS_KEY),
-      observations: this.read(OBSERVATIONS_KEY),
+      progress: readJson(PROGRESS_KEY),
+      observations: readJson(OBSERVATIONS_KEY),
     };
   }
 
@@ -67,22 +68,5 @@ export class ProgressExportService {
     link.download = `ganger-export-${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     URL.revokeObjectURL(url);
-  }
-
-  private read(key: string): unknown {
-    let raw: string | null;
-    try {
-      raw = localStorage.getItem(key);
-    } catch {
-      return null;
-    }
-    if (raw === null) {
-      return null;
-    }
-    try {
-      return JSON.parse(raw) as unknown;
-    } catch {
-      return null;
-    }
   }
 }

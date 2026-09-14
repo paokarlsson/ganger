@@ -19,6 +19,7 @@
  * inte av vad som råkar kännas lagom — se `MAX_OBSERVATIONS`.
  */
 import { Injectable } from '@angular/core';
+import { readJson, remove, writeJson } from './local-store';
 
 export const OBSERVATIONS_KEY = 'ganger-observations';
 export const OBSERVATIONS_SCHEMA_VERSION = 1;
@@ -212,11 +213,7 @@ export class ObservationLog {
     this.observations = [];
     // Kvoten kan mycket väl ha frigjorts av just den här rensningen.
     this.storageLimit = MAX_OBSERVATIONS;
-    try {
-      localStorage.removeItem(OBSERVATIONS_KEY);
-    } catch {
-      // Se flush().
-    }
+    remove(OBSERVATIONS_KEY);
   }
 
   private write(observations: Observation[]): boolean {
@@ -224,41 +221,23 @@ export class ObservationLog {
       schemaVersion: OBSERVATIONS_SCHEMA_VERSION,
       observations,
     };
-    try {
-      localStorage.setItem(OBSERVATIONS_KEY, JSON.stringify(document));
-      return true;
-    } catch {
-      return false;
-    }
+    return writeJson(OBSERVATIONS_KEY, document);
   }
 
   private read(): Observation[] {
-    let raw: string | null;
-    try {
-      raw = localStorage.getItem(OBSERVATIONS_KEY);
-    } catch {
+    const parsed = readJson(OBSERVATIONS_KEY);
+    if (typeof parsed !== 'object' || parsed === null) {
       return [];
     }
-    if (raw === null) {
+    const observations = (parsed as { observations?: unknown }).observations;
+    if (!Array.isArray(observations)) {
       return [];
     }
-    try {
-      const parsed: unknown = JSON.parse(raw);
-      if (typeof parsed !== 'object' || parsed === null) {
-        return [];
-      }
-      const observations = (parsed as { observations?: unknown }).observations;
-      if (!Array.isArray(observations)) {
-        return [];
-      }
-      // Loggen är felsökningsdata. Att en post ser konstig ut är inte värt att
-      // krascha uppstarten för, men den ska inte heller tas för en händelse.
-      return observations
-        .filter((item): item is Observation => isObservation(item))
-        .slice(-MAX_OBSERVATIONS);
-    } catch {
-      return [];
-    }
+    // Loggen är felsökningsdata. Att en post ser konstig ut är inte värt att
+    // krascha uppstarten för, men den ska inte heller tas för en händelse.
+    return observations
+      .filter((item): item is Observation => isObservation(item))
+      .slice(-MAX_OBSERVATIONS);
   }
 }
 
