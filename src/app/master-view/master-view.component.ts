@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnDestroy, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { HeatmapComponent } from '../heatmap/heatmap.component';
 import { ObservationLog } from '../services/observation-log';
-import { ProgressExportService } from '../services/progress-export';
+import { ProgressExporter } from '../services/progress-export';
 import { timeColor } from '../services/time-color';
 import { shuffle } from '../shared/random';
 import { AutoDifficultyState, initialAutoDifficulty } from '../training/auto-difficulty';
@@ -93,7 +93,7 @@ export class MasterViewComponent implements OnDestroy {
 
   private readonly engine = inject(TrainingEngine);
   private readonly observations = inject(ObservationLog);
-  private readonly exporter = inject(ProgressExportService);
+  private readonly exporter = inject(ProgressExporter);
   private questions: Pair[] = [];
   private questionStartTime = 0;
   private timerHandle?: ReturnType<typeof setInterval>;

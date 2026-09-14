@@ -8,8 +8,8 @@ bör göras och varför* — det ändrar ingen kod självt.
 på vägen dit. En post som utförs stryks härifrån; en som visar sig vara fel
 stryks också, med en rad om varför.
 
-Storleken just nu: **10 523 rader** över 60 `.ts`-, `.html`- och `.scss`-filer
-i `src/`, varav 864 rader (8 %) är den temporära temaväljaren och 2 808 rader
+Storleken just nu: **10 566 rader** över 60 `.ts`-, `.html`- och `.scss`-filer
+i `src/`, varav 864 rader (8 %) är den temporära temaväljaren och 2 809 rader
 är tester.
 
 ---
@@ -52,88 +52,28 @@ täckta av egna tester.
 
 ## 3. Namngivning
 
-### 3.1 Tre vokabulärer för ett och samma begrepp
+Utförd. `Question` och `GeneratedStatement` är nu båda ett `Fact` plus den
+ordning talet ritas i, så `first/second` och `n1/n2` är borta och nyckeln faller
+ut ur katalogen i stället för att bäras med. Match-viewen talar om frågor och
+svar rakt igenom, inte om `selQ` och `left`. Motorns nio tröskelnamn har blivit
+`thresholdsFor(channel)`, med de kanalspecifika privata, och de fyra
+`hasPractice`-booleanerna har en kommentar som ställer dem mot varandra i
+stället för fyra som var och en förklarar sig själv. `ProgressExportService` är
+`ProgressExporter`, efter repots suffixlösa konvention — `ProgressExport` står
+kvar som namnet på det som exporteras.
 
-| Form | Var | Fält |
-| --- | --- | --- |
-| `Fact` | `facts/fact-catalog.ts` | `a`, `b`, `answer` |
-| `Pair` | `master-view/levels.ts` | `[number, number]` |
-| `Question` | `match-view.component.ts` | `first`, `second` |
-| `GeneratedStatement` | `swipe-difficulty.ts` | `n1`, `n2` |
+Språket är avgjort: **kodkommentarer skrivs på svenska.** Det som fanns kvar på
+engelska låg i `match-view` och är omskrivet. README förblir engelsk och har
+fått en engelsk rubrik för temaväljaren.
 
-Fyra namn på «ett tal och dess två faktorer». `Pair` går inte att slå ihop utan
-att röra `DIFFICULTY`-tabellerna, men `Question.first/second` och
-`GeneratedStatement.n1/n2` kan båda byta till `a`/`b` utan att något annat
-ändras — och `Question` kan bli ett `Fact` plus visningsordningen, vilket är
-vad den redan är.
-
-### 3.2 `match-view.component.ts` bär hela repots förkortningar
-
-`selQ`, `selA`, `isQSelected`, `isASelected`, `isLeftWrong`, `allIsDone()`,
-`next()`, `playLoop`. Två vokabulärer blandas dessutom: `Q`/`A` (fråga/svar)
-och `left`/`right` (sida) för samma två spalter.
-
-**Förslag:** `selectQuestion` / `selectAnswer`, `isQuestionSelected` /
-`isAnswerSelected`, `isRoundComplete()`, `nextRound()`. Välj *en* av
-fråga/svar och vänster/höger — fråga/svar beskriver vad det är, sidan bara var
-det råkar ritas.
-
-### 3.3 `currentStatmentString`
-
-`swipe-view.component.ts:73` (satt på rad 413) — felstavat (`Statment`) och `String`-suffixet
-säger ingenting. Läses i mallen.
-
-**Förslag:** `statementText`.
-
-### 3.4 `nrCorrect` / `nrWrong`
-
-`swipe-view.component.ts` — `nr`-prefixet finns ingen annanstans i repot.
-
-**Förslag:** `correctCount` / `wrongCount`.
-
-### 3.5 Motorns tröskelfamilj
-
-`fastSeconds`, `fastSecondsFor(channel)`, `swipeFastSeconds`,
-`calibratedFastTime`, `slowSeconds`, `slowSecondsFor(channel)`,
-`swipeSlowSeconds`, `baselineSecondsFor(channel)`, `swipeBaselineSeconds`.
-
-Nio medlemmar för två kanaler × två trösklar. Varje enskilt namn är rimligt;
-tillsammans är de svåra att hålla isär, och `fastSeconds` (som betyder *skrivet
-svar*) ser ut som överkategorin till `fastSecondsFor()`.
-
-**Förslag:** en `thresholdsFor(channel): { fast, slow, baseline }` som det enda
-publika, och de kanalspecifika som privata. Värmekartan hämtar redan alla tre
-var för sig (`heatmap-grid.ts:47–48`, `heatmap.component.ts:79`).
-
-Samma sak med de fyra booleanerna `hasPractice`, `hasAnyPractice`,
-`hasPracticeIn(channel)`, `hasStoredProgress` — här räcker det förmodligen med
-en kommentar som ställer dem mot varandra på ett ställe, i stället för fyra som
-var och en förklarar sig själv.
-
-### 3.6 Filnamn
-
-`progress-export.ts` exporterar `ProgressExportService` — den enda klassen i
-repot med `Service`-suffix (`TrainingEngine`, `ObservationLog`,
-`LocalStorageProgressRepository` har inget). Välj en konvention.
-
-### 3.7 Språk
-
-`match-view.component.ts` och dess mall är kommenterade på engelska
-(«The audio elements are plain objects…», «Number of pairs shown in one
-round», «Lays out the answers so none of them sits…»), resten av `src/` på
-svenska. Filen har dessutom svenska kommentarer i de nyare delarna, så den är
-blandad i sig själv. README är engelsk men har en svensk rubrik
-(«Temaväljaren (temporary)»).
-
-**Åtgärd:** bestäm ett språk för kodkommentarer — svenska, givet att 20 av 21
-filer redan är det — och gör om `match-view`. README är en annan fråga och kan
-gott förbli engelsk, men då ska rubriken översättas.
+`Pair` i `master-view/levels.ts` står kvar — den går inte att slå ihop utan att
+röra `DIFFICULTY`-tabellerna, vilket är ett annat arbete än det här.
 
 ---
 
 ## 4. Struktur och ansvar
 
-### 4.1 `MasterViewComponent` är fem komponenter i en (514 rader)
+### 4.1 `MasterViewComponent` är fem komponenter i en (511 rader)
 
 Den äger fem skärmar (`menu`, `calibration`, `game`, `result`, `heatmap`), ~30
 publika fält, tre timers, kalibreringsflödet, frågebygget, resultatformateringen
@@ -143,18 +83,18 @@ på att filen innehåller fyra filer.
 
 **Åtgärd, i fallande ordning av värde:**
 
-1. `endGame()` (rad 404) formaterar resultatskärmen — snitt, bästa tid,
+1. `endGame()` (rad 410) formaterar resultatskärmen — snitt, bästa tid,
    uppdelningsrader med färg. Det är en ren transformation `Answer[] →
    RoundResult` och hör hemma i en egen modul med tester, som
    `heatmap-grid.ts` redan är för värmekartan.
-2. `buildQuestions()` (rad 430) bygger frågepoolen ur `LEVELS`. Hör hemma i
+2. `buildQuestions()` (rad 436) bygger frågepoolen ur `LEVELS`. Hör hemma i
    `levels.ts` eller i motorn — det är urval, inte utseende, och det är den
    enda urvalslogik som i dag inte går att testa.
 3. Kalibreringen (fält, `checkCalibrationAnswer`, `nextCalibrationQuestion`,
    `calibrationDotState`, två timers) är ett eget flöde med en egen skärm.
    Den kan bli `<app-calibration (done)="…">`.
 
-### 4.2 `TrainingEngine` är fyra motorer i en (547 rader)
+### 4.2 `TrainingEngine` är fyra motorer i en (536 rader)
 
 Filhuvudet beskriver den som pedagogikens fasad över rena moduler, vilket är
 rätt beskrivning. Men den bär fyra sorters ansvar: (1) skalet mot lagringen med
@@ -175,7 +115,7 @@ fler.
 constructor(private readonly log: ObservationLog = new ObservationLog()) {
   this.loopAudio = new Audio('assets/audio/loop.mp3');
   …
-  this.next();
+  this.nextRound();
 }
 ```
 
@@ -188,12 +128,12 @@ Tre problem i fyra rader:
 * **Ljudelementen byggs i konstruktorn**, så `match-view.component.spec.ts`
   måste byta ut tre publika fält efter konstruktionen (`componentWithFakeAudio`,
   `silenceEffects`) för att jsdom inte ska försöka spela upp.
-* **`this.next()` i konstruktorn** startar en runda innan komponenten ritats.
+* **`this.nextRound()` i konstruktorn** startar en runda innan komponenten ritats.
 
 **Åtgärd:** en liten `GameAudio`-tjänst med `playCorrect()`, `playWrong()`,
 `toggleLoop()`, injicerad med `inject()`. Då blir testet en provider i stället
-för tre fältbyten, `log` får sitt vanliga `inject()`, och `next()` flyttar till
-`ngOnInit`.
+för tre fältbyten, `log` får sitt vanliga `inject()`, och `nextRound()` flyttar
+till `ngOnInit`.
 
 ### 4.4 `observation-analysis.report.spec.ts` är ett verktyg i testdräkt
 
@@ -282,12 +222,12 @@ faktiskt behöver.
 
 Utspridda, men värda att ta när man ändå är i filen:
 
-* `progress-store.ts:74` — `/** Läser och skriver. Ingen pedagogik, inga
+* `progress-store.ts:75` — `/** Läser och skriver. Ingen pedagogik, inga
   trösklar, inga beslut. */` på ett interface med tre metoder som heter `load`,
   `save` och `clear`. Filhuvudet har redan sagt det, utförligare.
 * `training-engine.ts:525` — `// Färre än tre svar är för lite för att kalla
   ett tal automatiserat.` står ovanför en jämförelse mot
-  `MIN_MASTERY_SAMPLES`, vars egen deklaration (rad 66) säger samma sak.
+  `MIN_MASTERY_SAMPLES`, vars egen deklaration (rad 80) säger samma sak.
 * `master-view.component.ts` / `swipe-view.component.ts` — sektionsbannerna,
   se 4.1.
 
@@ -346,15 +286,20 @@ tillstånd där nästa steg blir mindre.
 | # | Steg | Storlek | Beroende |
 | --- | --- | --- | --- |
 | 1 | Prettier + ESLint + formateringscommit (6.1) | halvdag | — |
-| 5 | Namnbyten (3.1–3.6) | medel | 1 |
-| 6 | Kommentarskonsolidering (5.1–5.4) + språkval (3.7) | medel | 5 |
-| 7 | `GameAudio` + match-viewens konstruktor (4.3) | medel | 5 |
+| 6 | Kommentarskonsolidering (5.1–5.4) | medel | — |
+| 7 | `GameAudio` + match-viewens konstruktor (4.3) | medel | — |
 | 8 | Resultat- och frågebygge ut ur `MasterViewComponent` (4.1) | stor | — |
 | 10 | `npm run report` (4.4) | liten | — |
 | 11 | Signaler (4.5) | stor, eget arbete | 8 |
 
-Steg 2, 3, 4 och 9 är utförda — steg 2 var avsnitt 2, de andra tre avsnitt 1.
-Numren står kvar tomma så att de kvarvarandes beroenden fortsätter peka rätt.
+Steg 2, 3, 4, 5 och 9 är utförda — steg 2 var avsnitt 2, steg 5 avsnitt 3, de
+andra tre avsnitt 1. Numren står kvar tomma så att de kvarvarandes beroenden
+fortsätter peka rätt.
+
+Steg 1 stod som beroende för 5, 6 och 7 för att formateringen skulle gå först
+och hålla diffarna rena. Avsnitt 3 gick före ändå, av samma skäl som avsnitt 1
+gjorde det: det som ändrades är skrivet med repots vanliga två stegs indrag, så
+formateringscommiten har fortfarande inget att göra där.
 
 Steg 1 är en ren vinst utan risk. Steg 11 är den enda posten som ändrar
 hur appen fungerar under ytan och bör ha egna tester före och efter.

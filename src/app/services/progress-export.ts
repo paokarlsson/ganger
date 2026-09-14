@@ -25,7 +25,7 @@ export interface ProgressExport {
 }
 
 @Injectable({ providedIn: 'root' })
-export class ProgressExportService {
+export class ProgressExporter {
   /** Om det finns något att exportera alls. */
   get hasSomethingToExport(): boolean {
     return readJson(PROGRESS_KEY) !== null || readJson(OBSERVATIONS_KEY) !== null;
