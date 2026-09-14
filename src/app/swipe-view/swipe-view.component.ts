@@ -71,9 +71,9 @@ export class SwipeViewComponent implements OnDestroy {
   private previousBestStreak = 0;
 
   currentStatement: GeneratedStatement | undefined;
-  currentStatmentString = '';
-  nrCorrect = 0;
-  nrWrong = 0;
+  statementText = '';
+  correctCount = 0;
+  wrongCount = 0;
   feedback: Feedback | undefined;
 
   /** -1 helt åt vänster, 0 i vila, +1 helt åt höger. Driver all dragrespons. */
@@ -110,7 +110,7 @@ export class SwipeViewComponent implements OnDestroy {
   }
 
   get totalAnswered(): number {
-    return this.nrCorrect + this.nrWrong;
+    return this.correctCount + this.wrongCount;
   }
 
   /**
@@ -217,8 +217,8 @@ export class SwipeViewComponent implements OnDestroy {
     clearTimeout(this.feedbackTimer);
     clearTimeout(this.flashTimer);
     this.answered = 0;
-    this.nrCorrect = 0;
-    this.nrWrong = 0;
+    this.correctCount = 0;
+    this.wrongCount = 0;
     this.memory = createRoundMemory();
     this.streak = 0;
     this.roundBestStreak = 0;
@@ -286,11 +286,11 @@ export class SwipeViewComponent implements OnDestroy {
     // och en miss kommer tillbaka som ett sant kort precis som annars.
     if (correct) {
       if (!this.calibrating) {
-        this.nrCorrect += 1;
+        this.correctCount += 1;
       }
     } else {
       if (!this.calibrating) {
-        this.nrWrong += 1;
+        this.wrongCount += 1;
       }
       this.buzz();
       // Nästa gång talet kommer upp ska det vara sant — den rätta kopplingen
@@ -308,10 +308,10 @@ export class SwipeViewComponent implements OnDestroy {
     }
     this.answered += 1;
 
-    const { n1, n2 } = statement;
+    const { a, b } = statement;
     this.feedback = {
       correct,
-      solution: `${n1} × ${n2} = ${n1 * n2}`,
+      solution: `${a} × ${b} = ${a * b}`,
     };
     clearTimeout(this.feedbackTimer);
     this.feedbackTimer = setTimeout(
@@ -407,7 +407,7 @@ export class SwipeViewComponent implements OnDestroy {
       need: this.need,
     });
     this.currentStatement = next;
-    this.currentStatmentString = `${next.n1} × ${next.n2} = ${next.shown}`;
+    this.statementText = `${next.a} × ${next.b} = ${next.shown}`;
     this.cardShownAt = performance.now();
   }
 

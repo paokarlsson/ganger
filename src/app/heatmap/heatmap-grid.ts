@@ -8,7 +8,7 @@
 import { MAX_FACTOR, MIN_FACTOR } from '../facts/fact-catalog';
 import { ChannelStat } from '../services/progress-store';
 import { timeColor } from '../services/time-color';
-import { Channel } from '../training/training-engine';
+import { Channel, Thresholds } from '../training/training-engine';
 
 export interface HeatCell {
   text: string;
@@ -30,8 +30,7 @@ export interface HeatRow {
 export interface HeatSource {
   statFor(a: number, b: number, channel: Channel): ChannelStat | undefined;
   averageSeconds(stat: ChannelStat | undefined): number | null;
-  fastSecondsFor(channel: Channel): number;
-  slowSecondsFor(channel: Channel): number;
+  thresholdsFor(channel: Channel): Thresholds;
 }
 
 /**
@@ -46,8 +45,7 @@ export interface HeatSource {
  * hade fått halva tabellen att se behärskad ut på fel grund.
  */
 export function buildHeatRows(source: HeatSource, channel: Channel): HeatRow[] {
-  const fast = source.fastSecondsFor(channel);
-  const slow = source.slowSecondsFor(channel);
+  const { fast, slow } = source.thresholdsFor(channel);
   const rows: HeatRow[] = [];
 
   for (let row = MIN_FACTOR; row <= MAX_FACTOR; row++) {

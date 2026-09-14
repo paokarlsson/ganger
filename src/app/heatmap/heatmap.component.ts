@@ -76,7 +76,7 @@ export class HeatmapComponent implements OnInit {
 
   /** Takten kanalens färger utgår från, som text. */
   get baselineDisplay(): string {
-    const baseline = this.engine.baselineSecondsFor(this.channel);
+    const { baseline } = this.engine.thresholdsFor(this.channel);
     return baseline === null ? '—' : `${baseline.toFixed(1)}s`;
   }
 

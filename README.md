@@ -316,7 +316,7 @@ difficulty cannot rise any further, because that same counter is what the cheer
 in the top row is showing — resetting it on a step that could not be taken
 would put the cheer out mid-run.
 
-## Temaväljaren (temporary)
+## Theme picker (temporary)
 
 `src/app/theme-picker/` is scaffolding, not part of the app. It puts a **Tema**
 button in the bottom right corner that switches between a handful of candidate

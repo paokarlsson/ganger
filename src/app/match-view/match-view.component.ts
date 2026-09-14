@@ -1,10 +1,10 @@
 import { Component, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
-import { FACTS } from '../facts/fact-catalog';
+import { FACTS, Fact } from '../facts/fact-catalog';
 import { ObservationLog } from '../services/observation-log';
 import { progressKeyFor } from '../services/progress-store';
 import { shuffle } from '../shared/random';
 
-/** Number of pairs shown in one round. */
+/** Antal par som visas i en runda. */
 const ROUND_SIZE = 5;
 
 @Component({
@@ -17,11 +17,13 @@ export class MatchViewComponent implements OnDestroy {
   playLoop: boolean = false;
 
   round: Question[] = [];
-  leftList: Question[] = [];
-  rightList: Question[] = [];
+  /** Frågespalten och svarsspalten, var och en i sin egen ordning. */
+  questionColumn: Question[] = [];
+  answerColumn: Question[] = [];
   doneQuestions = new Set<Question>();
-  left: Question | null = null;
-  right: Question | null = null;
+  /** Det som är valt i respektive spalt just nu. */
+  selectedQuestion: Question | null = null;
+  selectedAnswer: Question | null = null;
 
   loopAudio: HTMLAudioElement;
   rightAudio: HTMLAudioElement;
@@ -49,14 +51,14 @@ export class MatchViewComponent implements OnDestroy {
     this.rightAudio.volume = 0.3;
     this.wrongAudio = new Audio('assets/audio/wrong.wav');
     this.wrongAudio.volume = 0.3;
-    this.next();
+    this.nextRound();
   }
 
   /**
-   * The audio elements are plain objects, not part of the template, so tearing
-   * the game down leaves them playing: going back to the menu would carry the
-   * music along, and starting the game again would build a second element that
-   * plays on top of the first one, with no way left to stop either.
+   * Ljudelementen är vanliga objekt och ligger utanför mallen, så att riva
+   * spelet lämnar dem spelande: att gå tillbaka till menyn skulle bära med sig
+   * musiken, och att starta om skulle bygga ett andra element som spelar ovanpå
+   * det första, utan att något av dem gick att stoppa.
    */
   ngOnDestroy(): void {
     this.playLoop = false;
@@ -68,9 +70,9 @@ export class MatchViewComponent implements OnDestroy {
     this.playLoop = !this.playLoop;
     if (this.playLoop) {
       this.loopAudio.play().catch((error) => {
-        // Playback can be refused — an unsupported file, or a browser that
-        // wants a plainer gesture than this one. Say so with the icon rather
-        // than leaving it claiming that music is playing.
+        // Uppspelningen kan nekas — en fil som inte stöds, eller en webbläsare
+        // som vill ha en rakare gest än den här. Säg det med ikonen i stället
+        // för att låta den påstå att musik spelas.
         this.playLoop = false;
         console.error('Error starting loop:', error);
       });
@@ -79,62 +81,81 @@ export class MatchViewComponent implements OnDestroy {
     }
   }
 
-  next() {
+  nextRound() {
     this.round = this.buildRound();
     this.doneQuestions = new Set<Question>();
     this.attempts = new Map<Question, number>();
-    this.resetLeftAndRight();
-    this.leftList = shuffle(this.round);
-    this.rightList = this.shuffleDeranged(this.round, this.leftList);
+    this.clearSelection();
+    this.questionColumn = shuffle(this.round);
+    this.answerColumn = this.shuffleDeranged(this.round, this.questionColumn);
     this.roundStartedAt = this.now();
     this.lastResolvedAt = this.roundStartedAt;
   }
 
-  isDone(q: Question) {
-    return this.doneQuestions.has(q);
+  /** Visningsformen för en ruta i frågespalten. */
+  questionText(question: Question): string {
+    return `${firstFactor(question)} × ${secondFactor(question)}`;
   }
 
-  allIsDone(): boolean {
+  /** Svarsspalten visar bara produkten. */
+  answerText(question: Question): number {
+    return question.fact.answer;
+  }
+
+  isDone(question: Question) {
+    return this.doneQuestions.has(question);
+  }
+
+  isRoundComplete(): boolean {
     return this.round.length > 0 && this.doneQuestions.size === this.round.length;
   }
 
-  isQSelected(q: Question) {
-    return this.left === q;
+  isQuestionSelected(question: Question) {
+    return this.selectedQuestion === question;
   }
 
-  isASelected(q: Question) {
-    return this.right === q;
+  isAnswerSelected(question: Question) {
+    return this.selectedAnswer === question;
   }
 
-  isLeftWrong(q: Question) {
-    return this.left === q && this.right !== null && this.left !== this.right;
+  isQuestionWrong(question: Question) {
+    return this.isQuestionSelected(question) && this.isMispaired();
   }
 
-  isRightWrong(q: Question) {
-    return this.right === q && this.left !== null && this.left !== this.right;
+  isAnswerWrong(question: Question) {
+    return this.isAnswerSelected(question) && this.isMispaired();
   }
 
-  selQ(q: Question) {
-    if (this.isDone(q)) {
+  selectQuestion(question: Question) {
+    if (this.isDone(question)) {
       return;
     }
     this.noteTouch('question');
-    this.left = this.left === q ? null : q;
+    this.selectedQuestion = this.selectedQuestion === question ? null : question;
     this.evaluatePair();
   }
 
-  selA(q: Question) {
-    if (this.isDone(q)) {
+  selectAnswer(question: Question) {
+    if (this.isDone(question)) {
       return;
     }
     this.noteTouch('answer');
-    this.right = this.right === q ? null : q;
+    this.selectedAnswer = this.selectedAnswer === question ? null : question;
     this.evaluatePair();
   }
 
-  private resetLeftAndRight() {
-    this.left = null;
-    this.right = null;
+  /** Två valda rutor som inte hör ihop. Står kvar tills något annat väljs. */
+  private isMispaired(): boolean {
+    return (
+      this.selectedQuestion !== null &&
+      this.selectedAnswer !== null &&
+      this.selectedQuestion !== this.selectedAnswer
+    );
+  }
+
+  private clearSelection() {
+    this.selectedQuestion = null;
+    this.selectedAnswer = null;
   }
 
   /**
@@ -143,28 +164,29 @@ export class MatchViewComponent implements OnDestroy {
    * och `attempts` är det som bär den informationen.
    */
   private noteTouch(from: 'question' | 'answer'): void {
-    if (this.left === null && this.right === null) {
+    if (this.selectedQuestion === null && this.selectedAnswer === null) {
       this.firstTouchAt = this.now();
       this.startedFrom = from;
     }
   }
 
   private evaluatePair() {
-    if (this.left === null || this.right === null) {
+    const question = this.selectedQuestion;
+    const answer = this.selectedAnswer;
+    if (question === null || answer === null) {
       return;
     }
-    if (this.left === this.right) {
-      const matched = this.left;
-      this.recordPair(matched);
-      this.doneQuestions.add(matched);
+    if (question === answer) {
+      this.recordPair(question);
+      this.doneQuestions.add(question);
       this.lastResolvedAt = this.now();
       this.firstTouchAt = null;
-      this.resetLeftAndRight();
+      this.clearSelection();
       this.playEffect(this.rightAudio);
     } else {
-      this.recordMispair(this.left, this.right);
-      this.attempts.set(this.left, (this.attempts.get(this.left) ?? 0) + 1);
-      this.attempts.set(this.right, (this.attempts.get(this.right) ?? 0) + 1);
+      this.recordMispair(question, answer);
+      this.attempts.set(question, (this.attempts.get(question) ?? 0) + 1);
+      this.attempts.set(answer, (this.attempts.get(answer) ?? 0) + 1);
       this.playEffect(this.wrongAudio);
     }
   }
@@ -175,7 +197,7 @@ export class MatchViewComponent implements OnDestroy {
     this.log.append({
       source: 'match',
       kind: 'pair',
-      key: question.key,
+      key: questionKey(question),
       firstTry: attempts === 0,
       attempts,
       msSinceRoundStart: Math.round(at - this.roundStartedAt),
@@ -185,7 +207,7 @@ export class MatchViewComponent implements OnDestroy {
       resolvedBefore: this.doneQuestions.size,
       remaining: this.round.length - this.doneQuestions.size,
       startedFrom: this.startedFrom,
-      flipped: question.first > question.second,
+      flipped: firstFactor(question) > secondFactor(question),
       at: Date.now(),
     });
   }
@@ -194,9 +216,9 @@ export class MatchViewComponent implements OnDestroy {
     this.log.append({
       source: 'match',
       kind: 'mispair',
-      key: question.key,
-      pairedWith: pairedWith.key,
-      chosenAnswer: pairedWith.first * pairedWith.second,
+      key: questionKey(question),
+      pairedWith: questionKey(pairedWith),
+      chosenAnswer: pairedWith.fact.answer,
       msSinceRoundStart: Math.round(this.now() - this.roundStartedAt),
       resolvedBefore: this.doneQuestions.size,
       remaining: this.round.length - this.doneQuestions.size,
@@ -205,10 +227,9 @@ export class MatchViewComponent implements OnDestroy {
   }
 
   /**
-   * Every round is drawn fresh from the whole table, so the game never runs
-   * out of questions. Products are kept unique within a round: the answer
-   * column shows nothing but the product, so two questions sharing one would
-   * be impossible to tell apart.
+   * Varje runda dras på nytt ur hela tabellen, så spelet tar aldrig slut på
+   * frågor. Produkterna hålls unika inom rundan: svarsspalten visar ingenting
+   * annat än produkten, så två frågor som delade en vore omöjliga att skilja åt.
    *
    * Urvalet är avsiktligt slumpmässigt, trots att katalogen vet vilka tal som
    * är svåra. Loggen ska kunna användas för att kalibrera, och det kräver ett
@@ -227,12 +248,7 @@ export class MatchViewComponent implements OnDestroy {
       products.add(fact.answer);
       // Katalogen lagrar den lättaste faktorn först. Att alltid visa den så
       // vore ett mönster att lära sig i stället för talet.
-      const flipped = Math.random() < 0.5;
-      round.push({
-        first: flipped ? fact.b : fact.a,
-        second: flipped ? fact.a : fact.b,
-        key: progressKeyFor(fact.a, fact.b),
-      });
+      round.push({ fact, flipped: Math.random() < 0.5 });
       if (round.length === ROUND_SIZE) {
         break;
       }
@@ -240,15 +256,15 @@ export class MatchViewComponent implements OnDestroy {
     return round;
   }
 
-  /** Lays out the answers so none of them sits on the same row as its question. */
+  /** Lägger svaren så att inget av dem hamnar på samma rad som sin fråga. */
   private shuffleDeranged(questions: Question[], other: Question[]): Question[] {
     for (let attempt = 0; attempt < 20; attempt++) {
       const shuffled = shuffle(questions);
-      if (shuffled.every((q, i) => q !== other[i])) {
+      if (shuffled.every((question, i) => question !== other[i])) {
         return shuffled;
       }
     }
-    // Rotating by one step is a derangement for any list of two or more.
+    // Att rotera ett steg är en derangemang för varje lista på två eller fler.
     return [...other.slice(1), ...other.slice(0, 1)];
   }
 
@@ -265,9 +281,26 @@ export class MatchViewComponent implements OnDestroy {
   }
 }
 
+/**
+ * Ett tal ur katalogen, med den ordning det ritas i. Katalogen lagrar den
+ * lättaste faktorn först; `flipped` säger att spalten visar den andra vägen.
+ */
 export interface Question {
-  first: number;
-  second: number;
-  /** Lagringsnyckeln för talet, `mul:7x8`. Oberoende av visad ordning. */
-  key: string;
+  fact: Fact;
+  flipped: boolean;
+}
+
+/** Den faktor som står först i spalten. */
+export function firstFactor(question: Question): number {
+  return question.flipped ? question.fact.b : question.fact.a;
+}
+
+/** Den faktor som står sist i spalten. */
+export function secondFactor(question: Question): number {
+  return question.flipped ? question.fact.a : question.fact.b;
+}
+
+/** Lagringsnyckeln för talet, `mul:7x8`. Oberoende av visad ordning. */
+export function questionKey(question: Question): string {
+  return progressKeyFor(question.fact.a, question.fact.b);
 }
