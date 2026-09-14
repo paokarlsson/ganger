@@ -13,8 +13,8 @@ import { clamp } from '../shared/numbers';
 /** Ett genererat påstående, redo att visas på kortet. */
 export interface GeneratedStatement {
   fact: Fact;
-  n1: number;
-  n2: number;
+  a: number;
+  b: number;
   shown: number;
   isTrue: boolean;
   /** Vilken sorts fel som visas. `undefined` på sanna kort. */
@@ -205,7 +205,7 @@ export function nextStatement(
   }
 
   if (isTrue) {
-    return { fact, n1: fact.a, n2: fact.b, shown: fact.answer, isTrue: true };
+    return { fact, a: fact.a, b: fact.b, shown: fact.answer, isTrue: true };
   }
 
   const used = memory.shownFalse.get(key) ?? new Set<number>();
@@ -219,7 +219,7 @@ export function nextStatement(
   used.add(shown);
   memory.shownFalse.set(key, used);
 
-  return { fact, n1: fact.a, n2: fact.b, shown, isTrue: false, kind };
+  return { fact, a: fact.a, b: fact.b, shown, isTrue: false, kind };
 }
 
 /** Tiden ett kort ska klaras på för att räknas som snabbt. */

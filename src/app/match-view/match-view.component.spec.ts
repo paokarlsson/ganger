@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MatchViewComponent, Question } from './match-view.component';
+import { MatchViewComponent, Question, firstFactor, questionKey, secondFactor } from './match-view.component';
 import { MatchMispairObservation, MatchPairObservation, ObservationLog } from '../services/observation-log';
 
 /**
@@ -40,8 +40,8 @@ function silenceEffects(component: MatchViewComponent): void {
 
 /** Löser ett par genom att välja frågan och sedan svaret. */
 function solve(component: MatchViewComponent, question: Question): void {
-  component.selQ(question);
-  component.selA(question);
+  component.selectQuestion(question);
+  component.selectAnswer(question);
 }
 
 function pairs(log: ObservationLog): MatchPairObservation[] {
@@ -96,11 +96,12 @@ describe('MatchViewComponent', () => {
 
       expect(component.round.length).toBe(5);
       for (const question of component.round) {
-        expect(question.key).toMatch(/^mul:\d+x\d+$/);
+        const key = questionKey(question);
+        expect(key).toMatch(/^mul:\d+x\d+$/);
         // Nyckeln är kanonisk: minsta faktorn först, oavsett visad ordning.
-        const [small, large] = question.key.slice(4).split('x').map(Number);
+        const [small, large] = key.slice(4).split('x').map(Number);
         expect(small).toBeLessThanOrEqual(large);
-        expect(small * large).toBe(question.first * question.second);
+        expect(small * large).toBe(firstFactor(question) * secondFactor(question));
       }
     });
 
@@ -109,7 +110,7 @@ describe('MatchViewComponent', () => {
       // inte att skilja åt.
       for (let attempt = 0; attempt < 20; attempt++) {
         const { component } = componentWithFakeAudio();
-        const products = component.round.map((q) => q.first * q.second);
+        const products = component.round.map((question) => question.fact.answer);
         expect(new Set(products).size).toBe(products.length);
       }
     });
@@ -123,7 +124,7 @@ describe('MatchViewComponent', () => {
       solve(component, first);
 
       const [observation] = pairs(log);
-      expect(observation.key).toBe(first.key);
+      expect(observation.key).toBe(questionKey(first));
       expect(observation.firstTry).toBe(true);
       expect(observation.attempts).toBe(0);
       expect(observation.startedFrom).toBe('question');
@@ -146,8 +147,8 @@ describe('MatchViewComponent', () => {
       const { component, log } = componentWithFakeAudio();
       const first = component.round[0];
 
-      component.selA(first);
-      component.selQ(first);
+      component.selectAnswer(first);
+      component.selectQuestion(first);
 
       expect(pairs(log)[0].startedFrom).toBe('answer');
     });
@@ -156,39 +157,39 @@ describe('MatchViewComponent', () => {
       const { component, log } = componentWithFakeAudio();
       const [one, other] = component.round;
 
-      component.selQ(one);
-      component.selA(other);
+      component.selectQuestion(one);
+      component.selectAnswer(other);
 
       const [observation] = mispairs(log);
-      expect(observation.key).toBe(one.key);
-      expect(observation.pairedWith).toBe(other.key);
-      expect(observation.chosenAnswer).toBe(other.first * other.second);
+      expect(observation.key).toBe(questionKey(one));
+      expect(observation.pairedWith).toBe(questionKey(other));
+      expect(observation.chosenAnswer).toBe(other.fact.answer);
     });
 
     it('räknar felparningar på båda talen som var inblandade', () => {
       const { component, log } = componentWithFakeAudio();
       const [one, other] = component.round;
 
-      component.selQ(one);
-      component.selA(other);
+      component.selectQuestion(one);
+      component.selectAnswer(other);
       // Felparningen står kvar tills något annat väljs; att peka ut rätt svar
       // löser paret utan att börja om.
-      component.selA(one);
+      component.selectAnswer(one);
       solve(component, other);
 
       const byKey = new Map(pairs(log).map((o) => [o.key, o]));
-      expect(byKey.get(one.key)!.attempts).toBe(1);
-      expect(byKey.get(one.key)!.firstTry).toBe(false);
-      expect(byKey.get(other.key)!.attempts).toBe(1);
+      expect(byKey.get(questionKey(one))!.attempts).toBe(1);
+      expect(byKey.get(questionKey(one))!.firstTry).toBe(false);
+      expect(byKey.get(questionKey(other))!.attempts).toBe(1);
     });
 
     it('börjar om räkningen med en ny runda', () => {
       const { component, log } = componentWithFakeAudio();
       const [one, other] = component.round;
-      component.selQ(one);
-      component.selA(other);
+      component.selectQuestion(one);
+      component.selectAnswer(other);
 
-      component.next();
+      component.nextRound();
       solve(component, component.round[0]);
 
       expect(pairs(log)[0].attempts).toBe(0);

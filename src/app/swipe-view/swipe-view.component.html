@@ -1,8 +1,8 @@
 <div class="container">
     <header class="top">
         @if (screen === 'game' || screen === 'result') {
-            <span class="score score--correct">Rätt {{nrCorrect}}</span>
-            <span class="score score--wrong">Fel {{nrWrong}}</span>
+            <span class="score score--correct">Rätt {{correctCount}}</span>
+            <span class="score score--wrong">Fel {{wrongCount}}</span>
             @if (screen === 'game' && roundIsEndless) {
                 <button type="button" class="stop-btn ui-toggle" (click)="stopRound()">Klar</button>
             }
@@ -55,7 +55,7 @@
         <section class="result">
             <div class="result-card ui-card ui-card--roomy">
                 <p class="result-title ui-title ui-title--lg">Klart!</p>
-                <p class="result-score">{{nrCorrect}} av {{totalAnswered}} rätt</p>
+                <p class="result-score">{{correctCount}} av {{totalAnswered}} rätt</p>
                 <p class="result-level">Nivå {{level}} av {{levelMax}}</p>
                 <p class="result-streak">
                     Längsta räcka: <strong>{{roundBestStreak}}</strong>
@@ -86,7 +86,7 @@
                     [style.transform]="leaving ? null : 'rotate(' + rotation + 'deg)'">
                     <span class="stamp stamp--false" [style.opacity]="strength(-1)">FEL</span>
                     <span class="stamp stamp--true" [style.opacity]="strength(1)">RÄTT</span>
-                    <span class="statement">{{currentStatmentString}}</span>
+                    <span class="statement">{{statementText}}</span>
                 </mat-card>
             </div>
 

@@ -18,37 +18,39 @@
   </div>
   <main>
     <div class="column">
-      @for (q of leftList; track q) {
-        <button type="button" class="item" [class.selected]="isQSelected(q)" [class.correct-selected]="isDone(q)"
-          [class.wrong-selected]="isLeftWrong(q)" [attr.aria-pressed]="isQSelected(q)" (click)="selQ(q)">
+      @for (question of questionColumn; track question) {
+        <button type="button" class="item" [class.selected]="isQuestionSelected(question)"
+          [class.correct-selected]="isDone(question)" [class.wrong-selected]="isQuestionWrong(question)"
+          [attr.aria-pressed]="isQuestionSelected(question)" (click)="selectQuestion(question)">
           <!-- Tecknet säger samma sak som färgen, för den som inte skiljer
                grönt från rött. -->
-          @if (isDone(q)) {
+          @if (isDone(question)) {
             <span class="item-mark" aria-hidden="true">✓</span><span class="ui-visually-hidden">Rätt: </span>
-          } @else if (isLeftWrong(q)) {
+          } @else if (isQuestionWrong(question)) {
             <span class="item-mark" aria-hidden="true">✗</span><span class="ui-visually-hidden">Fel: </span>
           }
-          {{ q.first }} × {{ q.second }}
+          {{ questionText(question) }}
         </button>
       }
     </div>
     <div class="column">
-      @for (q of rightList; track q) {
-        <button type="button" class="item" [class.selected]="isASelected(q)" [class.correct-selected]="isDone(q)"
-          [class.wrong-selected]="isRightWrong(q)" [attr.aria-pressed]="isASelected(q)" (click)="selA(q)">
-          @if (isDone(q)) {
+      @for (question of answerColumn; track question) {
+        <button type="button" class="item" [class.selected]="isAnswerSelected(question)"
+          [class.correct-selected]="isDone(question)" [class.wrong-selected]="isAnswerWrong(question)"
+          [attr.aria-pressed]="isAnswerSelected(question)" (click)="selectAnswer(question)">
+          @if (isDone(question)) {
             <span class="item-mark" aria-hidden="true">✓</span><span class="ui-visually-hidden">Rätt: </span>
-          } @else if (isRightWrong(q)) {
+          } @else if (isAnswerWrong(question)) {
             <span class="item-mark" aria-hidden="true">✗</span><span class="ui-visually-hidden">Fel: </span>
           }
-          {{ q.first * q.second }}
+          {{ answerText(question) }}
         </button>
       }
     </div>
   </main>
   <div class="bottom">
-    @if (allIsDone()) {
-      <button type="button" class="ui-btn ui-btn--primary" (click)="next()">Nästa</button>
+    @if (isRoundComplete()) {
+      <button type="button" class="ui-btn ui-btn--primary" (click)="nextRound()">Nästa</button>
     }
   </div>
 </div>

@@ -37,7 +37,7 @@ describe('nextStatement', () => {
     for (let i = 0; i < 500; i++) {
       const statement = nextStatement({ level: 5, memory }, rng);
       if (statement.isTrue) {
-        expect(statement.shown).toBe(statement.n1 * statement.n2);
+        expect(statement.shown).toBe(statement.a * statement.b);
       }
     }
   });
@@ -51,8 +51,8 @@ describe('nextStatement', () => {
         for (let i = 0; i < 200; i++) {
           const statement = nextStatement({ level, memory }, rng);
           if (!statement.isTrue) {
-            expect(statement.shown, `${statement.n1} × ${statement.n2}`).not.toBe(
-              statement.n1 * statement.n2,
+            expect(statement.shown, `${statement.a} × ${statement.b}`).not.toBe(
+              statement.a * statement.b,
             );
             expect(statement.shown).toBeGreaterThan(0);
           }
@@ -67,10 +67,10 @@ describe('nextStatement', () => {
       const memory = createRoundMemory();
       for (let i = 0; i < 300; i++) {
         const statement = nextStatement({ level, memory }, rng);
-        expect(statement.n1).toBeGreaterThanOrEqual(1);
-        expect(statement.n2).toBeGreaterThanOrEqual(1);
-        expect(statement.n1).toBeLessThanOrEqual(10);
-        expect(statement.n2).toBeLessThanOrEqual(10);
+        expect(statement.a).toBeGreaterThanOrEqual(1);
+        expect(statement.b).toBeGreaterThanOrEqual(1);
+        expect(statement.a).toBeLessThanOrEqual(10);
+        expect(statement.b).toBeLessThanOrEqual(10);
       }
     }
   });
@@ -89,7 +89,7 @@ describe('nextStatement', () => {
         if (statement.isTrue) {
           continue;
         }
-        const key = factKey(statement.n1, statement.n2);
+        const key = factKey(statement.a, statement.b);
         const used = seen.get(key) ?? new Set<number>();
         const pools = poolsFor(statement.fact);
         const available = new Set([
@@ -122,8 +122,8 @@ describe('nextStatement', () => {
           memory = createRoundMemory();
         }
         const statement = nextStatement({ level, memory }, rng);
-        expect(statement.n1).toBeLessThanOrEqual(10);
-        expect(statement.n2).toBeLessThanOrEqual(10);
+        expect(statement.a).toBeLessThanOrEqual(10);
+        expect(statement.b).toBeLessThanOrEqual(10);
         if (!statement.isTrue) {
           shown.push(statement.shown);
         }
@@ -140,10 +140,10 @@ describe('nextStatement', () => {
     const missed = nextStatement({ level: 5, memory }, rng);
     rememberMiss(memory, missed.fact);
 
-    const key = factKey(missed.n1, missed.n2);
+    const key = factKey(missed.a, missed.b);
     for (let i = 0; i < 400; i++) {
       const statement = nextStatement({ level: 5, memory }, rng);
-      if (factKey(statement.n1, statement.n2) === key) {
+      if (factKey(statement.a, statement.b) === key) {
         expect(statement.isTrue).toBe(true);
         return;
       }
@@ -240,7 +240,7 @@ describe('kalibreringen', () => {
     const memory = createRoundMemory();
     for (let i = 0; i < 200; i++) {
       const statement = nextStatement({ level: LEVEL_MAX, memory, calibration: true }, rng);
-      expect(statement.fact.band, `${statement.n1} × ${statement.n2}`).toBe('anchor');
+      expect(statement.fact.band, `${statement.a} × ${statement.b}`).toBe('anchor');
     }
   });
 
@@ -308,7 +308,7 @@ describe('en rond utan slut', () => {
       const statement = nextStatement({ level: 3, memory }, rng);
       expect(statement.shown).toBeGreaterThan(0);
       if (!statement.isTrue) {
-        expect(statement.shown).not.toBe(statement.n1 * statement.n2);
+        expect(statement.shown).not.toBe(statement.a * statement.b);
         shown.push(statement.shown);
       }
     }

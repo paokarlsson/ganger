@@ -448,7 +448,7 @@ describe('TrainingEngine', () => {
     /** Ett påstående att mata pedagogiken med. */
     function statement(isTrue: boolean): GeneratedStatement {
       const fact = factFor(7, 8)!;
-      return { fact, n1: fact.a, n2: fact.b, shown: isTrue ? fact.answer : 54, isTrue };
+      return { fact, a: fact.a, b: fact.b, shown: isTrue ? fact.answer : 54, isTrue };
     }
 
     it('drar ned vikten för ett tal som sitter och håller den uppe för ett obeprövat', async () => {
