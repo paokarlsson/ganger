@@ -101,8 +101,8 @@ function unitTrap(fact: Fact): number[] {
  * Hur stor del av de falska korten som testar sifferkänsla i stället för
  * tabellkunskap. Referensdatan ligger på 13 %; resten är tabellrimliga fel.
  */
-export const NEAR_NUMBER_WEIGHT = 15;
-export const PLAUSIBLE_WEIGHT = 100 - NEAR_NUMBER_WEIGHT;
+const NEAR_NUMBER_WEIGHT = 15;
+const PLAUSIBLE_WEIGHT = 100 - NEAR_NUMBER_WEIGHT;
 
 /**
  * Typfördelningen per nivå. De tabellrimliga typerna summerar alltid till

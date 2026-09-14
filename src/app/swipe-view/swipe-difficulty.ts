@@ -127,8 +127,8 @@ export function nextStreak(streak: number, correct: boolean, fast: boolean): num
  *  som ska hitta spelarens nivå fort. Tanken är att uppsteget ska bero på
  *  räckan och falla tillbaka hit när fönstret är slut. Se docs/plan.md,
  *  öppen fråga 6. */
-export const LEVEL_UP_STEP = 1;
-export const LEVEL_DOWN_STEP = 2;
+const LEVEL_UP_STEP = 1;
+const LEVEL_DOWN_STEP = 2;
 
 /** Startnivå för en spelare vi inte vet något om.
  *
@@ -294,6 +294,6 @@ export function startLevel(
   return clampLevel(Math.round(LEVEL_MIN + share * (LEVEL_MAX - LEVEL_MIN)));
 }
 
-export function clampLevel(level: number): number {
+function clampLevel(level: number): number {
   return clamp(level, LEVEL_MIN, LEVEL_MAX);
 }

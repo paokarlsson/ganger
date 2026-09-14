@@ -43,28 +43,6 @@ koden pekar på de numren.
 
 ## 2. Död och överflödig kod
 
-### 2.2 Exporter utan konsument
-
-Varken appen eller något test läser dem:
-
-| Symbol | Fil |
-| --- | --- |
-| `TABLE_PRODUCTS` | `facts/fact-catalog.ts` |
-| `focusRank`, `windowWeight`, `SelectionContext` | `facts/fact-selector.ts` |
-| `clampLevel`, `LEVEL_UP_STEP`, `LEVEL_DOWN_STEP` | `swipe-view/swipe-difficulty.ts` |
-| `NEAR_NUMBER_WEIGHT`, `PLAUSIBLE_WEIGHT` | `facts/distractors.ts` |
-| `emptyChannel` | `services/progress-store.ts` |
-| `ObservationSource` | `services/observation-log.ts` |
-
-**Åtgärd:** var och en är antingen (a) intern och ska tappa sitt `export`,
-eller (b) värd ett eget test. `focusRank` och `windowWeight` hör till (b) — de
-är de två funktioner som avgör vilka tal en nivå släpper fram, och de saknar
-direkt täckning. `TABLE_PRODUCTS` hör till (a): `isTableProduct()` är det
-avsedda gränssnittet.
-
-Medan du är i `fact-catalog.ts`: `TABLE_PRODUCTS` byggs med
-`FACTS.flatMap((fact) => [fact.answer])` där `map` räcker.
-
 ### 2.3 Genomgångsexporter och genomgångsgetters
 
 * `swipe-difficulty.ts:12` re-exporterar `LEVEL_MAX` och `LEVEL_MIN` från

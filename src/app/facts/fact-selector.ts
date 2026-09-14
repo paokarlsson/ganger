@@ -48,7 +48,7 @@ export interface FactPerformance {
 /** Hämtar spelarens vikt för ett tal. Utelämnas i tester och för en ny spelare. */
 export type FactNeed = (fact: Fact) => number;
 
-export interface SelectionContext {
+interface SelectionContext {
   level: number;
   /** Senast ställda tal, nyast först eller sist spelar ingen roll. */
   recent: readonly Fact[];

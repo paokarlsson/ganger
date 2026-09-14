@@ -94,10 +94,9 @@ export function factFor(a: number, b: number): Fact | undefined {
   return BY_KEY.get(factKey(a, b));
 }
 
-/** Alla produkter som går att bilda i tabellen — vad som är ett *rimligt* svar. */
-export const TABLE_PRODUCTS: ReadonlySet<number> = new Set(
-  FACTS.flatMap((fact) => [fact.answer]),
-);
+/** Alla produkter som går att bilda i tabellen — vad som är ett *rimligt* svar.
+ *  `isTableProduct()` är den avsedda vägen dit. */
+const TABLE_PRODUCTS: ReadonlySet<number> = new Set(FACTS.map((fact) => fact.answer));
 
 export function isTableProduct(value: number): boolean {
   return TABLE_PRODUCTS.has(value);

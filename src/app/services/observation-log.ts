@@ -50,7 +50,7 @@ export const OBSERVATIONS_SCHEMA_VERSION = 1;
 export const MAX_OBSERVATIONS = 2000;
 
 /** Vilket spel händelsen kommer ur. Svep och Mästaren skriver ännu inte hit. */
-export type ObservationSource = 'match';
+type ObservationSource = 'match';
 
 /**
  * Ett par som löstes i Para ihop.
@@ -61,7 +61,7 @@ export type ObservationSource = 'match';
  * är billigare än att gissa fel.
  */
 export interface MatchPairObservation {
-  source: 'match';
+  source: ObservationSource;
   kind: 'pair';
   /** `mul:7x8`, samma nyckel som framstegsdokumentet använder. */
   key: string;
@@ -96,7 +96,7 @@ export interface MatchPairObservation {
  * kort av: paras 7 × 8 konsekvent med 54 är det ett mönster, inte brus.
  */
 export interface MatchMispairObservation {
-  source: 'match';
+  source: ObservationSource;
   kind: 'mispair';
   /** Talet i frågespalten. */
   key: string;

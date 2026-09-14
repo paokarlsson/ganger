@@ -79,7 +79,7 @@ export interface ProgressRepository {
   clear(): Promise<void>;
 }
 
-export function emptyChannel(): ChannelStat {
+function emptyChannel(): ChannelStat {
   return { times: [], correct: 0, total: 0 };
 }
 
