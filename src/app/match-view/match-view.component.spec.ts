@@ -1,41 +1,54 @@
+import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 import { MatchViewComponent, Question, firstFactor, questionKey, secondFactor } from './match-view.component';
+import { GameAudio } from '../services/game-audio';
 import { MatchMispairObservation, MatchPairObservation, ObservationLog } from '../services/observation-log';
 
 /**
- * jsdom har ingen uppspelning, så ljudelementen byts mot attrapper som bara
- * minns om de spelar. Musikslingan är det som mäts: den ligger utanför mallen
- * och tystnar inte av sig själv när spelet rivs.
+ * jsdom har ingen uppspelning, så ljudet byts mot en attrapp som bara minns om
+ * slingan spelar. Slingan är det som mäts: den överlever komponenten och
+ * tystnar inte av sig själv när spelet rivs.
  */
-function componentWithFakeAudio(): {
-  component: MatchViewComponent;
-  loop: { playing: boolean };
-  log: ObservationLog;
-} {
-  const log = new ObservationLog();
-  const component = new MatchViewComponent(log);
-  const loop = { playing: false };
-  component.loopAudio = {
-    play: () => {
-      loop.playing = true;
-      return Promise.resolve();
-    },
-    pause: () => {
-      loop.playing = false;
-    },
-  } as unknown as HTMLAudioElement;
-  silenceEffects(component);
-  return { component, loop, log };
+class FakeGameAudio implements Pick<GameAudio, 'toggleLoop' | 'stopLoop' | 'playCorrect' | 'playWrong'> {
+  playing = false;
+  /** Sätts av testet som prövar en nekad uppspelning. */
+  denyLoop = false;
+
+  get loopPlaying(): boolean {
+    return this.playing;
+  }
+
+  toggleLoop(): void {
+    this.playing = !this.playing && !this.denyLoop;
+  }
+
+  stopLoop(): void {
+    this.playing = false;
+  }
+
+  playCorrect(): void {}
+  playWrong(): void {}
 }
 
-function silenceEffects(component: MatchViewComponent): void {
-  const silent = {
-    currentTime: 0,
-    play: () => Promise.resolve(),
-    pause: () => {},
-  } as unknown as HTMLAudioElement;
-  component.rightAudio = silent;
-  component.wrongAudio = silent;
+/** Komponenten som appen bygger den, med ljudet utbytt. Rundan läggs fram av
+ *  `ngOnInit`, alltså av den första ändringsdetekteringen. */
+function matchView(): {
+  component: MatchViewComponent;
+  loop: FakeGameAudio;
+  log: ObservationLog;
+} {
+  TestBed.resetTestingModule();
+  const loop = new FakeGameAudio();
+  TestBed.configureTestingModule({
+    providers: [{ provide: GameAudio, useValue: loop }],
+  });
+  const fixture = TestBed.createComponent(MatchViewComponent);
+  fixture.detectChanges();
+  return {
+    component: fixture.componentInstance,
+    loop,
+    log: TestBed.inject(ObservationLog),
+  };
 }
 
 /** Löser ett par genom att välja frågan och sedan svaret. */
@@ -54,7 +67,7 @@ function mispairs(log: ObservationLog): MatchMispairObservation[] {
 
 describe('MatchViewComponent', () => {
   it('startar och stoppar musiken med knappen', () => {
-    const { component, loop } = componentWithFakeAudio();
+    const { component, loop } = matchView();
 
     component.startStopLoopAudio();
     expect(component.playLoop).toBe(true);
@@ -66,7 +79,7 @@ describe('MatchViewComponent', () => {
   });
 
   it('tystnar när spelet rivs', () => {
-    const { component, loop } = componentWithFakeAudio();
+    const { component, loop } = matchView();
     component.startStopLoopAudio();
 
     // Att gå tillbaka till menyn river komponenten. Utan det här fortsätter
@@ -77,22 +90,18 @@ describe('MatchViewComponent', () => {
     expect(component.playLoop).toBe(false);
   });
 
-  it('låter knappen visa tystnad när uppspelningen nekas', async () => {
-    const { component } = componentWithFakeAudio();
-    component.loopAudio = {
-      play: () => Promise.reject(new Error('nekad')),
-      pause: () => {},
-    } as unknown as HTMLAudioElement;
+  it('låter knappen visa tystnad när uppspelningen nekas', () => {
+    const { component, loop } = matchView();
+    loop.denyLoop = true;
 
     component.startStopLoopAudio();
-    await Promise.resolve();
 
     expect(component.playLoop).toBe(false);
   });
 
   describe('rundan', () => {
     it('bygger den ur katalogen, med talens egna nycklar', () => {
-      const { component } = componentWithFakeAudio();
+      const { component } = matchView();
 
       expect(component.round.length).toBe(5);
       for (const question of component.round) {
@@ -109,7 +118,7 @@ describe('MatchViewComponent', () => {
       // Svarsspalten visar bara produkten. Två frågor med samma produkt gick
       // inte att skilja åt.
       for (let attempt = 0; attempt < 20; attempt++) {
-        const { component } = componentWithFakeAudio();
+        const { component } = matchView();
         const products = component.round.map((question) => question.fact.answer);
         expect(new Set(products).size).toBe(products.length);
       }
@@ -118,7 +127,7 @@ describe('MatchViewComponent', () => {
 
   describe('observationer', () => {
     it('skriver en händelse när ett par löses', () => {
-      const { component, log } = componentWithFakeAudio();
+      const { component, log } = matchView();
       const first = component.round[0];
 
       solve(component, first);
@@ -134,7 +143,7 @@ describe('MatchViewComponent', () => {
     it('mäter hur stort uteslutningsrummet var', () => {
       // Sista paret är gratis: det finns bara ett kvar att välja. Utan den
       // siffran går det inte att skilja kunskap från uteslutning i efterhand.
-      const { component, log } = componentWithFakeAudio();
+      const { component, log } = matchView();
       for (const question of [...component.round]) {
         solve(component, question);
       }
@@ -144,7 +153,7 @@ describe('MatchViewComponent', () => {
     });
 
     it('minns vilken spalt spelaren började i', () => {
-      const { component, log } = componentWithFakeAudio();
+      const { component, log } = matchView();
       const first = component.round[0];
 
       component.selectAnswer(first);
@@ -154,7 +163,7 @@ describe('MatchViewComponent', () => {
     });
 
     it('skriver en felparning med båda talen', () => {
-      const { component, log } = componentWithFakeAudio();
+      const { component, log } = matchView();
       const [one, other] = component.round;
 
       component.selectQuestion(one);
@@ -167,7 +176,7 @@ describe('MatchViewComponent', () => {
     });
 
     it('räknar felparningar på båda talen som var inblandade', () => {
-      const { component, log } = componentWithFakeAudio();
+      const { component, log } = matchView();
       const [one, other] = component.round;
 
       component.selectQuestion(one);
@@ -184,7 +193,7 @@ describe('MatchViewComponent', () => {
     });
 
     it('börjar om räkningen med en ny runda', () => {
-      const { component, log } = componentWithFakeAudio();
+      const { component, log } = matchView();
       const [one, other] = component.round;
       component.selectQuestion(one);
       component.selectAnswer(other);
@@ -196,7 +205,7 @@ describe('MatchViewComponent', () => {
     });
 
     it('skriver ingenting för ett tal som redan är löst', () => {
-      const { component, log } = componentWithFakeAudio();
+      const { component, log } = matchView();
       const first = component.round[0];
       solve(component, first);
 

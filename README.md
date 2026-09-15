@@ -263,6 +263,7 @@ All of it is cleared by the **Nollställ** button on the heat map screen, and by
 | `src/app/services/local-store.ts` | The only file that touches `localStorage` directly |
 | `src/app/services/debounced-writer.ts` | Delayed writes, flushed when the tab goes away |
 | `src/app/services/observation-log.ts` | Raw training events; written, not yet read |
+| `src/app/services/game-audio.ts` | The loop and the two effects; outlives the component that plays them |
 | `src/app/shared/` | `shuffle`, `clamp`, `median` and `mean`, shared by everything above |
 | `src/app/testing/` | Helpers for the specs only; never imported by the app |
 | `src/app/training/training-engine.ts` | What the game believes about the player, and what it does with that |
