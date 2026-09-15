@@ -214,15 +214,13 @@ export class TrainingEngine implements OnDestroy {
     }
     const withMargin = Math.round((middle / 1000) * 1.2 * 10) / 10;
     this.progress.typedCalibration = clamp(withMargin, MIN_CALIBRATED_TIME, MAX_CALIBRATED_TIME);
-    this.scheduleWrite();
-    this.flush();
+    this.write();
   }
 
   /** Används när spelaren hoppar över kalibreringen. */
   useDefaultCalibration(): void {
     this.progress.typedCalibration = DEFAULT_FAST_TIME;
-    this.scheduleWrite();
-    this.flush();
+    this.write();
   }
 
   /**
@@ -317,7 +315,9 @@ export class TrainingEngine implements OnDestroy {
     if (correct) {
       target.correct += 1;
     }
-    this.scheduleWrite();
+    // Den enda skrivningen som får vänta: den sker per svar, och det är för
+    // den fördröjningen finns. Se `deferWrite()`.
+    this.deferWrite();
   }
 
   /**
@@ -370,8 +370,7 @@ export class TrainingEngine implements OnDestroy {
     if (this.progress.swipeBaseline.length > BASELINE_WINDOW) {
       this.progress.swipeBaseline.shift();
     }
-    this.scheduleWrite();
-    this.flush();
+    this.write();
   }
 
   /** Längsta räcka snabba rätt spelaren haft. Rekordet att jaga i en rond
@@ -382,8 +381,7 @@ export class TrainingEngine implements OnDestroy {
 
   set swipeBestStreak(streak: number) {
     this.progress.swipeBestStreak = streak;
-    this.scheduleWrite();
-    this.flush();
+    this.write();
   }
 
   /** Nivån Svep senast landade på, så brasan börjar där den slutade. */
@@ -393,8 +391,7 @@ export class TrainingEngine implements OnDestroy {
 
   set swipeLevel(level: number) {
     this.progress.swipeLevel = level;
-    this.scheduleWrite();
-    this.flush();
+    this.write();
   }
 
   async reset(): Promise<void> {
@@ -530,7 +527,22 @@ export class TrainingEngine implements OnDestroy {
     return mastered / pairs.length;
   }
 
-  private scheduleWrite(): void {
+  /**
+   * Skriver ned dokumentet nu.
+   *
+   * Det som ändras utanför ett svar — kalibreringen, sveptakten, nivån,
+   * rekordet — sker en gång per rond eller mer sällan, så att låta det ligga
+   * och vänta vinner ingenting men riskerar att det går förlorat.
+   */
+  private write(): void {
+    this.writer.schedule();
+    this.writer.flush();
+  }
+
+  /** Låter skrivningen vänta in fler. Bara för `record()`: varje skrivning
+   *  serialiserar hela dokumentet, och en rond utan slut kan ge hundratals
+   *  kort. Se `STATS_WRITE_DELAY`. */
+  private deferWrite(): void {
     this.writer.schedule();
   }
 }
