@@ -270,6 +270,7 @@ All of it is cleared by the **Nollställ** button on the heat map screen, and by
 | `src/app/training/training-engine.ts` | What the game believes about the player, and what it does with that |
 | `src/app/training/auto-difficulty.ts` | How *Mästaren*'s auto mode moves between difficulty groups |
 | `src/app/heatmap/` | The one heat map, shared by both games |
+| `src/app/calibration/` | The speed calibration: five easy facts, timed. Says when it is done |
 | `src/app/training/observation-analysis.ts` | Reads the observation log; not part of the app |
 | `src/app/services/progress-export.ts` | Gets the log and the progress off the device |
 | `src/app/services/time-color.ts` | The green-to-red scale both heat maps colour a time with |

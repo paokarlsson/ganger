@@ -1,11 +1,11 @@
 import { Component, ElementRef, OnDestroy, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
+import { CalibrationComponent } from '../calibration/calibration.component';
 import { HeatmapComponent } from '../heatmap/heatmap.component';
 import { ObservationLog } from '../services/observation-log';
 import { ProgressExporter } from '../services/progress-export';
 import { AutoDifficultyState, initialAutoDifficulty } from '../training/auto-difficulty';
 import { Thresholds, TrainingEngine } from '../training/training-engine';
 import {
-  CALIBRATION_QUESTIONS,
   LEVEL_BUTTONS,
   Level,
   PENALTY_TIME,
@@ -26,18 +26,16 @@ const STREAK_VISIBLE_FROM = 3;
 
 @Component({
   selector: 'app-master-view',
-  imports: [HeatmapComponent],
+  imports: [CalibrationComponent, HeatmapComponent],
   templateUrl: './master-view.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './master-view.component.scss',
 })
 export class MasterViewComponent implements OnDestroy {
   @ViewChild('answerInput') private answerInput?: ElementRef<HTMLInputElement>;
-  @ViewChild('calibrationInput') private calibrationInput?: ElementRef<HTMLInputElement>;
 
   readonly levelButtons = LEVEL_BUTTONS;
   readonly questionCounts = [10, 20, 30];
-  readonly calibrationQuestions = CALIBRATION_QUESTIONS;
   readonly penaltyTime = PENALTY_TIME;
 
   screen: MasterScreen = 'menu';
@@ -54,11 +52,6 @@ export class MasterViewComponent implements OnDestroy {
   showAbortModal = false;
   results: Answer[] = [];
   currentQuestion = 0;
-
-  // Kalibrering
-  calibrationQuestionText = '';
-  calibrationIndex = 0;
-  calibrationWrong = false;
 
   // Resultat
   resultTitle = '';
@@ -78,8 +71,6 @@ export class MasterViewComponent implements OnDestroy {
   private questionStartTime = 0;
   private timerHandle?: ReturnType<typeof setInterval>;
   private advanceHandle?: ReturnType<typeof setTimeout>;
-  private calibrationHandle?: ReturnType<typeof setTimeout>;
-  private calibrationTimes: number[] = [];
   /** Auto-lägets läge i skalan, och räknarna som flyttar det. Ett värde i
    *  stället för tre fält — se `training/auto-difficulty.ts`. Mallen läser
    *  räckan härifrån; `streakVisible` äger tröskeln för när den syns. */
@@ -94,7 +85,6 @@ export class MasterViewComponent implements OnDestroy {
   ngOnDestroy(): void {
     clearInterval(this.timerHandle);
     clearTimeout(this.advanceHandle);
-    clearTimeout(this.calibrationHandle);
   }
 
   // --- Meny -----------------------------------------------------------------
@@ -108,11 +98,6 @@ export class MasterViewComponent implements OnDestroy {
     const correct = this.results.filter((r) => r.correct).length;
     const at = Math.min(this.currentQuestion + 1, this.selectedQuestionCount);
     return `Fråga ${at} av ${this.selectedQuestionCount}, ${correct} rätt hittills`;
-  }
-
-  get calibrationProgressLabel(): string {
-    const total = this.calibrationQuestions.length;
-    return `Fråga ${Math.min(this.calibrationIndex + 1, total)} av ${total}`;
   }
 
   get streakVisible(): boolean {
@@ -139,7 +124,7 @@ export class MasterViewComponent implements OnDestroy {
   /** Utan en mätt snabbhetstid har spelet inget att jämföra svaren mot. */
   start(): void {
     if (this.thresholds.baseline === null) {
-      this.startCalibration();
+      this.screen = 'calibration';
     } else {
       this.startGame();
     }
@@ -147,68 +132,6 @@ export class MasterViewComponent implements OnDestroy {
 
   showMenu(): void {
     this.screen = 'menu';
-  }
-
-  // --- Kalibrering ----------------------------------------------------------
-
-  startCalibration(): void {
-    this.calibrationIndex = 0;
-    this.calibrationTimes = [];
-    this.calibrationWrong = false;
-    this.screen = 'calibration';
-    this.nextCalibrationQuestion();
-  }
-
-  skipCalibration(): void {
-    this.engine.useDefaultCalibration();
-    this.startGame();
-  }
-
-  /** Tillståndsklasserna kommer från stilmallens .ui-dot. */
-  calibrationDotState(index: number): 'is-done' | 'is-current' | '' {
-    if (index < this.calibrationIndex) {
-      return 'is-done';
-    }
-    return index === this.calibrationIndex ? 'is-current' : '';
-  }
-
-  /** Svaret prövas medan det skrivs, så snart det är lika långt som facit. */
-  checkCalibrationAnswer(): void {
-    const input = this.calibrationInput?.nativeElement;
-    if (!input || this.calibrationIndex >= CALIBRATION_QUESTIONS.length) {
-      return;
-    }
-    const [a, b] = CALIBRATION_QUESTIONS[this.calibrationIndex];
-    const correctAnswer = a * b;
-    const userAnswer = Number.parseInt(input.value, 10);
-
-    if (Number.isNaN(userAnswer) || input.value.length < String(correctAnswer).length) {
-      return;
-    }
-
-    if (userAnswer === correctAnswer) {
-      this.calibrationTimes.push(Date.now() - this.questionStartTime);
-      this.calibrationIndex += 1;
-      this.calibrationHandle = setTimeout(() => this.nextCalibrationQuestion(), 300);
-    } else {
-      this.calibrationWrong = true;
-      this.calibrationHandle = setTimeout(() => {
-        this.calibrationWrong = false;
-        this.clearAndFocus('calibration');
-      }, 500);
-    }
-  }
-
-  private nextCalibrationQuestion(): void {
-    if (this.calibrationIndex >= CALIBRATION_QUESTIONS.length) {
-      this.engine.calibrate(this.calibrationTimes);
-      this.startGame();
-      return;
-    }
-    const [a, b] = CALIBRATION_QUESTIONS[this.calibrationIndex];
-    this.calibrationQuestionText = `${a} × ${b}`;
-    this.questionStartTime = Date.now();
-    this.clearAndFocus('calibration');
   }
 
   // --- Rundan ---------------------------------------------------------------
@@ -309,7 +232,7 @@ export class MasterViewComponent implements OnDestroy {
     this.showAbortModal = false;
     if (this.isAnswering) {
       this.startTimer();
-      this.focus('answer');
+      this.focus();
     }
   }
 
@@ -375,7 +298,7 @@ export class MasterViewComponent implements OnDestroy {
     this.timerDisplay = '0.0';
     this.questionStartTime = Date.now();
     this.startTimer();
-    this.clearAndFocus('answer');
+    this.clearAndFocus();
   }
 
   private startTimer(): void {
@@ -427,11 +350,11 @@ export class MasterViewComponent implements OnDestroy {
     });
   }
 
-  /** Fälten ligger bakom @if och finns först när vyn ritats om, så de slås
+  /** Fältet ligger bakom @if och finns först när vyn ritats om, så det slås
    *  upp inifrån timeouten i stället för att skickas in. */
-  private clearAndFocus(which: 'answer' | 'calibration'): void {
+  private clearAndFocus(): void {
     setTimeout(() => {
-      const input = this.inputFor(which);
+      const input = this.answerInput?.nativeElement;
       if (input) {
         input.value = '';
         input.focus();
@@ -439,12 +362,7 @@ export class MasterViewComponent implements OnDestroy {
     });
   }
 
-  private focus(which: 'answer' | 'calibration'): void {
-    setTimeout(() => this.inputFor(which)?.focus());
-  }
-
-  private inputFor(which: 'answer' | 'calibration'): HTMLInputElement | undefined {
-    const ref = which === 'answer' ? this.answerInput : this.calibrationInput;
-    return ref?.nativeElement;
+  private focus(): void {
+    setTimeout(() => this.answerInput?.nativeElement.focus());
   }
 }

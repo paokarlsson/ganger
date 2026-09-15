@@ -40,24 +40,7 @@
     }
 
     @case ('calibration') {
-      <div class="calibration-screen">
-        <div class="calibration-card ui-card ui-card--roomy">
-          <div class="calibration-title ui-title">🎯 Snabbhetskalibrering</div>
-          <div class="calibration-subtitle">Svara så snabbt du kan på dessa enkla tal</div>
-          <div class="calibration-progress" role="img" [attr.aria-label]="calibrationProgressLabel">
-            @for (question of calibrationQuestions; track $index) {
-              <div class="ui-dot ui-dot--lg" [class]="calibrationDotState($index)"></div>
-            }
-          </div>
-          <div class="calibration-question">{{ calibrationQuestionText }}</div>
-          <input #calibrationInput type="number" class="calibration-input"
-            [class.wrong]="calibrationWrong" autocomplete="off" inputmode="numeric"
-            (input)="checkCalibrationAnswer()" (keydown.enter)="checkCalibrationAnswer()" />
-        </div>
-        <button type="button" class="calibration-skip ui-btn ui-btn--quiet" (click)="skipCalibration()">
-          Hoppa över (använd standard)
-        </button>
-      </div>
+      <app-calibration (done)="startGame()" />
     }
 
     @case ('game') {
@@ -72,7 +55,7 @@
 
         <div class="question-card ui-card ui-card--roomy">
           <div class="question-text">{{ questionText }}</div>
-          <input #answerInput type="number" class="answer-input" [class]="answerState"
+          <input #answerInput type="number" class="ui-answer-input" [class]="answerState"
             autocomplete="off" inputmode="numeric" [disabled]="!isAnswering"
             (input)="onAnswerInput()" (keydown.enter)="checkAnswer()" />
         </div>
