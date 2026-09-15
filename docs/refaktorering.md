@@ -8,9 +8,10 @@ bör göras och varför* — det ändrar ingen kod självt.
 på vägen dit. En post som utförs stryks härifrån; en som visar sig vara fel
 stryks också, med en rad om varför.
 
-Storleken just nu: **10 566 rader** över 60 `.ts`-, `.html`- och `.scss`-filer
-i `src/`, varav 864 rader (8 %) är den temporära temaväljaren och 2 809 rader
-är tester.
+Storleken just nu: **11 188 rader** över 69 `.ts`-, `.html`- och `.scss`-filer
+i `src/`, varav 864 rader (8 %) är den temporära temaväljaren och 3 242 rader
+är tester. Avsnitt 4 lade till rader netto: det som lyftes ut ur komponenterna
+fick tester det inte hade, och de väger tyngre än raderna som försvann.
 
 ---
 
@@ -73,26 +74,25 @@ röra `DIFFICULTY`-tabellerna, vilket är ett annat arbete än det här.
 
 ## 4. Struktur och ansvar
 
-### 4.1 `MasterViewComponent` är fem komponenter i en (511 rader)
+### 4.1 `MasterViewComponent`
 
-Den äger fem skärmar (`menu`, `calibration`, `game`, `result`, `heatmap`), ~30
-publika fält, tre timers, kalibreringsflödet, frågebygget, resultatformateringen
-och exportknappen. Sektionsbannerna `// --- Meny ---`, `// --- Kalibrering ---`,
-`// --- Rundan ---`, `// --- Avbryt ---` är inte dokumentation utan ett kvitto
-på att filen innehåller fyra filer.
+Utförd. Komponenten har gått från 511 rader till 368 och äger fyra skärmar i
+stället för fem. `endGame()` är `master-view/round-result.ts`, en ren
+transformation `Answer[] → RoundResult` med egna tester; `buildQuestions()` är
+`buildRound()` i `levels.ts`, där urvalet hör hemma; kalibreringen är
+`<app-calibration (done)="startGame()">` med egna tester, som den inte hade
+förut — den gick inte att nå utan att spela.
 
-**Åtgärd, i fallande ordning av värde:**
+Svarsfältets stilar flyttade till stilmallen som `.ui-answer-input`.
+Kalibreringens fält och rundans delade redan en regel, och att duplicera den
+till den nya komponenten hade gjort samma sak till två.
 
-1. `endGame()` (rad 410) formaterar resultatskärmen — snitt, bästa tid,
-   uppdelningsrader med färg. Det är en ren transformation `Answer[] →
-   RoundResult` och hör hemma i en egen modul med tester, som
-   `heatmap-grid.ts` redan är för värmekartan.
-2. `buildQuestions()` (rad 436) bygger frågepoolen ur `LEVELS`. Hör hemma i
-   `levels.ts` eller i motorn — det är urval, inte utseende, och det är den
-   enda urvalslogik som i dag inte går att testa.
-3. Kalibreringen (fält, `checkCalibrationAnswer`, `nextCalibrationQuestion`,
-   `calibrationDotState`, två timers) är ett eget flöde med en egen skärm.
-   Den kan bli `<app-calibration (done)="…">`.
+Testerna av `buildRound()` fäste ett beteende som ingen visste om: på den
+blandade nivån ligger varje tal utom kvadraterna två gånger i påsen, en gång
+per tabell det hör till. En rond kan alltså ställa samma fråga två gånger fast
+hundra tal finns att välja bland. Det är inte infört här utan hittat här, och
+om det ska ändras är det en fråga för `docs/plan.md` och inte för den här
+planen.
 
 ### 4.2 `TrainingEngine` är fyra motorer i en (536 rader)
 
@@ -101,9 +101,20 @@ rätt beskrivning. Men den bär fyra sorters ansvar: (1) skalet mot lagringen me
 fördröjd skrivning, (2) Mästarens kalibrering och trösklar, (3) Svepets takt,
 nivå och rekord, (4) urvalet av nästa fråga.
 
-Punkt 1 lyfts ut av 1.3 ovan. Punkt 3 är sju rena `get`/`set`-par mot
-`this.progress` som var och en kallar `scheduleWrite()` + `flush()` — de kunde
-lika gärna vara en `swipeState`-vy över dokumentet.
+Punkt 1 lyfts ut av 1.3 ovan.
+
+Det som *är* gjort är skrivningarna: sex av sju stod som `scheduleWrite()` följt
+av `flush()` — schemalägg en fördröjd skrivning, gör den sedan omedelbart —
+utan att något sa varför. De heter nu `write()` och `deferWrite()`.
+Fördröjningen finns för `record()`, som sker per svar; allt annat ändras en
+gång per rond eller mer sällan.
+
+Punkt 3 står kvar, men förslaget om en `swipeState`-vy väger lättare än det
+såg ut: de två `get`/`set`-paren ligger inte för sig utan bland
+`swipeStartLevel()`, `isFastSwipe()`, `nextSwipeLevel()` och
+`recordSwipeCalibration()`, som alla anropas från samma flöde i svep-viewen.
+Att flytta paren utan fasadmetoderna omkring dem rör varje anropsställe utan
+att flytta ansvaret.
 
 Det är ingen brådska, men filen är näst störst i repot och växer med varje
 kanal som läggs till. `add:`-prefixet i lagringsnyckeln lovar att det kommer
@@ -111,41 +122,18 @@ fler.
 
 ### 4.3 `MatchViewComponent` konstruktor gör för mycket
 
-```ts
-constructor(private readonly log: ObservationLog = new ObservationLog()) {
-  this.loopAudio = new Audio('assets/audio/loop.mp3');
-  …
-  this.nextRound();
-}
-```
+Utförd. Loggen kommer ur `inject()` som överallt annars, ljudet ur en
+`GameAudio` med `playCorrect()`, `playWrong()`, `toggleLoop()` och `stopLoop()`,
+och `nextRound()` ligger i `ngOnInit`. Specen är en provider i stället för tre
+fältbyten efter konstruktionen.
 
-Tre problem i fyra rader:
-
-* **Defaultvärdet finns bara för testernas skull** — kommentaren säger det rakt
-  ut. Men det betyder att ett DI-missöde tyst ger en *andra* `ObservationLog`
-  med egna `pagehide`-lyssnare som skriver över den riktiga loggen på samma
-  nyckel.
-* **Ljudelementen byggs i konstruktorn**, så `match-view.component.spec.ts`
-  måste byta ut tre publika fält efter konstruktionen (`componentWithFakeAudio`,
-  `silenceEffects`) för att jsdom inte ska försöka spela upp.
-* **`this.nextRound()` i konstruktorn** startar en runda innan komponenten ritats.
-
-**Åtgärd:** en liten `GameAudio`-tjänst med `playCorrect()`, `playWrong()`,
-`toggleLoop()`, injicerad med `inject()`. Då blir testet en provider i stället
-för tre fältbyten, `log` får sitt vanliga `inject()`, och `nextRound()` flyttar
-till `ngOnInit`.
+Elementen byggs först när de behövs, och den nekade uppspelningen — som förut
+bara fanns i komponenten — har ett eget test.
 
 ### 4.4 `observation-analysis.report.spec.ts` är ett verktyg i testdräkt
 
-Filen säger det själv: «Inte ett test av spelet utan ett verktyg som råkar bo i
-testkörningen». Den läser `tools/observations.json` och skriver
-`tools/observations-report.txt`. Skälet — att det inte kostar ett beroende — var
-rimligt, men konsekvensen är att `npm test` i CI (`.github/workflows/pages.yml`)
-kör en filskrivande rapportgenerator vid varje push.
-
-**Åtgärd:** `npm run report` som kör `vitest run` mot just den filen, och låt
-`npm test` utesluta den. Samma kod, samma nollkostnad, men CI kör tester och
-verktyget körs när någon vill ha en rapport.
+Utförd. Ändelsen `.report.spec.ts` är utesluten ur `test`-målet och det enda
+`report`-målet kör. `npm test` kör tester, `npm run report` kör verktyget.
 
 ### 4.5 Den stora hävstången: signaler
 
@@ -287,19 +275,20 @@ tillstånd där nästa steg blir mindre.
 | --- | --- | --- | --- |
 | 1 | Prettier + ESLint + formateringscommit (6.1) | halvdag | — |
 | 6 | Kommentarskonsolidering (5.1–5.4) | medel | — |
-| 7 | `GameAudio` + match-viewens konstruktor (4.3) | medel | — |
-| 8 | Resultat- och frågebygge ut ur `MasterViewComponent` (4.1) | stor | — |
-| 10 | `npm run report` (4.4) | liten | — |
-| 11 | Signaler (4.5) | stor, eget arbete | 8 |
+| 11 | Signaler (4.5) | stor, eget arbete | — |
 
-Steg 2, 3, 4, 5 och 9 är utförda — steg 2 var avsnitt 2, steg 5 avsnitt 3, de
-andra tre avsnitt 1. Numren står kvar tomma så att de kvarvarandes beroenden
-fortsätter peka rätt.
+Steg 2–5 och 7–10 är utförda: steg 2 var avsnitt 2, steg 5 avsnitt 3, steg 3, 4
+och 9 avsnitt 1, och steg 7, 8 och 10 avsnitt 4. Numren står kvar som de var —
+hänvisningarna i planen och i koden pekar på dem.
 
 Steg 1 stod som beroende för 5, 6 och 7 för att formateringen skulle gå först
-och hålla diffarna rena. Avsnitt 3 gick före ändå, av samma skäl som avsnitt 1
-gjorde det: det som ändrades är skrivet med repots vanliga två stegs indrag, så
-formateringscommiten har fortfarande inget att göra där.
+och hålla diffarna rena. Avsnitt 3 och 4 gick före ändå, av samma skäl som
+avsnitt 1 gjorde det: det som ändrats är skrivet med repots vanliga två stegs
+indrag och enkla citattecken, så formateringscommiten har fortfarande inget att
+göra där. De nya `.scss`-filerna följer stilmallens fyra steg.
+
+Steg 11 stod som beroende av 8. Det beroendet är borta i och med att 8 är
+utförd.
 
 Steg 1 är en ren vinst utan risk. Steg 11 är den enda posten som ändrar
 hur appen fungerar under ytan och bör ha egna tester före och efter.
