@@ -258,7 +258,8 @@ All of it is cleared by the **Nollställ** button on the heat map screen, and by
 | `src/app/app.component.*` | Shell: the start menu and the choice of game |
 | `src/app/match-view/` | The *Para ihop* game |
 | `src/app/swipe-view/` | The *Svep* game |
-| `src/app/master-view/` | The *Mästaren* game, with its levels in `levels.ts` |
+| `src/app/master-view/` | The *Mästaren* game, with its levels and round building in `levels.ts` |
+| `src/app/master-view/round-result.ts` | The result screen as a transformation: answers in, what to show out |
 | `src/app/services/progress-store.ts` | The stored document, its schema version and its migrations |
 | `src/app/services/local-store.ts` | The only file that touches `localStorage` directly |
 | `src/app/services/debounced-writer.ts` | Delayed writes, flushed when the tab goes away |

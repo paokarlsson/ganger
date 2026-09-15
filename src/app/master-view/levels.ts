@@ -1,3 +1,5 @@
+import { shuffle } from '../shared/random';
+
 /** Ett tal att öva på, som paret av faktorer det består av. */
 export type Pair = [number, number];
 
@@ -78,3 +80,38 @@ export const PENALTY_TIME = 4.0;
  *  ska accelerera under kalibreringsfönstret. Se docs/plan.md, öppen fråga 6. */
 export const UPGRADE_THRESHOLD = 5;
 export const DOWNGRADE_THRESHOLD = 2;
+
+/**
+ * Talen en runda börjar med.
+ *
+ * I auto-läget väljs varje fråga utifrån hur den förra gick, så bara den
+ * första kan bestämmas på förhand; resten fylls på under rondens gång. Den
+ * dras jämnt ur gruppen och inte efter träningsvärde — ronden ska inte öppna
+ * med det svåraste spelaren har.
+ *
+ * På en fast nivå läggs hela ronden fram direkt. Båda ordningarna av ett tal
+ * ingår: 4 × 7 och 7 × 4 är samma kunskap men inte samma fråga att möta.
+ */
+export function buildRound(level: Level, questionCount: number, difficulty: Difficulty): Pair[] {
+  if (level === 'auto') {
+    return [shuffle(DIFFICULTY[difficulty])[0]];
+  }
+
+  const pool: Pair[] = [];
+  for (const table of LEVELS[level]) {
+    for (let i = 1; i <= 10; i++) {
+      pool.push([table, i]);
+      if (table !== i) {
+        pool.push([i, table]);
+      }
+    }
+  }
+
+  // En enskild tabell ger 19 tal, alltså färre än 20 och 30 frågor. Rundan
+  // fylls då på med en ny blandning i stället för att ta slut i förtid.
+  const round: Pair[] = [];
+  while (round.length < questionCount) {
+    round.push(...shuffle(pool));
+  }
+  return round.slice(0, questionCount);
+}

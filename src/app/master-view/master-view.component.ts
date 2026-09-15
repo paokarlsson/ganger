@@ -2,41 +2,21 @@ import { Component, ElementRef, OnDestroy, ViewChild, inject, ChangeDetectionStr
 import { HeatmapComponent } from '../heatmap/heatmap.component';
 import { ObservationLog } from '../services/observation-log';
 import { ProgressExporter } from '../services/progress-export';
-import { timeColor } from '../services/time-color';
-import { shuffle } from '../shared/random';
 import { AutoDifficultyState, initialAutoDifficulty } from '../training/auto-difficulty';
 import { Thresholds, TrainingEngine } from '../training/training-engine';
 import {
   CALIBRATION_QUESTIONS,
-  DIFFICULTY,
-  LEVELS,
   LEVEL_BUTTONS,
   Level,
   PENALTY_TIME,
   Pair,
+  buildRound,
 } from './levels';
+import { Answer, BreakdownRow, buildRoundResult } from './round-result';
 
 /** Skärmarna inom Mästaren. Att slå ihop den med Sveps vore frestande men
  *  skulle ge en typ som tillåter 'calibration' där. */
 type MasterScreen = 'menu' | 'calibration' | 'game' | 'result' | 'heatmap';
-
-interface Answer {
-  a: number;
-  b: number;
-  correct: boolean;
-  /** Svarstiden med straffet inräknat — det är den som mäts och sparas. */
-  timeMs: number;
-  penalty: number;
-  userAnswer: number;
-  correctAnswer: number;
-}
-
-interface BreakdownRow {
-  text: string;
-  time: string;
-  penalty: string;
-  color: string;
-}
 
 /** Hur länge facit står kvar innan nästa fråga kommer. */
 const NEXT_QUESTION_DELAY_MS = { correct: 800, wrong: 1700 };
@@ -412,56 +392,22 @@ export class MasterViewComponent implements OnDestroy {
     clearTimeout(this.advanceHandle);
     this.isAnswering = false;
 
-    const correctTimes = this.results.filter((r) => r.correct).map((r) => r.timeMs);
-    const average = correctTimes.length
-      ? correctTimes.reduce((sum, t) => sum + t, 0) / correctTimes.length / 1000
-      : 0;
-    const best = correctTimes.length ? Math.min(...correctTimes) / 1000 : 0;
-
-    this.resultTitle = this.gameAborted ? 'Avbrutet' : 'Rundan klar!';
-    this.resultCorrect = `${correctTimes.length}/${this.results.length}`;
-    this.resultAvgTime = average.toFixed(1) + 's';
-    this.resultBestTime = best.toFixed(1) + 's';
-    this.breakdown = this.results.map((r) => ({
-      text: `${r.correct ? '✓' : '✗'} ${r.a} × ${r.b} = ${
-        r.correct ? r.correctAnswer : `${r.userAnswer} (${r.correctAnswer})`
-      }`,
-      time: (r.timeMs / 1000).toFixed(1) + 's',
-      penalty: r.penalty ? ` (+${r.penalty}s)` : '',
-      color: this.timeColor(r.timeMs / 1000),
-    }));
+    const result = buildRoundResult(this.results, this.thresholds, this.gameAborted);
+    this.resultTitle = result.title;
+    this.resultCorrect = result.correct;
+    this.resultAvgTime = result.avgTime;
+    this.resultBestTime = result.bestTime;
+    this.breakdown = result.breakdown;
     this.screen = 'result';
   }
 
+  /** Auto-läget börjar där motorn tror att spelaren står; en fast nivå bär
+   *  ingen svårighetsgrupp, men räckan räknas ändå och behöver ett läge. */
   private buildQuestions(): Pair[] {
-    if (this.selectedLevel === 'auto') {
-      this.auto = initialAutoDifficulty(this.engine.startDifficulty());
-      // I auto-läget väljs varje fråga utifrån hur den förra gick, så bara
-      // den första kan bestämmas på förhand. Den dras jämnt ur gruppen och
-      // inte efter träningsvärde — ronden ska inte öppna med det svåraste
-      // spelaren har.
-      return [shuffle(DIFFICULTY[this.auto.difficulty])[0]];
-    }
-
-    this.auto = initialAutoDifficulty('medium');
-    const tables = LEVELS[this.selectedLevel];
-    const pool: Pair[] = [];
-    for (const table of tables) {
-      for (let i = 1; i <= 10; i++) {
-        pool.push([table, i]);
-        if (table !== i) {
-          pool.push([i, table]);
-        }
-      }
-    }
-
-    // En enskild tabell ger 19 tal, alltså färre än 20 och 30 frågor. Rundan
-    // fylls då på med en ny blandning i stället för att ta slut i förtid.
-    const round: Pair[] = [];
-    while (round.length < this.selectedQuestionCount) {
-      round.push(...shuffle(pool));
-    }
-    return round.slice(0, this.selectedQuestionCount);
+    const difficulty =
+      this.selectedLevel === 'auto' ? this.engine.startDifficulty() : 'medium';
+    this.auto = initialAutoDifficulty(difficulty);
+    return buildRound(this.selectedLevel, this.selectedQuestionCount, difficulty);
   }
 
   private nextAdaptiveQuestion(): Pair {
@@ -479,13 +425,6 @@ export class MasterViewComponent implements OnDestroy {
       correct: last.correct,
       timeSec: last.timeMs / 1000,
     });
-  }
-
-  /** Grönt upp till den kalibrerade tiden, sedan gult mot rött. Färgar
-   *  resultatskärmens uppdelning; värmekartan färgar sig själv. */
-  private timeColor(seconds: number): string {
-    const { fast, slow } = this.thresholds;
-    return timeColor(seconds, fast, slow);
   }
 
   /** Fälten ligger bakom @if och finns först när vyn ritats om, så de slås
