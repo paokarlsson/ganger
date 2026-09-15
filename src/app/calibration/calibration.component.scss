@@ -1,0 +1,44 @@
+/* Kortet, rubriken, knappen, prickarna och svarsfältet kommer från stilmallen
+   i src/styles/. Här ligger bara kalibreringsskärmens egen disposition. */
+
+/* Värdelementet ska inte lägga sig emellan: skärmen ska ta samma plats som
+   den gjorde när den var en div i Mästarens mall. */
+:host {
+    display: block;
+}
+
+.calibration-screen {
+    text-align: center;
+}
+
+.calibration-card {
+    margin-bottom: var(--space-4);
+}
+
+.calibration-title {
+    margin-bottom: var(--space-2);
+}
+
+.calibration-subtitle {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    margin-bottom: var(--space-5);
+}
+
+.calibration-progress {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-1);
+    margin-bottom: var(--space-4);
+}
+
+.calibration-question {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 10vw, 3rem);
+    font-weight: 700;
+    margin-bottom: var(--space-4);
+}
+
+.calibration-skip {
+    margin-top: var(--space-4);
+}

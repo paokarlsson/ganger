@@ -71,43 +71,6 @@
     margin-top: var(--space-3);
 }
 
-/* Kalibreringsskärmen */
-.calibration-screen {
-    text-align: center;
-}
-
-.calibration-card {
-    margin-bottom: var(--space-4);
-}
-
-.calibration-title {
-    margin-bottom: var(--space-2);
-}
-
-.calibration-subtitle {
-    font-size: 0.95rem;
-    color: var(--text-muted);
-    margin-bottom: var(--space-5);
-}
-
-.calibration-progress {
-    display: flex;
-    justify-content: center;
-    gap: var(--space-1);
-    margin-bottom: var(--space-4);
-}
-
-.calibration-question {
-    font-family: var(--font-display);
-    font-size: clamp(2rem, 10vw, 3rem);
-    font-weight: 700;
-    margin-bottom: var(--space-4);
-}
-
-.calibration-skip {
-    margin-top: var(--space-4);
-}
-
 /* Spelskärmen */
 .game-screen {
     text-align: center;
@@ -135,68 +98,6 @@
     font-weight: 700;
     color: var(--text-primary);
     margin-bottom: var(--space-5);
-}
-
-/* Svarsfälten. Kalibreringen har samma fält i en mindre storlek. */
-.answer-input,
-.calibration-input {
-    font-family: var(--font-display);
-    padding: 10px;
-    text-align: center;
-    border: 3px solid var(--line-strong);
-    border-radius: var(--radius-sm);
-    background: var(--fill-quiet);
-    color: var(--text-primary);
-    outline: none;
-    transition: border-color var(--motion-fast), background var(--motion-fast);
-}
-
-.answer-input {
-    font-size: clamp(1.8rem, 9vw, 2.5rem);
-    width: 120px;
-}
-
-.calibration-input {
-    font-size: clamp(1.5rem, 8vw, 2rem);
-    width: 100px;
-}
-
-.answer-input:focus,
-.calibration-input:focus {
-    border-color: var(--accent-highlight);
-}
-
-.answer-input.correct {
-    border-color: var(--accent-green);
-    background: var(--tint-green);
-}
-
-.answer-input.wrong,
-.calibration-input.wrong {
-    border-color: var(--accent-red);
-    background: var(--tint-red);
-}
-
-.answer-input:disabled {
-    /* Fältet låses medan facit visas — det ska inte se avstängt ut. */
-    opacity: 1;
-    -webkit-text-fill-color: var(--text-primary);
-}
-
-/* type="number" ger pilar som stjäl plats i de smala fälten. Mobilen visar
-   ändå ett siffertangentbord via inputmode. */
-.answer-input::-webkit-outer-spin-button,
-.answer-input::-webkit-inner-spin-button,
-.calibration-input::-webkit-outer-spin-button,
-.calibration-input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
-.answer-input,
-.calibration-input {
-    appearance: textfield;
-    -moz-appearance: textfield;
 }
 
 .timer {

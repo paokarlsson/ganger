@@ -1,0 +1,18 @@
+<div class="calibration-screen">
+  <div class="calibration-card ui-card ui-card--roomy">
+    <div class="calibration-title ui-title">🎯 Snabbhetskalibrering</div>
+    <div class="calibration-subtitle">Svara så snabbt du kan på dessa enkla tal</div>
+    <div class="calibration-progress" role="img" [attr.aria-label]="progressLabel">
+      @for (question of questions; track $index) {
+        <div class="ui-dot ui-dot--lg" [class]="dotState($index)"></div>
+      }
+    </div>
+    <div class="calibration-question">{{ questionText }}</div>
+    <input #input type="number" class="ui-answer-input ui-answer-input--sm"
+      [class.wrong]="wrong" autocomplete="off" inputmode="numeric"
+      (input)="checkAnswer()" (keydown.enter)="checkAnswer()" />
+  </div>
+  <button type="button" class="calibration-skip ui-btn ui-btn--quiet" (click)="skip()">
+    Hoppa över (använd standard)
+  </button>
+</div>

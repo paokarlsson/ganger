@@ -1,5 +1,6 @@
-import { Component, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnDestroy, OnInit, inject } from '@angular/core';
 import { FACTS, Fact } from '../facts/fact-catalog';
+import { GameAudio } from '../services/game-audio';
 import { ObservationLog } from '../services/observation-log';
 import { progressKeyFor } from '../services/progress-store';
 import { shuffle } from '../shared/random';
@@ -13,9 +14,7 @@ const ROUND_SIZE = 5;
   templateUrl: 'match-view.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
 })
-export class MatchViewComponent implements OnDestroy {
-  playLoop: boolean = false;
-
+export class MatchViewComponent implements OnInit, OnDestroy {
   round: Question[] = [];
   /** Frågespalten och svarsspalten, var och en i sin egen ordning. */
   questionColumn: Question[] = [];
@@ -24,10 +23,6 @@ export class MatchViewComponent implements OnDestroy {
   /** Det som är valt i respektive spalt just nu. */
   selectedQuestion: Question | null = null;
   selectedAnswer: Question | null = null;
-
-  loopAudio: HTMLAudioElement;
-  rightAudio: HTMLAudioElement;
-  wrongAudio: HTMLAudioElement;
 
   /** När rundan lades fram, och när det senaste paret löstes. */
   private roundStartedAt = 0;
@@ -38,47 +33,27 @@ export class MatchViewComponent implements OnDestroy {
   /** Felparningar per tal i den här rundan. */
   private attempts = new Map<Question, number>();
 
-  /**
-   * Loggen kommer från DI i appen. Grundvärdet finns för testerna, som bygger
-   * komponenten med `new` — `inject()` går inte utanför en injektionskontext,
-   * och att dra in TestBed för det här vore dyrare än en parameter.
-   */
-  constructor(private readonly log: ObservationLog = new ObservationLog()) {
-    this.loopAudio = new Audio('assets/audio/loop.mp3');
-    this.loopAudio.loop = true;
-    this.loopAudio.volume = 0.1;
-    this.rightAudio = new Audio('assets/audio/right.wav');
-    this.rightAudio.volume = 0.3;
-    this.wrongAudio = new Audio('assets/audio/wrong.wav');
-    this.wrongAudio.volume = 0.3;
+  private readonly log = inject(ObservationLog);
+  private readonly audio = inject(GameAudio);
+
+  /** Rundan läggs fram när komponenten ritats, inte i konstruktorn. */
+  ngOnInit(): void {
     this.nextRound();
   }
 
-  /**
-   * Ljudelementen är vanliga objekt och ligger utanför mallen, så att riva
-   * spelet lämnar dem spelande: att gå tillbaka till menyn skulle bära med sig
-   * musiken, och att starta om skulle bygga ett andra element som spelar ovanpå
-   * det första, utan att något av dem gick att stoppa.
-   */
+  /** Ljudet överlever komponenten, så det som river spelet får tysta det:
+   *  annars följer musiken med tillbaka till menyn. */
   ngOnDestroy(): void {
-    this.playLoop = false;
-    this.loopAudio.pause();
+    this.audio.stopLoop();
     this.log.flush();
   }
 
+  get playLoop(): boolean {
+    return this.audio.loopPlaying;
+  }
+
   startStopLoopAudio() {
-    this.playLoop = !this.playLoop;
-    if (this.playLoop) {
-      this.loopAudio.play().catch((error) => {
-        // Uppspelningen kan nekas — en fil som inte stöds, eller en webbläsare
-        // som vill ha en rakare gest än den här. Säg det med ikonen i stället
-        // för att låta den påstå att musik spelas.
-        this.playLoop = false;
-        console.error('Error starting loop:', error);
-      });
-    } else {
-      this.loopAudio.pause();
-    }
+    this.audio.toggleLoop();
   }
 
   nextRound() {
@@ -182,12 +157,12 @@ export class MatchViewComponent implements OnDestroy {
       this.lastResolvedAt = this.now();
       this.firstTouchAt = null;
       this.clearSelection();
-      this.playEffect(this.rightAudio);
+      this.audio.playCorrect();
     } else {
       this.recordMispair(question, answer);
       this.attempts.set(question, (this.attempts.get(question) ?? 0) + 1);
       this.attempts.set(answer, (this.attempts.get(answer) ?? 0) + 1);
-      this.playEffect(this.wrongAudio);
+      this.audio.playWrong();
     }
   }
 
@@ -272,12 +247,6 @@ export class MatchViewComponent implements OnDestroy {
    *  tider. `at` i händelsen är väggklockan och används för att sortera. */
   private now(): number {
     return typeof performance === 'undefined' ? Date.now() : performance.now();
-  }
-
-  /** Spelar om från början, så att två par i snabb följd hörs som två. */
-  private playEffect(audio: HTMLAudioElement): void {
-    audio.currentTime = 0;
-    audio.play().catch((error) => console.error('Error playing effect:', error));
   }
 }
 

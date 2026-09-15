@@ -205,6 +205,59 @@
     transform: scale(1.3);
 }
 
+/* --- Svarsfält -----------------------------------------------------------
+   Rundans fält och kalibreringens, som bara skiljer sig i storlek. De ligger
+   i var sin komponent men är samma sak att skriva ett svar i. */
+.ui-answer-input {
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 9vw, 2.5rem);
+    width: 120px;
+    padding: 10px;
+    text-align: center;
+    border: 3px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    background: var(--fill-quiet);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color var(--motion-fast), background var(--motion-fast);
+    /* type="number" ger pilar som stjäl plats i de smala fälten. Mobilen
+       visar ändå ett siffertangentbord via inputmode. */
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
+/* Kalibreringen är samma fält i en mindre storlek. */
+.ui-answer-input--sm {
+    font-size: clamp(1.5rem, 8vw, 2rem);
+    width: 100px;
+}
+
+.ui-answer-input:focus {
+    border-color: var(--accent-highlight);
+}
+
+.ui-answer-input.correct {
+    border-color: var(--accent-green);
+    background: var(--tint-green);
+}
+
+.ui-answer-input.wrong {
+    border-color: var(--accent-red);
+    background: var(--tint-red);
+}
+
+.ui-answer-input:disabled {
+    /* Fältet låses medan facit visas — det ska inte se avstängt ut. */
+    opacity: 1;
+    -webkit-text-fill-color: var(--text-primary);
+}
+
+.ui-answer-input::-webkit-outer-spin-button,
+.ui-answer-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
 /* --- Dialog --------------------------------------------------------------- */
 .ui-modal-overlay {
     position: fixed;

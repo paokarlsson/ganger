@@ -220,8 +220,9 @@ the log is data nobody can read. The button puts both keys on the clipboard, or
 downloads them as a file where the clipboard is refused; both are needed,
 because the correlation above compares against swipe times, which live in the
 progress document. Drop the result in `tools/observations.json` and run
-`npm test`: `observation-analysis.ts` writes a report to
-`tools/observations-report.txt`. Neither file is committed — a child's response
+`npm run report`: `observation-analysis.ts` writes a report to
+`tools/observations-report.txt`. It is a separate script and not part of
+`npm test`, so CI runs tests rather than a report generator. Neither file is committed — a child's response
 times do not belong in a public repo — and nothing in `src/app` imports the
 analysis, so it never reaches the bundle.
 
@@ -257,16 +258,19 @@ All of it is cleared by the **Nollställ** button on the heat map screen, and by
 | `src/app/app.component.*` | Shell: the start menu and the choice of game |
 | `src/app/match-view/` | The *Para ihop* game |
 | `src/app/swipe-view/` | The *Svep* game |
-| `src/app/master-view/` | The *Mästaren* game, with its levels in `levels.ts` |
+| `src/app/master-view/` | The *Mästaren* game, with its levels and round building in `levels.ts` |
+| `src/app/master-view/round-result.ts` | The result screen as a transformation: answers in, what to show out |
 | `src/app/services/progress-store.ts` | The stored document, its schema version and its migrations |
 | `src/app/services/local-store.ts` | The only file that touches `localStorage` directly |
 | `src/app/services/debounced-writer.ts` | Delayed writes, flushed when the tab goes away |
 | `src/app/services/observation-log.ts` | Raw training events; written, not yet read |
+| `src/app/services/game-audio.ts` | The loop and the two effects; outlives the component that plays them |
 | `src/app/shared/` | `shuffle`, `clamp`, `median` and `mean`, shared by everything above |
 | `src/app/testing/` | Helpers for the specs only; never imported by the app |
 | `src/app/training/training-engine.ts` | What the game believes about the player, and what it does with that |
 | `src/app/training/auto-difficulty.ts` | How *Mästaren*'s auto mode moves between difficulty groups |
 | `src/app/heatmap/` | The one heat map, shared by both games |
+| `src/app/calibration/` | The speed calibration: five easy facts, timed. Says when it is done |
 | `src/app/training/observation-analysis.ts` | Reads the observation log; not part of the app |
 | `src/app/services/progress-export.ts` | Gets the log and the progress off the device |
 | `src/app/services/time-color.ts` | The green-to-red scale both heat maps colour a time with |

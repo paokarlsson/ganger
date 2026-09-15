@@ -2,8 +2,12 @@
  * Kör analysen över en riktig export och skriver rapporten.
  *
  * Inte ett test av spelet utan ett verktyg som råkar bo i testkörningen. Skälet
- * är att det inte kostar ett enda beroende: `npm test` finns redan, kan redan
+ * är att det inte kostar ett enda beroende: testköraren finns redan, kan redan
  * TypeScript, och rapporten hamnar i utskriften.
+ *
+ * Därför körs den inte av `npm test` — ändelsen `.report.spec.ts` är utesluten
+ * där och är det enda `npm run report` kör. CI kör tester; det här körs när
+ * någon vill ha en rapport.
  *
  * Så här används den:
  *
@@ -11,7 +15,7 @@
  *      **Exportera data**.
  *   2. Klistra in i `tools/observations.json` (filen är ignorerad av git —
  *      det är ett barns övningsdata och hör inte hemma i ett publikt repo).
- *   3. `npm test`
+ *   3. `npm run report`
  *
  * Rapporten hamnar i `tools/observations-report.txt`. Den skrivs till fil och
  * inte bara till utskriften eftersom Angulars testkörare sväljer `console.log`.
