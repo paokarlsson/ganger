@@ -6,9 +6,8 @@ table are already answered fast enough to count as automatic — once there is
 any practice to count.
 
 - **Para ihop** — match each question in the left column with its answer in the
-  right one. Background music and sound effects included. Its rounds are drawn
-  from the shared fact catalogue, and every pair it resolves is written to an
-  observation log; see below.
+  right one. Its rounds are drawn from the shared fact catalogue, and every pair
+  it resolves is written to an observation log; see below.
 - **Svep** — a statement such as `7 × 8 = 54` is shown on a card. Swipe (or drag
   with the mouse, or press the arrow keys) right if it is correct, left if it is
   not. Pick a round of 10 to 40 cards, or ∞ to keep going until you press
@@ -211,7 +210,12 @@ measure of how much elimination was available — with one pair left the answer
 is free — so a later threshold can be set on that number rather than on taste.
 A mispairing is recorded too, with *both* facts and the answer that was chosen,
 because pairing 7 × 8 with 54 is the same kind of information the distractors
-are built from.
+are built from. Changing your mind is not one: a mispairing stays on the board
+until the next tile is picked, and picking a different *question* wipes it
+rather than pairing it with the answer that was left over. Without that, one
+wrong tap wrote three mispairings and stamped three facts as *not on the first
+try*, two of which had never been paired wrong on purpose — noise that runs one
+way, in the measure the log exists to take.
 
 Reading it back is what the **Exportera data** button on *Mästaren*'s heat map
 screen is for. The log lives in `localStorage` on the device it was practised
@@ -264,7 +268,6 @@ All of it is cleared by the **Nollställ** button on the heat map screen, and by
 | `src/app/services/local-store.ts` | The only file that touches `localStorage` directly |
 | `src/app/services/debounced-writer.ts` | Delayed writes, flushed when the tab goes away |
 | `src/app/services/observation-log.ts` | Raw training events; written, not yet read |
-| `src/app/services/game-audio.ts` | The loop and the two effects; outlives the component that plays them |
 | `src/app/shared/` | `shuffle`, `clamp`, `median` and `mean`, shared by everything above |
 | `src/app/testing/` | Helpers for the specs only; never imported by the app |
 | `src/app/training/training-engine.ts` | What the game believes about the player, and what it does with that |

@@ -8,8 +8,8 @@ bör göras och varför* — det ändrar ingen kod självt.
 på vägen dit. En post som utförs stryks härifrån; en som visar sig vara fel
 stryks också, med en rad om varför.
 
-Storleken just nu: **11 188 rader** över 69 `.ts`-, `.html`- och `.scss`-filer
-i `src/`, varav 864 rader (8 %) är den temporära temaväljaren och 3 242 rader
+Storleken just nu: **11 007 rader** över 67 `.ts`-, `.html`- och `.scss`-filer
+i `src/`, varav 864 rader (8 %) är den temporära temaväljaren och 3 168 rader
 är tester. Avsnitt 4 lade till rader netto: det som lyftes ut ur komponenterna
 fick tester det inte hade, och de väger tyngre än raderna som försvann.
 
@@ -123,12 +123,13 @@ fler.
 ### 4.3 `MatchViewComponent` konstruktor gör för mycket
 
 Utförd. Loggen kommer ur `inject()` som överallt annars, ljudet ur en
-`GameAudio` med `playCorrect()`, `playWrong()`, `toggleLoop()` och `stopLoop()`,
-och `nextRound()` ligger i `ngOnInit`. Specen är en provider i stället för tre
-fältbyten efter konstruktionen.
+`GameAudio`, och `nextRound()` ligger i `ngOnInit`. Specen är en provider i
+stället för tre fältbyten efter konstruktionen.
 
-Elementen byggs först när de behövs, och den nekade uppspelningen — som förut
-bara fanns i komponenten — har ett eget test.
+Ljudet är sedan dess borta ur spelet på begäran — `GameAudio`, ljudknappen och
+de tre filerna under `src/assets/audio/` finns inte längre. Posten står kvar
+för de två andra delarna, som gäller: konstruktorn gör inget, och vad
+komponenten behöver kommer ur `inject()`.
 
 ### 4.4 `observation-analysis.report.spec.ts` är ett verktyg i testdräkt
 

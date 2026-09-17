@@ -1,52 +1,17 @@
 import { TestBed } from '@angular/core/testing';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { MatchViewComponent, Question, firstFactor, questionKey, secondFactor } from './match-view.component';
-import { GameAudio } from '../services/game-audio';
 import { MatchMispairObservation, MatchPairObservation, ObservationLog } from '../services/observation-log';
 
-/**
- * jsdom har ingen uppspelning, så ljudet byts mot en attrapp som bara minns om
- * slingan spelar. Slingan är det som mäts: den överlever komponenten och
- * tystnar inte av sig själv när spelet rivs.
- */
-class FakeGameAudio implements Pick<GameAudio, 'toggleLoop' | 'stopLoop' | 'playCorrect' | 'playWrong'> {
-  playing = false;
-  /** Sätts av testet som prövar en nekad uppspelning. */
-  denyLoop = false;
-
-  get loopPlaying(): boolean {
-    return this.playing;
-  }
-
-  toggleLoop(): void {
-    this.playing = !this.playing && !this.denyLoop;
-  }
-
-  stopLoop(): void {
-    this.playing = false;
-  }
-
-  playCorrect(): void {}
-  playWrong(): void {}
-}
-
-/** Komponenten som appen bygger den, med ljudet utbytt. Rundan läggs fram av
- *  `ngOnInit`, alltså av den första ändringsdetekteringen. */
-function matchView(): {
-  component: MatchViewComponent;
-  loop: FakeGameAudio;
-  log: ObservationLog;
-} {
+/** Komponenten som appen bygger den. Rundan läggs fram av `ngOnInit`, alltså
+ *  av den första ändringsdetekteringen. */
+function matchView(): { component: MatchViewComponent; log: ObservationLog } {
   TestBed.resetTestingModule();
-  const loop = new FakeGameAudio();
-  TestBed.configureTestingModule({
-    providers: [{ provide: GameAudio, useValue: loop }],
-  });
+  TestBed.configureTestingModule({});
   const fixture = TestBed.createComponent(MatchViewComponent);
   fixture.detectChanges();
   return {
     component: fixture.componentInstance,
-    loop,
     log: TestBed.inject(ObservationLog),
   };
 }
@@ -66,37 +31,16 @@ function mispairs(log: ObservationLog): MatchMispairObservation[] {
 }
 
 describe('MatchViewComponent', () => {
-  it('startar och stoppar musiken med knappen', () => {
-    const { component, loop } = matchView();
+  it('skriver ned loggen när spelet rivs', () => {
+    const { component, log } = matchView();
+    const flush = vi.spyOn(log, 'flush');
 
-    component.startStopLoopAudio();
-    expect(component.playLoop).toBe(true);
-    expect(loop.playing).toBe(true);
-
-    component.startStopLoopAudio();
-    expect(component.playLoop).toBe(false);
-    expect(loop.playing).toBe(false);
-  });
-
-  it('tystnar när spelet rivs', () => {
-    const { component, loop } = matchView();
-    component.startStopLoopAudio();
-
-    // Att gå tillbaka till menyn river komponenten. Utan det här fortsätter
-    // musiken i menyn, och nästa omgång lägger en andra slinga ovanpå.
+    // Att gå tillbaka till menyn river komponenten. Skrivningen är fördröjd,
+    // så utan det här ligger de senaste händelserna kvar i minnet och väntar
+    // på en skrivning som ingen kommer att be om.
     component.ngOnDestroy();
 
-    expect(loop.playing).toBe(false);
-    expect(component.playLoop).toBe(false);
-  });
-
-  it('låter knappen visa tystnad när uppspelningen nekas', () => {
-    const { component, loop } = matchView();
-    loop.denyLoop = true;
-
-    component.startStopLoopAudio();
-
-    expect(component.playLoop).toBe(false);
+    expect(flush).toHaveBeenCalled();
   });
 
   describe('rundan', () => {
@@ -190,6 +134,54 @@ describe('MatchViewComponent', () => {
       expect(byKey.get(questionKey(one))!.attempts).toBe(1);
       expect(byKey.get(questionKey(one))!.firstTry).toBe(false);
       expect(byKey.get(questionKey(other))!.attempts).toBe(1);
+    });
+
+    it('låter ett ångrat fel förbli ett enda fel', () => {
+      const { component, log } = matchView();
+      const [one, other, third] = component.round;
+
+      component.selectQuestion(one);
+      component.selectAnswer(other);
+      // Spelaren ångrar sig och pekar på en annan fråga. Stryks inte
+      // felparningen utvärderas klicket mot svaret som blev kvar, och ett
+      // enda felval skriver tre felparningar på tre olika tal.
+      component.selectQuestion(third);
+
+      expect(mispairs(log).length).toBe(1);
+      expect(component.isAnswerSelected(other)).toBe(false);
+      expect(component.isQuestionSelected(third)).toBe(true);
+
+      component.selectAnswer(third);
+
+      const solved = pairs(log).find((o) => o.key === questionKey(third))!;
+      expect(solved.attempts).toBe(0);
+      expect(solved.firstTry).toBe(true);
+    });
+
+    it('räknar ett nytt svar på samma fråga som ett nytt försök', () => {
+      const { component, log } = matchView();
+      const [one, other, third] = component.round;
+
+      component.selectQuestion(one);
+      component.selectAnswer(other);
+      // Samma fråga, en ny gissning: det är ett fel till, och ska räknas.
+      component.selectAnswer(third);
+
+      expect(mispairs(log).length).toBe(2);
+    });
+
+    it('stryker felparningen även när växlingen började i svarsspalten', () => {
+      const { component, log } = matchView();
+      const [one, other, third] = component.round;
+
+      component.selectAnswer(one);
+      component.selectQuestion(other);
+      // Det är svarsspalten som inledde, så det är den som börjar om.
+      component.selectAnswer(third);
+
+      expect(mispairs(log).length).toBe(1);
+      expect(component.isQuestionSelected(other)).toBe(false);
+      expect(component.isAnswerSelected(third)).toBe(true);
     });
 
     it('börjar om räkningen med en ny runda', () => {
