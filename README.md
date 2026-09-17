@@ -211,7 +211,12 @@ measure of how much elimination was available — with one pair left the answer
 is free — so a later threshold can be set on that number rather than on taste.
 A mispairing is recorded too, with *both* facts and the answer that was chosen,
 because pairing 7 × 8 with 54 is the same kind of information the distractors
-are built from.
+are built from. Changing your mind is not one: a mispairing stays on the board
+until the next tile is picked, and picking a different *question* wipes it
+rather than pairing it with the answer that was left over. Without that, one
+wrong tap wrote three mispairings and stamped three facts as *not on the first
+try*, two of which had never been paired wrong on purpose — noise that runs one
+way, in the measure the log exists to take.
 
 Reading it back is what the **Exportera data** button on *Mästaren*'s heat map
 screen is for. The log lives in `localStorage` on the device it was practised

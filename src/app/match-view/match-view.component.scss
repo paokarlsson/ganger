@@ -6,11 +6,16 @@
     height: 100%;
 }
 
+/* Tre band: ljudknappen, spelplanen, och raden som Nästa dyker upp i. De två
+   ytterbanden är lika stora, vilket är vad som håller brädet mitt på skärmen.
+   Förut var de 1fr och 2fr, och brickorna dessutom 15 % höga var — fem av dem
+   fyllde alltså tre fjärdedelar av mittbandet och låg toppställda. Resultatet
+   var en tom tredjedel längst ned på varje skärmstorlek. */
 .wrapper {
     height: 100%;
     width: 100%;
     display: grid;
-    grid-template-rows: 1fr 8fr 2fr;
+    grid-template-rows: 1fr 6fr 1fr;
     overflow: hidden;
 }
 
@@ -19,6 +24,9 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
+    /* Skalets menyknapp ligger absolut placerad i samma hörn och kan radbrytas.
+       Bandet håller undan den från första brickraden. */
+    min-height: 3.5rem;
     padding: 0 var(--space-3);
 }
 
@@ -50,21 +58,36 @@
 
 main {
     width: 100%;
-    height: 100%;
     display: grid;
     grid-template-columns: 1fr 1fr;
+    /* Utan den här får ett rutnät med `fr`-spår aldrig krympa under sitt
+       innehåll, och mittbandet växer i stället för brickorna. */
+    min-height: 0;
 }
 
+/* En rad per bricka, lika höga, hela bandet ut. `grid-auto-rows` gör att
+   raderna följer rondens storlek: ändras ROUND_SIZE behöver stilmallen inte
+   veta om det, vilket den gjorde när höjden stod som 15 %. */
 .column {
-    text-align: center;
+    display: grid;
+    grid-auto-rows: 1fr;
+    gap: var(--space-2);
+    min-height: 0;
 }
 
 /* Brickorna. Vald bricka markeras i guld, som växlarna i de andra spelen;
    rätt och fel tar temats gröna och röda. */
 .item {
     width: 90%;
-    height: 15%;
-    margin-top: var(--space-2);
+    height: 100%;
+    /* Brickan är en pill, och taket är vad som håller den avlång. Utan det
+       drar en hög skärm ut den till ett ägg, eftersom radien är --radius-pill
+       och alltså halva den kortaste sidan. Överskottet blir jämn luft mellan
+       raderna i stället, eftersom brickan står mitt i sin rad. */
+    max-height: 6rem;
+    min-height: 0;
+    align-self: center;
+    justify-self: center;
     padding: 0;
     border: 3px solid var(--line-strong);
     border-radius: var(--radius-pill);
@@ -114,8 +137,11 @@ main {
     margin-right: 0.4em;
 }
 
+/* Raden är reserverad även när rondan pågår, så att brädet inte hoppar i det
+   ögonblick Nästa dyker upp. */
 .bottom {
     display: flex;
     align-items: center;
     justify-content: center;
+    min-height: 5rem;
 }

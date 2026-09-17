@@ -65,6 +65,7 @@ export class MatchViewComponent implements OnInit, OnDestroy {
     this.answerColumn = this.shuffleDeranged(this.round, this.questionColumn);
     this.roundStartedAt = this.now();
     this.lastResolvedAt = this.roundStartedAt;
+    this.firstTouchAt = null;
   }
 
   /** Visningsformen för en ruta i frågespalten. */
@@ -105,6 +106,7 @@ export class MatchViewComponent implements OnInit, OnDestroy {
     if (this.isDone(question)) {
       return;
     }
+    this.leaveMispair('question');
     this.noteTouch('question');
     this.selectedQuestion = this.selectedQuestion === question ? null : question;
     this.evaluatePair();
@@ -114,12 +116,39 @@ export class MatchViewComponent implements OnInit, OnDestroy {
     if (this.isDone(question)) {
       return;
     }
+    this.leaveMispair('answer');
     this.noteTouch('answer');
     this.selectedAnswer = this.selectedAnswer === question ? null : question;
     this.evaluatePair();
   }
 
-  /** Två valda rutor som inte hör ihop. Står kvar tills något annat väljs. */
+  /**
+   * Klicket som lämnar en felparning bakom sig.
+   *
+   * Den felparade rutan står kvar tills något annat väljs, och utan det här
+   * utvärderades nästa klick mot den halva som blev kvar. Att ångra sig blev
+   * därmed ett fel till: ett enda felval kunde skriva tre felparningar och
+   * stämpla tre tal som «inte på första försöket», varav två aldrig hade
+   * parats fel med avsikt. Loggen finns för att mäta spelaren (docs/plan.md,
+   * steg 4), och den sortens brus är systematiskt åt ett håll.
+   *
+   * Vilken spalt klicket kommer i är det som skiljer de två fallen åt:
+   *
+   * - I den spalt där felet lades — den som *inte* inledde växlingen — byter
+   *   spelaren sitt svar på samma fråga. Det är ett nytt försök i samma
+   *   växling, och rutan ersätts som förut.
+   * - I spalten som inledde växlingen byter spelaren i stället fråga. Då
+   *   stryks felparningen helt, och klicket börjar om från ett tomt bräde.
+   */
+  private leaveMispair(column: 'question' | 'answer'): void {
+    if (this.isMispaired() && column === this.startedFrom) {
+      this.clearSelection();
+      this.firstTouchAt = null;
+    }
+  }
+
+  /** Två valda rutor som inte hör ihop. Står kvar till nästa val, som enligt
+   *  `leaveMispair` antingen byter svar eller stryker felparningen. */
   private isMispaired(): boolean {
     return (
       this.selectedQuestion !== null &&
@@ -134,9 +163,10 @@ export class MatchViewComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * En växling börjar när brädet är orört och något väljs. Klicket som bryter
-   * en felparning räknas inte som en ny början — felet hör till samma försök,
-   * och `attempts` är det som bär den informationen.
+   * En växling börjar när brädet är orört och något väljs. Ett nytt svar på
+   * samma fråga är ingen ny början — felet hör till samma försök, och
+   * `attempts` är det som bär den informationen. Byter spelaren däremot fråga
+   * har `leaveMispair` redan tömt brädet, och då börjar växlingen om här.
    */
   private noteTouch(from: 'question' | 'answer'): void {
     if (this.selectedQuestion === null && this.selectedAnswer === null) {

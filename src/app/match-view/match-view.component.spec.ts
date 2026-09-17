@@ -192,6 +192,54 @@ describe('MatchViewComponent', () => {
       expect(byKey.get(questionKey(other))!.attempts).toBe(1);
     });
 
+    it('låter ett ångrat fel förbli ett enda fel', () => {
+      const { component, log } = matchView();
+      const [one, other, third] = component.round;
+
+      component.selectQuestion(one);
+      component.selectAnswer(other);
+      // Spelaren ångrar sig och pekar på en annan fråga. Stryks inte
+      // felparningen utvärderas klicket mot svaret som blev kvar, och ett
+      // enda felval skriver tre felparningar på tre olika tal.
+      component.selectQuestion(third);
+
+      expect(mispairs(log).length).toBe(1);
+      expect(component.isAnswerSelected(other)).toBe(false);
+      expect(component.isQuestionSelected(third)).toBe(true);
+
+      component.selectAnswer(third);
+
+      const solved = pairs(log).find((o) => o.key === questionKey(third))!;
+      expect(solved.attempts).toBe(0);
+      expect(solved.firstTry).toBe(true);
+    });
+
+    it('räknar ett nytt svar på samma fråga som ett nytt försök', () => {
+      const { component, log } = matchView();
+      const [one, other, third] = component.round;
+
+      component.selectQuestion(one);
+      component.selectAnswer(other);
+      // Samma fråga, en ny gissning: det är ett fel till, och ska räknas.
+      component.selectAnswer(third);
+
+      expect(mispairs(log).length).toBe(2);
+    });
+
+    it('stryker felparningen även när växlingen började i svarsspalten', () => {
+      const { component, log } = matchView();
+      const [one, other, third] = component.round;
+
+      component.selectAnswer(one);
+      component.selectQuestion(other);
+      // Det är svarsspalten som inledde, så det är den som börjar om.
+      component.selectAnswer(third);
+
+      expect(mispairs(log).length).toBe(1);
+      expect(component.isQuestionSelected(other)).toBe(false);
+      expect(component.isAnswerSelected(third)).toBe(true);
+    });
+
     it('börjar om räkningen med en ny runda', () => {
       const { component, log } = matchView();
       const [one, other] = component.round;
