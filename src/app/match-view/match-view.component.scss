@@ -1,62 +1,35 @@
 /* Knappen längst ned kommer från stilmallen i src/styles/. Här ligger
-   spelplanen: de två kolumnerna, brickorna och ljudknappen. */
+   spelplanen: de två kolumnerna och brickorna. */
 
 :host {
     display: block;
     height: 100%;
 }
 
-/* Tre band: ljudknappen, spelplanen, och raden som Nästa dyker upp i. De två
-   ytterbanden är lika stora, vilket är vad som håller brädet mitt på skärmen.
-   Förut var de 1fr och 2fr, och brickorna dessutom 15 % höga var — fem av dem
-   fyllde alltså tre fjärdedelar av mittbandet och låg toppställda. Resultatet
-   var en tom tredjedel längst ned på varje skärmstorlek. */
+/* Tre band: ett tomt överst, spelplanen, och raden som Nästa dyker upp i.
+   Det översta är tomt men inte onödigt — skalets menyknapp ligger absolut
+   placerad i hörnet och kan radbrytas, och bandet är det som håller den undan
+   första brickraden. Ytterbanden är lika stora, vilket är vad som håller
+   brädet mitt på skärmen. Golven är de två knapparnas höjd, så att inget band
+   trycks ihop på en låg skärm: menyknappen radbryts på en bred skärm och blir
+   då 4 rem hög, och på en låg skärm räckte ett golv på 3,5 rem inte — första
+   brickraden hamnade under den.
+
+   Förut var banden 1fr och 2fr, och brickorna dessutom 15 % höga var — fem av
+   dem fyllde alltså tre fjärdedelar av mittbandet och låg toppställda.
+   Resultatet var en tom tredjedel längst ned på varje skärmstorlek. */
 .wrapper {
     height: 100%;
     width: 100%;
     display: grid;
-    grid-template-rows: 1fr 6fr 1fr;
+    grid-template-rows: minmax(4.5rem, 1fr) 6fr minmax(5rem, 1fr);
     overflow: hidden;
 }
 
-/* Ljudknappen sitter till höger — skalets menyknapp har vänsterhörnet. */
-.top {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    /* Skalets menyknapp ligger absolut placerad i samma hörn och kan radbrytas.
-       Bandet håller undan den från första brickraden. */
-    min-height: 3.5rem;
-    padding: 0 var(--space-3);
-}
-
-.sound-btn {
-    display: flex;
-    padding: var(--space-1);
-    border: 0;
-    border-radius: var(--radius-pill);
-    background: transparent;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: color var(--motion-fast);
-}
-
-.sound-btn:hover {
-    color: var(--accent-highlight);
-}
-
-.sound-btn:focus-visible {
-    outline: var(--focus-ring);
-    outline-offset: 2px;
-}
-
-.icon {
-    width: 36px;
-    height: 36px;
-    fill: currentColor;
-}
-
 main {
+    /* Placeras uttryckligen: första raden har ingen tagg, och utan det här
+       hamnar spelplanen i den i stället för i sin egen. */
+    grid-row: 2;
     width: 100%;
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -140,8 +113,8 @@ main {
 /* Raden är reserverad även när rondan pågår, så att brädet inte hoppar i det
    ögonblick Nästa dyker upp. */
 .bottom {
+    grid-row: 3;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 5rem;
 }

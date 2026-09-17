@@ -1,6 +1,5 @@
 import { Component, ChangeDetectionStrategy, OnDestroy, OnInit, inject } from '@angular/core';
 import { FACTS, Fact } from '../facts/fact-catalog';
-import { GameAudio } from '../services/game-audio';
 import { ObservationLog } from '../services/observation-log';
 import { progressKeyFor } from '../services/progress-store';
 import { shuffle } from '../shared/random';
@@ -34,26 +33,16 @@ export class MatchViewComponent implements OnInit, OnDestroy {
   private attempts = new Map<Question, number>();
 
   private readonly log = inject(ObservationLog);
-  private readonly audio = inject(GameAudio);
 
   /** Rundan läggs fram när komponenten ritats, inte i konstruktorn. */
   ngOnInit(): void {
     this.nextRound();
   }
 
-  /** Ljudet överlever komponenten, så det som river spelet får tysta det:
-   *  annars följer musiken med tillbaka till menyn. */
+  /** Att gå tillbaka till menyn river komponenten. Det som ligger och väntar
+   *  på att skrivas ned skrivs här, medan sidan fortfarande lever. */
   ngOnDestroy(): void {
-    this.audio.stopLoop();
     this.log.flush();
-  }
-
-  get playLoop(): boolean {
-    return this.audio.loopPlaying;
-  }
-
-  startStopLoopAudio() {
-    this.audio.toggleLoop();
   }
 
   nextRound() {
@@ -187,12 +176,10 @@ export class MatchViewComponent implements OnInit, OnDestroy {
       this.lastResolvedAt = this.now();
       this.firstTouchAt = null;
       this.clearSelection();
-      this.audio.playCorrect();
     } else {
       this.recordMispair(question, answer);
       this.attempts.set(question, (this.attempts.get(question) ?? 0) + 1);
       this.attempts.set(answer, (this.attempts.get(answer) ?? 0) + 1);
-      this.audio.playWrong();
     }
   }
 
