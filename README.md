@@ -48,15 +48,18 @@ components use instead of restyling the same widget once per game. A component's
 own stylesheet keeps only what is that game's own: the swipe card, the matching
 board, and each heat map screen's own layout around the shared grid. The
 `ui-` prefix in a template is the signal that the look comes from the shared
-sheet. The dark palette was *Mästaren*'s to begin with, and the yellow of
-*Svep*'s card is kept as its own token, deliberately lighter than the theme's
+sheet. The dark palette was *Mästaren*'s to begin with, and the face of
+*Svep*'s card is kept as its own token, deliberately lighter than the palette's
 highlight — the card is an object on a table, not a heading, and so keeps its
 colour in both modes.
 
 `_tokens.scss` holds two palettes, a dark one and a light one, as SCSS mixins.
-Without a choice in the app the system decides, through
+Both are *Sockervadd*: a plum ground, raspberry for what lifts, and a green
+turned towards mint so that it belongs with the raspberry rather than standing
+next to it. Without a choice in the app the system decides, through
 `prefers-color-scheme`; `data-mode="light"` or `"dark"` on `<html>` outweighs
-it.
+it, and nothing in the app writes that attribute today — it is the seam an
+in-app switch would use.
 
 The colours are written in `oklch()` rather than hex, and that is not
 cosmetic. The first number, L, is the lightness the eye actually sees, and it
@@ -79,9 +82,10 @@ rule, and a departure from it needs a reason:
   `--green-shadow` 0.60 for the edge underneath. One even step in L per state,
   so the three read as one colour at three depths; in hex the steps were
   uneven.
-- **The one exception** is the accent that lifts. Blue and violet cannot be
-  both that light and that coloured — sRGB runs out — so for those hues the
-  lightness drops until chroma reaches 0.12, never below 0.72.
+- **The one exception** is the accent that lifts. Not every hue can be both
+  that light and that coloured — sRGB runs out — so the lightness drops until
+  the chroma comes up, never below 0.72. The raspberry sits at 0.82, which is
+  where its chroma reaches 0.137.
 
 The primary button is the one place where the app still wants to feel
 physical, and that is worth keeping in a game for children — what was dated
@@ -95,10 +99,10 @@ against a light one, written with `oklch(from …)` so that only the lightness
 moves. Mixing toward `--tone` would have dragged the hue along and turned the
 green teal.
 
-Light mode is not dark mode mirrored. Its ground is warm (hue 85) rather than
-blue-grey: paper that leans yellow reads as paper, where the old `#f7f8fc`
+Light mode is not dark mode mirrored. Its ground is warm (hue 340) rather than
+blue-grey: paper that leans pink reads as paper, where the old `#f7f8fc`
 read as a disabled control. The ink stays on the dark palette's hue, and that
-warm-ground/cool-ink pairing is what carries the mode.
+warm-ground/cooler-ink pairing is what carries the mode.
 
 Three tokens are what make one set of rules serve both modes:
 
@@ -132,7 +136,7 @@ the primary button carries dark text in the dark palette because white on that
 `--accent-green` is 2:1 — which is exactly why the colour under the text is
 a token of its own, `--on-green`, and turns light where the light palette's
 green is dark enough to carry it; the weakest of that button's six
-combinations, three states across two palettes, is 5.5:1. Text on a red or green tint is light, never
+combinations, three states across two palettes, is 5.1:1. Text on a red or green tint is light, never
 red or green — a colour against its own tint does not reach 4.5:1.
 
 Both heat maps colour a time on one scale, and that scale sweeps hue in OKLCH
@@ -277,7 +281,6 @@ All of it is cleared by the **Nollställ** button on the heat map screen, and by
 | `src/app/training/observation-analysis.ts` | Reads the observation log; not part of the app |
 | `src/app/services/progress-export.ts` | Gets the log and the progress off the device |
 | `src/app/services/time-color.ts` | The green-to-red scale both heat maps colour a time with |
-| `src/app/theme-picker/` | **Temporary** — the theme picker; see below |
 | `docs/plan.md` | What is decided, what is open, and which constants are guesses |
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) and runs on
@@ -322,39 +325,6 @@ rewritten: at the top of the ladder the streak keeps counting even though the
 difficulty cannot rise any further, because that same counter is what the cheer
 in the top row is showing — resetting it on a step that could not be taken
 would put the cheer out mid-run.
-
-## Theme picker (temporary)
-
-`src/app/theme-picker/` is scaffolding, not part of the app. It puts a **Tema**
-button in the bottom right corner that switches between a handful of candidate
-palettes and between Auto / Ljust / Mörkt, so a theme can be judged in the
-running games rather than in a swatch. The choice is kept in `localStorage`
-under `ganger-tema` and `ganger-lage`.
-
-It touches nothing else: it writes `data-theme` and `data-mode` on `<html>` and
-injects the candidate palettes as one `<style>` element, mirroring the rule
-order `_tokens.scss` already uses. Light and dark mode themselves are *not*
-temporary — they live in `_tokens.scss` and stay when this folder is gone.
-
-All seven palettes are built on the same ladder of lightness and chroma the
-section above describes, and the only thing that separates them is their hues.
-That is what makes them comparable: switching theme moves the colour but not
-the weight, and no theme can accidentally end up easier to read than another.
-Each was checked against the same WCAG 2.2 AA thresholds — body text 4.5:1
-against every ground it sits on, control borders 3:1 against both neighbours,
-text on a fill 4.5:1 against the fill. The weakest contrast in each of them
-lands at 4.69:1 or better, and it is the same pair of tokens that is weakest
-everywhere, which is the sign that it is the rule and not luck doing the work.
-
-To remove it once a theme is settled on:
-
-1. Open the picker, pick the theme, press **Kopiera temats CSS**, and paste the
-   dark and light declarations into the two mixins in `src/styles/_tokens.scss`
-   (Midnatt is already what stands there).
-2. Delete `src/app/theme-picker/`.
-3. Delete the `<app-theme-picker />` tag in `src/app/app.component.html` and the
-   import and `imports:` entry in `src/app/app.component.ts`. All three are
-   marked `TILLFÄLLIG`.
 
 ## Development server
 

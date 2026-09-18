@@ -17,6 +17,10 @@
    - Accenterna: L 0.84 för det som lyfter, 0.80 för grönt och orange, 0.72
      för rött, som inte når högre utan att bli rosa. I ljust läge ligger de
      alla på L 0.505 — samma färg bär inte text mot båda underlagen.
+   - Undantaget är accenten som lyfter. Den vill ligga på 0.84, men alla
+     nyanser kan inte vara både så ljusa och så färgade — sRGB tar slut.
+     Hallonet sänks därför till 0.82, vilket är där kromat kommer upp i
+     0.137. Aldrig under 0.72.
    - Knappens trappa: grönt 0.80, --green-deep 0.72, --green-shadow 0.60. Ett
      jämnt steg i L ger en jämn toning; i hex blev stegen olika stora.
 
@@ -32,50 +36,55 @@
    - --card-ink är texten på Sveps kort, som är ett ljust kort i båda lägena.
 
    Lägena väljs så här: utan val följer appen systemets inställning, och
-   data-mode="light" eller "dark" på <html> vinner över den. */
+   data-mode="light" eller "dark" på <html> vinner över den. Inget i appen
+   skriver data-mode i dag — det är sömmen en växel i gränssnittet skulle
+   använda, och den kostar två regler att låta stå kvar. */
 
 /* --- Mörk palett ---------------------------------------------------------- */
 @mixin dark-palette {
     color-scheme: dark;
 
-    --bg-base: oklch(0.205 0.024 272);
-    --bg-floor: oklch(0.15 0.019 272);
-    --bg-card: oklch(0.248 0.024 272);
-    --bg-card-raised: oklch(0.31 0.028 272);
+    --bg-base: oklch(0.205 0.03 328);
+    --bg-floor: oklch(0.15 0.024 328);
+    --bg-card: oklch(0.248 0.03 328);
+    --bg-card-raised: oklch(0.31 0.034 328);
 
-    /* Bärnsten, inte guld. Samma roll som förr, men på accenternas ljushet i
-       stället för tjugo punkter över dem. */
-    --accent-highlight: oklch(0.84 0.155 82);
-    --on-highlight: oklch(0.18 0.024 272);
+    /* Hallon, inte guld. Samma roll som förr, men på accenternas ljushet i
+       stället för tjugo punkter över dem. L 0.82 och inte 0.84: se undantaget
+       i trappan ovan. */
+    --accent-highlight: oklch(0.82 0.137 340);
+    --on-highlight: oklch(0.18 0.03 328);
 
-    --accent-green: oklch(0.8 0.155 155);
+    /* Grönt vridet mot mynta, så att det hör ihop med hallonet i stället för
+       att stå bredvid det. */
+    --accent-green: oklch(0.8 0.155 168);
     /* Primärknappens gradient och den skugga den trycks ned mot. */
-    --green-deep: oklch(0.72 0.165 155);
-    --green-shadow: oklch(0.6 0.149 155);
+    --green-deep: oklch(0.72 0.146 168);
+    --green-shadow: oklch(0.6 0.122 168);
     /* Texten är mörk, inte vit: vitt mot ett grönt så här ljust ger 2:1. */
-    --on-green: oklch(0.18 0.024 272);
+    --on-green: oklch(0.18 0.03 328);
 
     /* Rött stannar på L 0.72 — högre upp blir det rosa, lägre ned faller det
        under 4.5:1 mot --bg-card-raised, som är det ljusaste underlaget. */
-    --accent-red: oklch(0.72 0.165 25);
-    --accent-orange: oklch(0.8 0.133 55);
+    --accent-red: oklch(0.72 0.165 28);
+    --accent-orange: oklch(0.8 0.14 60);
 
     /* Sveps kort är medvetet ljusare än --accent-highlight — det ska läsas
        som ett spelkort på bordet, inte som en rubrik. Kortet är ett föremål
        och behåller därför sin färg i båda lägena. */
-    --card-face: oklch(0.9 0.12 90);
-    --card-ink: oklch(0.21 0.03 90);
+    --card-face: oklch(0.9 0.063 348);
+    --card-ink: oklch(0.21 0.03 348);
 
-    --text-primary: oklch(0.965 0.006 272);
-    --text-muted: oklch(0.72 0.018 272);
+    --text-primary: oklch(0.965 0.006 328);
+    --text-muted: oklch(0.72 0.018 328);
 
     /* Det som ska lyfta sig ur en mörk botten. Inte rent vitt: en gnutta av
        underlagets nyans gör att en ram ser ut att höra till ytan. */
-    --tone: oklch(0.99 0.004 272);
+    --tone: oklch(0.99 0.004 328);
     /* Sjoket bakom en modal. Mörkt i båda lägena — det är riktningen som gör
        att dialogen läser som ovanpå — men det tar underlagets nyans i stället
        för att vara rent svart. */
-    --scrim: oklch(0.15 0.019 272 / 0.7);
+    --scrim: oklch(0.15 0.024 328 / 0.7);
     /* Se --line-strong nedan. Mot en mörk botten räcker det här. */
     --line-strong-alpha: 45%;
     /* Ett steg i ljushet bort från underlaget, för en yta som hovras. Mot en
@@ -93,48 +102,48 @@
 /* --- Ljus palett -----------------------------------------------------------
    Inte den mörka spegelvänd. Två saker skiljer:
 
-   Underlaget är varmt och inte blågrått. Ett papper som lutar åt gult (nyans
-   85) läser som papper; det blågrå #f7f8fc som stod här läser som en
+   Underlaget är varmt och inte blågrått. Ett papper som lutar åt rosa (nyans
+   340) läser som papper; det blågrå #f7f8fc som stod här läser som en
    inaktiverad kontroll. Bläcket är däremot kvar på den mörka palettens
-   nyans, och det är den kontrasten mellan varmt underlag och svalt bläck som
-   bär läget.
+   nyans, och det är den kontrasten mellan varmt underlag och svalare bläck
+   som bär läget.
 
    Accenterna ligger allihop på L 0.505, vilket är så ljusa de kan vara och
    ändå klara 4.5:1 mot --bg-floor. Där de i stället är fyllning — den aktiva
    växeln, primärknappen — är texten ovanpå ljus, och det är vad
-   --on-highlight och --on-green byter ut. Bärnstenen vrids samtidigt mot
-   nyans 68: gult som mörknas blir oliv, medan gult som samtidigt vrids mot
-   orange blir brons. */
+   --on-highlight och --on-green byter ut. Hallonet vrids samtidigt mot nyans
+   348: rosa som mörknas blir lila, medan rosa som samtidigt vrids mot rött
+   blir körsbär. */
 @mixin light-palette {
     color-scheme: light;
 
-    --bg-base: oklch(0.98 0.006 85);
-    --bg-floor: oklch(0.945 0.012 85);
-    --bg-card: oklch(0.999 0.002 85);
-    --bg-card-raised: oklch(0.962 0.008 85);
+    --bg-base: oklch(0.98 0.006 340);
+    --bg-floor: oklch(0.945 0.012 340);
+    --bg-card: oklch(0.999 0.002 340);
+    --bg-card-raised: oklch(0.962 0.008 340);
 
-    --accent-highlight: oklch(0.505 0.111 68);
-    --on-highlight: oklch(0.995 0.006 68);
+    --accent-highlight: oklch(0.505 0.135 348);
+    --on-highlight: oklch(0.995 0.006 348);
 
-    --accent-green: oklch(0.505 0.125 155);
-    --green-deep: oklch(0.45 0.112 155);
-    --green-shadow: oklch(0.38 0.095 155);
-    --on-green: oklch(0.995 0.006 155);
+    --accent-green: oklch(0.505 0.103 168);
+    --green-deep: oklch(0.45 0.092 168);
+    --green-shadow: oklch(0.38 0.078 168);
+    --on-green: oklch(0.995 0.006 168);
 
-    --accent-red: oklch(0.505 0.165 25);
-    --accent-orange: oklch(0.505 0.135 42);
+    --accent-red: oklch(0.505 0.165 28);
+    --accent-orange: oklch(0.505 0.135 48);
 
-    --card-face: oklch(0.9 0.12 90);
-    --card-ink: oklch(0.21 0.03 90);
+    --card-face: oklch(0.9 0.063 348);
+    --card-ink: oklch(0.21 0.03 348);
 
-    --text-primary: oklch(0.28 0.032 272);
-    --text-muted: oklch(0.5 0.026 272);
+    --text-primary: oklch(0.28 0.032 328);
+    --text-muted: oklch(0.5 0.026 328);
 
     /* Bläck: samma roll som det nästan vita har i den mörka paletten. */
-    --tone: oklch(0.235 0.032 272);
+    --tone: oklch(0.235 0.032 328);
     /* Svagare än i mörkt läge: mot ett ljust underlag räcker mindre för att
        skilja på framför och bakom, och 70 % svart blir en lucka i sidan. */
-    --scrim: oklch(0.235 0.032 272 / 0.45);
+    --scrim: oklch(0.235 0.032 328 / 0.45);
     /* Högre än i mörkt läge: bläck mot ett vitt kort tar sig inte över 3:1
        förrän här, medan det ljusa mot en mörk botten är där redan vid 45 %. */
     --line-strong-alpha: 58%;
@@ -142,8 +151,8 @@
        läge, åt andra hållet. */
     --lift: -0.04;
 
-    --shadow-card: 0 1px 2px oklch(0.235 0.032 272 / 0.06),
-        0 4px 12px oklch(0.235 0.032 272 / 0.08);
+    --shadow-card: 0 1px 2px oklch(0.235 0.032 328 / 0.06),
+        0 4px 12px oklch(0.235 0.032 328 / 0.08);
     /* Mot en ljus botten blir en skugga bakom texten smuts, inte djup. */
     --title-shadow: none;
     --title-shadow-lg: none;

@@ -8,9 +8,8 @@ bör göras och varför* — det ändrar ingen kod självt.
 på vägen dit. En post som utförs stryks härifrån; en som visar sig vara fel
 stryks också, med en rad om varför.
 
-Storleken just nu: **11 007 rader** över 67 `.ts`-, `.html`- och `.scss`-filer
-i `src/`, varav 864 rader (8 %) är den temporära temaväljaren och 3 168 rader
-är tester. Avsnitt 4 lade till rader netto: det som lyftes ut ur komponenterna
+Storleken just nu: **10 148 rader** över 65 `.ts`-, `.html`- och `.scss`-filer
+i `src/`, varav 3 168 rader är tester. Avsnitt 4 lade till rader netto: det som lyftes ut ur komponenterna
 fick tester det inte hade, och de väger tyngre än raderna som försvann.
 
 ---
@@ -64,8 +63,7 @@ stället för fyra som var och en förklarar sig själv. `ProgressExportService`
 kvar som namnet på det som exporteras.
 
 Språket är avgjort: **kodkommentarer skrivs på svenska.** Det som fanns kvar på
-engelska låg i `match-view` och är omskrivet. README förblir engelsk och har
-fått en engelsk rubrik för temaväljaren.
+engelska låg i `match-view` och är omskrivet. README förblir engelsk.
 
 `Pair` i `master-view/levels.ts` står kvar — den går inte att slå ihop utan att
 röra `DIFFICULTY`-tabellerna, vilket är ett annat arbete än det här.
@@ -156,10 +154,10 @@ en bieffekt av något annat.
 
 ### 4.6 Temaväljaren
 
-`src/app/theme-picker/` är 864 rader, 8 % av källträdet, och är märkt
-`TILLFÄLLIG` i fyra filer. Den tas bort av ett *beslut* (vilket tema?), inte av
-en refaktorering — men den är den största enskilda radminskning som finns att
-göra, och den är redan planerad i README steg för steg.
+Utförd. Beslutet blev *Sockervadd*, vars två paletter nu står i
+`src/styles/_tokens.scss` som appens enda. `src/app/theme-picker/` är borta med
+sina 864 rader, och med den de fyra `TILLFÄLLIG`-markeringarna. Ljust och mörkt
+står kvar — de bodde aldrig i väljaren.
 
 ---
 
@@ -230,8 +228,8 @@ Filen säger `indent_size = 2` för allt. Verkligheten:
 
 | Indrag | Filer |
 | --- | --- |
-| 2 | all `.ts` utom theme-picker |
-| 4 | **alla sju `.scss`-filer**, `swipe-view.component.html`, `theme-picker/*.ts` |
+| 2 | all `.ts` |
+| 4 | **alla sju `.scss`-filer**, `swipe-view.component.html` |
 
 Mallarna skiljer sig också i interpolationsstil: `{{ värde }}` i master-,
 heatmap- och match-mallarna, `{{värde}}` i swipe-mallen.
@@ -258,8 +256,8 @@ Avsnitt 1 gick före ändå. Filerna det lade till (`shared/`,
 
 ### 6.2 README har svällt
 
-22 570 tecken, och beskriver numera både vad spelet är, hur lagren hänger ihop,
-hur temaväljaren tas bort och hur man kör tester. Delar av «Three layers»
+Beskriver numera både vad spelet är, hur lagren hänger ihop och hur man kör
+tester. Delar av «Three layers»
 överlappar `docs/plan.md` §«Tre lager» ordagrant.
 
 **Åtgärd:** låt README vara «vad det är och hur man kör det», och flytta
@@ -294,5 +292,3 @@ utförd.
 Steg 1 är en ren vinst utan risk. Steg 11 är den enda posten som ändrar
 hur appen fungerar under ytan och bör ha egna tester före och efter.
 
-Temaväljaren (4.6) ligger utanför ordningen — den väntar på ett beslut, inte på
-en refaktorering.
